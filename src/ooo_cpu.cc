@@ -1,5 +1,9 @@
 #include "ooo_cpu.h"
 #include "set.h"
+namespace knob
+{
+	extern bool knob_cloudsuite;
+}
 
 // out-of-order core
 O3_CPU ooo_cpu[NUM_CPUS]; 
@@ -43,9 +47,9 @@ void O3_CPU::handle_branch()
     // first, read PIN trace
     while (continue_reading) {
 
-        size_t instr_size = knob_cloudsuite ? sizeof(cloudsuite_instr) : sizeof(input_instr);
+        size_t instr_size = knob::knob_cloudsuite ? sizeof(cloudsuite_instr) : sizeof(input_instr);
 
-        if (knob_cloudsuite) {
+        if (knob::knob_cloudsuite) {
             if (!fread(&current_cloudsuite_instr, instr_size, 1, trace_file)) {
                 // reached end of file for this trace
                 cout << "*** Reached end of trace for Core: " << cpu << " Repeating trace: " << trace_string << endl; 
@@ -430,7 +434,7 @@ void O3_CPU::fetch_instruction()
         trace_packet.fill_level = FILL_L1;
         trace_packet.cpu = cpu;
         trace_packet.address = ROB.entry[read_index].ip >> LOG2_PAGE_SIZE;
-        if (knob_cloudsuite)
+        if (knob::knob_cloudsuite)
             trace_packet.address = ((ROB.entry[read_index].ip >> LOG2_PAGE_SIZE) << 9) | ( 256 + ROB.entry[read_index].asid[0]);
         else
             trace_packet.address = ROB.entry[read_index].ip >> LOG2_PAGE_SIZE;
@@ -1149,7 +1153,7 @@ void O3_CPU::operate_lsq()
                 data_packet.cpu = cpu;
                 data_packet.data_index = SQ.entry[sq_index].data_index;
                 data_packet.sq_index = sq_index;
-                if (knob_cloudsuite)
+                if (knob::knob_cloudsuite)
                     data_packet.address = ((SQ.entry[sq_index].virtual_address >> LOG2_PAGE_SIZE) << 9) | SQ.entry[sq_index].asid[1];
                 else
                     data_packet.address = SQ.entry[sq_index].virtual_address >> LOG2_PAGE_SIZE;
@@ -1231,7 +1235,7 @@ void O3_CPU::operate_lsq()
                 data_packet.cpu = cpu;
                 data_packet.data_index = LQ.entry[lq_index].data_index;
                 data_packet.lq_index = lq_index;
-                if (knob_cloudsuite)
+                if (knob::knob_cloudsuite)
                     data_packet.address = ((LQ.entry[lq_index].virtual_address >> LOG2_PAGE_SIZE) << 9) | LQ.entry[lq_index].asid[1];
                 else
                     data_packet.address = LQ.entry[lq_index].virtual_address >> LOG2_PAGE_SIZE;

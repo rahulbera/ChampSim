@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include "ooo_cpu.h"
 #include "uncore.h"
+#include "knobs.h"
 #include <fstream>
 
 #define FIXED_FLOAT(x) std::fixed << std::setprecision(5) << (x)
@@ -11,13 +12,16 @@ uint8_t warmup_complete[NUM_CPUS],
         simulation_complete[NUM_CPUS], 
         all_warmup_complete = 0, 
         all_simulation_complete = 0,
-        MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS,
-        knob_cloudsuite = 0,
-        knob_low_bandwidth = 0;
+        MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS;
+uint64_t champsim_seed;
 
-uint64_t warmup_instructions     = 1000000,
-         simulation_instructions = 10000000,
-         champsim_seed;
+namespace knob
+{
+    extern uint64_t warmup_instructions;
+    extern uint64_t simulation_instructions;
+    extern uint8_t  knob_cloudsuite;
+    extern uint8_t  knob_low_bandwidth;
+}
 
 time_t start_time;
 
@@ -465,8 +469,8 @@ uint64_t va_to_pa(uint32_t cpu, uint64_t instr_id, uint64_t va, uint64_t unique_
 
 void print_knobs()
 {
-    cout << "warmup_instructions " << warmup_instructions << endl
-        << "simulation_instructions " << simulation_instructions << endl
+    cout << "warmup_instructions " << knob::warmup_instructions << endl
+        << "simulation_instructions " << knob::simulation_instructions << endl
         << "champsim_seed " << champsim_seed << endl
         // << "low_bandwidth " << knob_low_bandwidth << endl
         // << "scramble_loads " << knob_scramble_loads << endl
@@ -511,61 +515,16 @@ int main(int argc, char** argv)
     // initialize knobs
     uint8_t show_heartbeat = 1;
 
+    parse_args(argc, argv);
+
     uint32_t seed_number = 0;
 
-    // check to see if knobs changed using getopt_long()
-    int c;
-    while (1) {
-        static struct option long_options[] =
-        {
-            {"warmup_instructions", required_argument, 0, 'w'},
-            {"simulation_instructions", required_argument, 0, 'i'},
-            {"hide_heartbeat", no_argument, 0, 'h'},
-            {"cloudsuite", no_argument, 0, 'c'},
-            {"low_bandwidth",  no_argument, 0, 'b'},
-            {"traces",  no_argument, 0, 't'},
-            {0, 0, 0, 0}      
-        };
-
-        int option_index = 0;
-
-        c = getopt_long_only(argc, argv, "wihsb", long_options, &option_index);
-
-        // no more option characters
-        if (c == -1)
-            break;
-
-        int traces_encountered = 0;
-
-        switch(c) {
-            case 'w':
-                warmup_instructions = atol(optarg);
-                break;
-            case 'i':
-                simulation_instructions = atol(optarg);
-                break;
-            case 'h':
-                show_heartbeat = 0;
-                break;
-            case 'c':
-                knob_cloudsuite = 1;
-                MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS_SPARC;
-                break;
-            case 'b':
-                knob_low_bandwidth = 1;
-                break;
-            case 't':
-                traces_encountered = 1;
-                break;
-            default:
-                abort();
-        }
-
-        if (traces_encountered == 1)
-            break;
+    if(knob::knob_cloudsuite)
+    {
+        MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS_SPARC;
     }
 
-    if (knob_low_bandwidth)
+    if (knob::knob_low_bandwidth)
         DRAM_MTPS = DRAM_IO_FREQ/4;
     else
         DRAM_MTPS = DRAM_IO_FREQ;
@@ -659,10 +618,10 @@ int main(int argc, char** argv)
     for (int i=0; i<NUM_CPUS; i++) {
 
         ooo_cpu[i].cpu = i; 
-        ooo_cpu[i].warmup_instructions = warmup_instructions;
-        ooo_cpu[i].simulation_instructions = simulation_instructions;
+        ooo_cpu[i].warmup_instructions = knob::warmup_instructions;
+        ooo_cpu[i].simulation_instructions = knob::simulation_instructions;
         ooo_cpu[i].begin_sim_cycle = 0; 
-        ooo_cpu[i].begin_sim_instr = warmup_instructions;
+        ooo_cpu[i].begin_sim_instr = knob::warmup_instructions;
 
         // ROB
         ooo_cpu[i].ROB.cpu = i;
@@ -825,7 +784,7 @@ int main(int argc, char** argv)
 
             // check for warmup
             // warmup complete
-            if ((warmup_complete[i] == 0) && (ooo_cpu[i].num_retired > warmup_instructions)) {
+            if ((warmup_complete[i] == 0) && (ooo_cpu[i].num_retired > knob::warmup_instructions)) {
                 warmup_complete[i] = 1;
                 all_warmup_complete++;
             }
