@@ -66,10 +66,30 @@ void print_roi_stats(uint32_t cpu, CACHE *cache)
         << "Core_" << cpu << "_" << cache->NAME << "_writeback_hit " << cache->roi_hit[cpu][3] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_writeback_miss " << cache->roi_miss[cpu][3] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_requested " << cache->pf_requested << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_prefetch_dropped " << cache->pf_dropped << endl
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_issued " << cache->pf_issued << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_prefetch_filled " << cache->pf_filled << endl
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_useful " << cache->pf_useful << endl
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_useless " << cache->pf_useless << endl
         << "Core_" << cpu << "_" << cache->NAME << "_average_miss_latency " << (1.0*(cache->total_miss_latency))/TOTAL_MISS << endl
+        << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_rq_access " << cache->RQ.ACCESS << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_rq_forward " << cache->RQ.FORWARD << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_rq_merged " << cache->RQ.MERGED << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_rq_to_cache " << cache->RQ.TO_CACHE << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_rq_full " << cache->RQ.FULL << endl
+        << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_wq_access " << cache->WQ.ACCESS << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_wq_forward " << cache->WQ.FORWARD << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_wq_merged " << cache->WQ.MERGED << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_wq_to_cache " << cache->WQ.TO_CACHE << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_wq_full " << cache->WQ.FULL << endl
+        << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_pq_access " << cache->PQ.ACCESS << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_pq_forward " << cache->PQ.FORWARD << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_pq_merged " << cache->PQ.MERGED << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_pq_to_cache " << cache->PQ.TO_CACHE << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_pq_full " << cache->PQ.FULL << endl
         << endl;
 }
 
@@ -495,6 +515,13 @@ void print_knobs()
     print_core_config();
     print_cache_config();
     print_dram_config();
+
+    // for(uint32_t index = 0; index < NUM_CPUS; ++index)
+    // {
+        ooo_cpu[0].L1D.l1d_prefetcher_print_config();
+        ooo_cpu[0].L2C.l2c_prefetcher_print_config();
+    // }
+    uncore.LLC.llc_prefetcher_print_config();
     cout << endl;
 }
 

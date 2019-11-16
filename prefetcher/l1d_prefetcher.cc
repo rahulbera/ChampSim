@@ -19,3 +19,8 @@ void CACHE::l1d_prefetcher_final_stats()
 {
 
 }
+
+void CACHE::l1d_prefetcher_print_config()
+{
+	
+}

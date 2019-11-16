@@ -1025,7 +1025,7 @@ void CACHE::fill_cache(uint32_t set, uint32_t way, PACKET *packet)
     block[set][way].used = 0;
 
     if (block[set][way].prefetch)
-        pf_fill++;
+        pf_filled++;
 
     block[set][way].delta = packet->delta;
     block[set][way].depth = packet->depth;
@@ -1293,12 +1293,11 @@ int CACHE::prefetch_line(uint64_t ip, uint64_t base_addr, uint64_t pf_addr, int 
     pf_requested++;
 
     if (PQ.occupancy < PQ.SIZE) {
-        if ((base_addr>>LOG2_PAGE_SIZE) == (pf_addr>>LOG2_PAGE_SIZE)) {
-            
+        // if ((base_addr>>LOG2_PAGE_SIZE) == (pf_addr>>LOG2_PAGE_SIZE)) {            
             PACKET pf_packet;
             pf_packet.fill_level = pf_fill_level;
-	    pf_packet.pf_origin_level = fill_level;
-	    pf_packet.pf_metadata = prefetch_metadata;
+            pf_packet.pf_origin_level = fill_level;
+            pf_packet.pf_metadata = prefetch_metadata;
             pf_packet.cpu = cpu;
             //pf_packet.data_index = LQ.entry[lq_index].data_index;
             //pf_packet.lq_index = lq_index;
@@ -1312,11 +1311,12 @@ int CACHE::prefetch_line(uint64_t ip, uint64_t base_addr, uint64_t pf_addr, int 
 
             // give a dummy 0 as the IP of a prefetch
             add_pq(&pf_packet);
-
             pf_issued++;
 
             return 1;
-        }
+        // }
+    } else {
+        pf_dropped++;
     }
 
     return 0;
@@ -1601,7 +1601,7 @@ void CACHE::increment_WQ_FULL(uint64_t address)
 void CACHE::prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_t &pref_used, uint64_t &pref_late)
 {
     pref_gen = pf_issued;
-    pref_fill = pf_fill;
+    pref_fill = pf_filled;
     pref_used = pf_useful;
     pref_late = pf_late;
 }

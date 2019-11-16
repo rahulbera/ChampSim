@@ -65,7 +65,7 @@ extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;
 #define L2C_WAY 8
 #define L2C_RQ_SIZE 32
 #define L2C_WQ_SIZE 32
-#define L2C_PQ_SIZE 16
+#define L2C_PQ_SIZE 32
 #define L2C_MSHR_SIZE 32
 #define L2C_LATENCY 10  // 5 (L1I or L1D) + 10 = 14 cycles
 
@@ -94,11 +94,12 @@ class CACHE : public MEMORY {
 
     // prefetch stats
     uint64_t pf_requested,
+             pf_dropped,
              pf_issued,
+             pf_filled,
              pf_useful,
              pf_useless,
-	     pf_late,
-             pf_fill;
+             pf_late;
 
     // queues
     PACKET_QUEUE WQ{NAME + "_WQ", WQ_SIZE}, // write queue
@@ -155,11 +156,12 @@ class CACHE : public MEMORY {
         MAX_FILL = 1;
 
         pf_requested = 0;
+        pf_dropped = 0;
         pf_issued = 0;
+        pf_filled = 0;
         pf_useful = 0;
         pf_useless = 0;
         pf_late = 0;
-        pf_fill = 0;
     };
 
     // destructor
@@ -205,6 +207,9 @@ class CACHE : public MEMORY {
          l1d_prefetcher_initialize(),
          l2c_prefetcher_initialize(),
          llc_prefetcher_initialize(),
+         l1d_prefetcher_print_config(),
+         l2c_prefetcher_print_config(),
+         llc_prefetcher_print_config(),
          prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type),
          l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type),
          prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr),
