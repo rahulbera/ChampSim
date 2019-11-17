@@ -70,7 +70,7 @@ class SMSPrefetcher : public Prefetcher
 private:
 	deque<FTEntry*> filter_table;
 	deque<ATEntry*> acc_table;
-	deque<PHTEntry*> pht;
+	deque<PHTEntry*> pht; /* TODO: make it set associative */
 	deque<uint64_t> pref_buffer;
 
 	struct

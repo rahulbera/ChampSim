@@ -2,6 +2,7 @@
 #include "cache.h"
 #include "prefetcher.h"
 #include "sms.h"
+#include "spp.h"
 
 using namespace std;
 
@@ -14,11 +15,22 @@ vector<Prefetcher*> prefetchers;
 
 void CACHE::l2c_prefetcher_initialize() 
 {
-	if(knob::l2c_prefetcher_type.compare("sms") == 0)
+	if(!knob::l2c_prefetcher_type.compare("sms"))
 	{
 		cout << "adding L2C_PREFETCHER: SMS" << endl;
 		SMSPrefetcher *pref_sms = new SMSPrefetcher(knob::l2c_prefetcher_type);
 		prefetchers.push_back(pref_sms);
+	}
+	else if(!knob::l2c_prefetcher_type.compare("spp"))
+	{
+		cout << "adding L2C_PREFETCHER: SPP" << endl;
+		SPP *pref_spp = new SPP(knob::l2c_prefetcher_type);
+		prefetchers.push_back(pref_spp);
+	}
+	else
+	{
+		cout << "unsupported prefetcher type " << knob::l2c_prefetcher_type << endl;
+		exit(1);
 	}
 }
 

@@ -25,6 +25,20 @@ namespace knob
 	uint32_t sms_region_size_log = 11;
 	bool     sms_enable_pref_buffer = true;
 	uint32_t sms_pref_buffer_size = 256;
+
+	uint32_t spp_st_size = 256;
+	uint32_t spp_pt_size = 512;
+	uint32_t spp_max_outcomes = 4;
+	double   spp_max_confidence = 25.0;
+	uint32_t spp_max_depth = 64;
+	uint32_t spp_max_prefetch_per_level = 1;
+	uint32_t spp_max_confidence_counter_value = 16;
+	uint32_t spp_max_global_counter_value = 1024;
+	uint32_t spp_pf_size = 1024;
+	bool     spp_enable_alpha = true;
+	bool     spp_enable_pref_buffer = true;
+	uint32_t spp_pref_buffer_size = 256;
+	uint32_t spp_pref_degree = 4;
 }
 
 char config_file_name[MAX_LEN];
@@ -92,6 +106,8 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     {
 		knob::l2c_prefetcher_type = string(value);
     }
+
+    /* SMS */
 	else if(MATCH("", "sms_at_size"))
 	{
 		knob::sms_at_size = atoi(value);
@@ -121,6 +137,61 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::sms_pref_buffer_size = atoi(value);
 	}
+
+	/* SPP */
+	else if (MATCH("", "spp_st_size"))
+	{
+		knob::spp_st_size = atoi(value);
+	}
+	else if (MATCH("", "spp_pt_size"))
+	{
+		knob::spp_pt_size = atoi(value);
+	}
+	else if (MATCH("", "spp_max_outcomes"))
+	{
+		knob::spp_max_outcomes = atoi(value);
+	}
+	else if (MATCH("", "spp_max_confidence"))
+	{
+		knob::spp_max_confidence = strtod(value, NULL);
+	}
+	else if (MATCH("", "spp_max_depth"))
+	{
+		knob::spp_max_depth = atoi(value);
+	}
+	else if (MATCH("", "spp_max_prefetch_per_level"))
+	{
+		knob::spp_max_prefetch_per_level = atoi(value);
+	}
+	else if (MATCH("", "spp_max_confidence_counter_value"))
+	{
+		knob::spp_max_confidence_counter_value = atoi(value);
+	}
+	else if (MATCH("", "spp_max_global_counter_value"))
+	{
+		knob::spp_max_global_counter_value = atoi(value);
+	}
+	else if (MATCH("", "spp_pf_size"))
+	{
+		knob::spp_pf_size = atoi(value);
+	}
+	else if (MATCH("", "spp_enable_alpha"))
+	{
+		knob::spp_enable_alpha = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "spp_enable_pref_buffer"))
+	{
+		knob::spp_enable_pref_buffer = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "spp_pref_buffer_size"))
+	{
+		knob::spp_pref_buffer_size = atoi(value);
+	}
+	else if (MATCH("", "spp_pref_degree"))
+	{
+		knob::spp_pref_degree = atoi(value);
+	}
+
     else 
     {
     	printf("unable to parse section: %s, name: %s, value: %s\n", section, name, value);
