@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <strings.h>
+#include <iomanip>
 #include "spp.h"
 #include "champsim.h"
 
@@ -23,6 +24,8 @@ namespace knob
 	extern bool     spp_enable_pref_buffer;
 	extern uint32_t spp_pref_buffer_size;
 	extern uint32_t spp_pref_degree;
+	extern bool     spp_enable_ghr;
+	extern uint32_t spp_ghr_size;
 }
 
 void SPP::init_knobs()
@@ -50,6 +53,8 @@ void SPP::print_config()
 		<< "spp_enable_pref_buffer " << knob::spp_enable_pref_buffer << endl
 		<< "spp_pref_buffer_size " << knob::spp_pref_buffer_size << endl
 		<< "spp_pref_degree " << knob::spp_pref_degree << endl
+		<< "spp_enable_ghr " << knob::spp_enable_ghr << endl
+		<< "spp_ghr_size " << knob::spp_ghr_size << endl
 		<< endl;
 }
 
@@ -95,7 +100,7 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 		update_age_signature_table(st_index);
 		
 		/* use new signature to generate prefetch */
-		generate_prefetch(page, offset, new_signature, tmp_pref_addr);
+		generate_prefetch(page, offset, new_signature, 1.0, tmp_pref_addr);
 		filter_prefetch(tmp_pref_addr, pref_addr);
 		if(knob::spp_enable_pref_buffer)
 		{
@@ -105,7 +110,17 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 	}
 	else
 	{
-		/* TODO: implement GHR */
+		if(knob::spp_enable_ghr)
+		{
+			uint64_t signature = 0;
+			double confidence = 0.0;
+			stats.ghr.lookup++;
+			if(lookup_ghr(offset, signature, confidence))
+			{
+				stats.ghr.hit++;
+				generate_prefetch(page, offset, signature, confidence, tmp_pref_addr);
+			}
+		}
 		insert_signature_table(page, offset, 0x00);
 	}
 
@@ -292,15 +307,16 @@ void PTEntry::get_satisfying_deltas(double confidence, vector<int32_t> &satisfyi
 }
 
 
-void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, vector<uint64_t> &pref_addr)
+void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr)
 {
-	double confidence = 1.0;
+	double curr_confidence = confidence;
 	uint32_t depth = 0;
 	int32_t curr_offset = (int32_t)offset, pref_offset = 0;
+	bool crossed_page = false;
 
 	stats.generate_prefetch.called++;
 
-	while((100*confidence) >= knob::spp_max_confidence && depth < knob::spp_max_depth)
+	while((100*curr_confidence) >= knob::spp_max_confidence && depth < knob::spp_max_depth)
 	{
 		auto pt_index = search_pattern_table(signature);
 		if(pt_index == pattern_table.end())
@@ -312,7 +328,7 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 		vector<int32_t> satisfying_deltas;
 		int32_t max_delta = 0;
 		uint32_t max_delta_occur = 0;
-		ptentry->get_satisfying_deltas(confidence, satisfying_deltas, max_delta, max_delta_occur);
+		ptentry->get_satisfying_deltas(curr_confidence, satisfying_deltas, max_delta, max_delta_occur);
 
 		for(uint32_t index = 0; index < satisfying_deltas.size() && index < knob::spp_max_prefetch_per_level; ++index)
 		{
@@ -325,10 +341,16 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 			}
 		}
 
+		curr_confidence = compute_confidence(curr_confidence, (double)max_delta_occur/ptentry->occurence);
+		if(knob::spp_enable_ghr && !crossed_page && (curr_offset+max_delta < 0 || curr_offset+max_delta >= 64))
+		{
+			crossed_page = true;
+			insert_ghr(signature, (uint32_t)curr_offset, max_delta, curr_confidence);
+		}
 		signature = compute_signature(signature, max_delta);
-		confidence = compute_confidence(confidence, (double)max_delta_occur/ptentry->occurence);
 		curr_offset += max_delta;
 		depth++;
+
 	}
 
 	if(depth == 0)
@@ -399,6 +421,10 @@ void SPP::dump_stats()
 		<< "spp.pref_buffer.buffered " << stats.pref_buffer.buffered << endl
 		<< "spp.pref_buffer.spilled " << stats.pref_buffer.spilled << endl
 		<< "spp.pref_buffer.issued " << stats.pref_buffer.issued << endl
+		<< "spp.ghr.lookup " << stats.ghr.lookup << endl
+		<< "spp.ghr.hit " << stats.ghr.hit << endl
+		<< "spp.ghr.insert " << stats.ghr.insert << endl
+		<< "spp.ghr.evict " << stats.ghr.evict << endl
 		<< endl;
 }
 
@@ -500,4 +526,60 @@ void SPP::issue_prefetch(vector<uint64_t> &pref_addr)
 		count++;
 	}
 	stats.pref_buffer.issued += pref_addr.size();
+}
+
+void SPP::insert_ghr(uint64_t signature, uint32_t offset, int32_t delta, double confidence)
+{
+	// cout << "sig " << hex << setw(20) << signature
+	// 	<< " offset " << dec << setw(2) << offset
+	// 	<< " delta " << dec << setw(3) << delta
+	// 	<< " confidence " << dec << setw(4) << FIXED_FLOAT(confidence)
+	// 	<< endl;
+
+	stats.ghr.insert++;
+	GHREntry *ghrentry = NULL;
+	if(ghr.size() >= knob::spp_ghr_size)
+	{
+		auto victim = ghr.begin();
+		ghrentry = (*victim);
+		ghr.erase(victim);
+		delete ghrentry;
+		stats.ghr.evict++;
+	}
+
+	ghrentry = new GHREntry();
+	ghrentry->signature = signature;
+	ghrentry->offset = offset;
+	ghrentry->delta = delta;
+	ghrentry->confidence = confidence;
+	ghr.push_back(ghrentry);
+}
+
+bool SPP::lookup_ghr(uint32_t offset, uint64_t &signature, double &confidence)
+{
+	for(uint32_t index = 0; index < ghr.size(); ++index)
+	{
+		if(compute_congruent_offset(ghr[index]->offset, ghr[index]->delta) == offset)
+		{
+			signature = ghr[index]->signature;
+			confidence = ghr[index]->confidence;
+			// cout << "[GHR_hit] offset " << offset << " ghr.offset " << ghr[index]->offset << " ghr.delta " << ghr[index]->delta << endl; 
+			return true;
+		}
+	}
+	return false;
+}
+
+uint32_t SPP::compute_congruent_offset(uint32_t offset, int32_t delta)
+{
+	int32_t n_offset = ((int32_t)offset + delta);
+	if(n_offset < 0)
+	{
+		return (uint32_t)(64 - (abs(n_offset) % 64));
+	}
+	else if(n_offset >= 64)
+	{
+		return (uint32_t)(n_offset % 64);
+	}
+	else return (uint32_t)n_offset;
 }

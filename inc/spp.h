@@ -81,6 +81,26 @@ public:
 	~PFEntry(){};
 };
 
+class GHREntry
+{
+public:
+	uint64_t signature;
+	uint32_t offset;
+	int32_t delta;
+	double confidence;
+
+public:
+	void reset()
+	{
+		signature = 0xdeadbeef;
+		offset = 0;
+		delta = 0;
+		confidence = 0.0;
+	}
+	GHREntry(){reset();}
+	~GHREntry(){}
+};
+
 class SPP : public Prefetcher
 {
 private:
@@ -88,6 +108,7 @@ private:
 	deque<PTEntry*> pattern_table; /* TODO: make it set associative */
 	deque<PFEntry*> prefetch_filter;
 	deque<uint64_t> pref_buffer;
+	deque<GHREntry*> ghr;
 
 	double alpha;
 	uint64_t total_pref, used_pref;
@@ -138,6 +159,14 @@ private:
 			uint64_t issued;
 		} pref_buffer;
 
+		struct
+		{
+			uint64_t lookup;
+			uint64_t hit;
+			uint64_t insert;
+			uint64_t evict;
+		} ghr;
+
 	} stats;
 
 private:
@@ -163,7 +192,7 @@ private:
 	void evict_prefetch_filter(deque<PFEntry*>::iterator victim);
 	void register_demand_hit(uint64_t address);
 
-	void generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, vector<uint64_t> &pref_addr);
+	void generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr);
 	void filter_prefetch(vector<uint64_t> tmp_pref_addr, vector<uint64_t> &pref_addr);
 	void buffer_prefetch(vector<uint64_t> pref_addr);
 	void issue_prefetch(vector<uint64_t> &pref_addr);
@@ -171,6 +200,10 @@ private:
 	double compute_confidence(double prev_conf, double curr_ratio);
 	int32_t compute_delta(uint32_t curr_offset, uint32_t prev_offset);
 	uint64_t compute_signature(uint64_t old_sig, int32_t new_delta);
+
+	void insert_ghr(uint64_t signature, uint32_t offset, int32_t delta, double confidence);
+	bool lookup_ghr(uint32_t offset, uint64_t &signature, double &confidence);
+	uint32_t compute_congruent_offset(uint32_t offset, int32_t delta);
 
 public:
 	SPP(string pref_type);

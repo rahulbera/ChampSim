@@ -39,6 +39,8 @@ namespace knob
 	bool     spp_enable_pref_buffer = true;
 	uint32_t spp_pref_buffer_size = 256;
 	uint32_t spp_pref_degree = 4;
+	bool     spp_enable_ghr = true;
+	uint32_t spp_ghr_size = 8;
 }
 
 char config_file_name[MAX_LEN];
@@ -190,6 +192,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "spp_pref_degree"))
 	{
 		knob::spp_pref_degree = atoi(value);
+	}
+	else if (MATCH("", "spp_enable_ghr"))
+	{
+		knob::spp_enable_ghr = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "spp_ghr_size"))
+	{
+		knob::spp_ghr_size = atoi(value);
 	}
 
     else 
