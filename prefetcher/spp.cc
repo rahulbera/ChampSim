@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 #include <strings.h>
 #include <iomanip>
 #include "spp.h"
@@ -26,6 +27,8 @@ namespace knob
 	extern uint32_t spp_pref_degree;
 	extern bool     spp_enable_ghr;
 	extern uint32_t spp_ghr_size;
+	extern uint32_t spp_signature_bits;
+	extern uint32_t spp_alpha_epoch;
 }
 
 void SPP::init_knobs()
@@ -55,6 +58,8 @@ void SPP::print_config()
 		<< "spp_pref_degree " << knob::spp_pref_degree << endl
 		<< "spp_enable_ghr " << knob::spp_enable_ghr << endl
 		<< "spp_ghr_size " << knob::spp_ghr_size << endl
+		<< "spp_signature_bits " << knob::spp_signature_bits << endl
+		<< "spp_alpha_epoch " << knob::spp_alpha_epoch << endl
 		<< endl;
 }
 
@@ -66,6 +71,7 @@ SPP::SPP(string type) : Prefetcher(type)
 	alpha = 1.0;
 	total_pref = 0;
 	used_pref = 0;
+	demand_counter = 0;
 }
 
 SPP::~SPP()
@@ -79,8 +85,17 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 	uint32_t offset = (address >> LOG2_BLOCK_SIZE) & ((1ull << (LOG2_PAGE_SIZE - LOG2_BLOCK_SIZE)) - 1);
 	vector<uint64_t> tmp_pref_addr;
 
+	// cout << "[ACCESS]"
+	// 	<< "pc: " << hex << setw(10) << pc
+	// 	<< " page: " << hex << setw(10) << page
+	// 	<< " offset: " << dec << setw(2) << offset
+	// 	<< endl;
+
 	/* register demand hit in PF */
-	register_demand_hit(address);
+	if(knob::spp_enable_alpha)
+	{
+		register_demand_hit(address);
+	}
 
 	auto st_index = search_signature_table(page);
 	stats.st.lookup++;
@@ -95,13 +110,16 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 		update_pattern_table(stentry->signature, curr_delta);
 
 		/* update ST */
+		// cout << "    [ST_b] " << stentry->to_string() << endl;
 		stentry->signature = new_signature;
 		stentry->last_offset = offset;
 		update_age_signature_table(st_index);
+		// cout << "    [ST_a] " << stentry->to_string() << endl;
 		
 		/* use new signature to generate prefetch */
 		generate_prefetch(page, offset, new_signature, 1.0, tmp_pref_addr);
 		filter_prefetch(tmp_pref_addr, pref_addr);
+		// cout << "    [Pref] gen: " << tmp_pref_addr.size() << " filtered: " << (tmp_pref_addr.size() - pref_addr.size()) << endl;
 		if(knob::spp_enable_pref_buffer)
 		{
 			buffer_prefetch(pref_addr);
@@ -110,25 +128,35 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 	}
 	else
 	{
+		uint64_t signature = 0x0;
 		if(knob::spp_enable_ghr)
 		{
-			uint64_t signature = 0;
 			double confidence = 0.0;
 			stats.ghr.lookup++;
 			if(lookup_ghr(offset, signature, confidence))
 			{
 				stats.ghr.hit++;
 				generate_prefetch(page, offset, signature, confidence, tmp_pref_addr);
+				filter_prefetch(tmp_pref_addr, pref_addr);
+				// cout << "    [Pref] gen: " << tmp_pref_addr.size() << " filtered: " << (tmp_pref_addr.size() - pref_addr.size()) << endl;
+				if(knob::spp_enable_pref_buffer)
+				{
+					buffer_prefetch(pref_addr);
+					pref_addr.clear();
+				}
 			}
 		}
-		insert_signature_table(page, offset, 0x00);
+		insert_signature_table(page, offset, signature);
 	}
 
 	/* slowly inject prefetches at every demand access, if buffer is turned on */
 	if(knob::spp_enable_pref_buffer)
 	{
 		issue_prefetch(pref_addr);
+		// cout << "    [Issu] count: " << pref_addr.size() << endl;
 	}
+
+	// cout << "    [Gcnt] C_total: " << dec << total_pref << " C_used: " << dec << used_pref << " alpha: " << FIXED_FLOAT(alpha) << endl;
 }
 
 /* Functions for Signature Table */
@@ -162,6 +190,7 @@ void SPP::insert_signature_table(uint64_t page, uint32_t offset, uint64_t signat
 	stentry->age = 0;
 	for(uint32_t index = 0; index < signature_table.size(); ++index) signature_table[index]->age++;
 	signature_table.push_back(stentry);	
+	// cout << "    [ST_insert] " << stentry->to_string() << endl;
 }
 
 deque<STEntry*>::iterator SPP::search_victim_signature_table()
@@ -197,9 +226,11 @@ void SPP::update_pattern_table(uint64_t signature, int32_t delta)
 	{
 		stats.pt.hit++;
 		ptentry = (*pt_index);
+		// cout << "    [PT_b] " << ptentry->to_string() << endl;
 		ptentry->update_delta(delta);
 		incr_counter(ptentry->occurence, knob::spp_max_confidence_counter_value);
 		update_age_pattern_table(pt_index);
+		// cout << "    [PT_a] " << ptentry->to_string() << endl;
 	}
 	else
 	{
@@ -218,10 +249,12 @@ void SPP::insert_pattern_table(uint64_t signature, int32_t delta)
 
 	PTEntry *ptentry = new PTEntry();
 	ptentry->signature = signature;
+	incr_counter(ptentry->occurence, knob::spp_max_confidence_counter_value);
 	ptentry->update_delta(delta);
 	ptentry->age = 0;
 	for(uint32_t index = 0; index < pattern_table.size(); ++index) pattern_table[index]->age++;
 	pattern_table.push_back(ptentry);
+	// cout << "    [PT_insert] " << ptentry->to_string() << endl;
 }
 
 deque<PTEntry*>::iterator SPP::search_pattern_table(uint64_t signature)
@@ -306,6 +339,31 @@ void PTEntry::get_satisfying_deltas(double confidence, vector<int32_t> &satisfyi
 	}
 }
 
+string PTEntry::to_string()
+{
+	stringstream ss;
+	ss << "sig: " << hex << setw(12) << signature
+		<< " occ: " << dec << setw(3) << occurence
+		<< " age: " << dec << setw(4) << age << " "
+		;
+	for(uint32_t index = 0; index < outcomes.size(); ++index)
+	{
+		ss << "(" << outcomes[index]->delta << "," << outcomes[index]->occurence << ")";
+	}
+	return ss.str();
+}
+
+/* STEntry functions */
+string STEntry::to_string()
+{
+	stringstream ss;
+	ss << "page: " << hex << setw(10) << page
+		<< " offset: " << dec << setw(2) << last_offset
+		<< " sig: " << hex << setw(12) << signature
+		<< " age: " << dec << setw(4) << age
+		;
+	return ss.str(); 
+}
 
 void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr)
 {
@@ -313,6 +371,15 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 	uint32_t depth = 0;
 	int32_t curr_offset = (int32_t)offset, pref_offset = 0;
 	bool crossed_page = false;
+	/* tracked for debugging purpose */
+	vector<int32_t> pref_offsets, pref_offsets_discarded;
+	vector<double> conf, conf_discarded;
+
+	// cout << "    [Pgen] page: " << hex << setw(10) << page
+	// 	<< " offset " << dec << setw(2) << offset
+	// 	<< " sig: " << hex << setw(12) << signature
+	// 	<< " conf: " << dec << setw(4) << FIXED_FLOAT(confidence)
+	// 	<< endl; 
 
 	stats.generate_prefetch.called++;
 
@@ -335,9 +402,16 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 			pref_offset = curr_offset + satisfying_deltas[index];
 			if(pref_offset >= 0 && pref_offset < 64 && pref_offset != (int32_t)offset)
 			{
+				pref_offsets.push_back(pref_offset);
+				conf.push_back(curr_confidence);
 				uint64_t addr = (page << LOG2_PAGE_SIZE) + (((uint32_t)pref_offset) << LOG2_BLOCK_SIZE);
 				pref_addr.push_back(addr);
 				stats.generate_prefetch.pref_generated++;
+			}
+			else
+			{
+				conf_discarded.push_back(curr_confidence);
+				pref_offsets_discarded.push_back(pref_offset);
 			}
 		}
 
@@ -350,7 +424,6 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 		signature = compute_signature(signature, max_delta);
 		curr_offset += max_delta;
 		depth++;
-
 	}
 
 	if(depth == 0)
@@ -361,6 +434,35 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 	{
 		stats.generate_prefetch.depth += depth;
 	}
+
+	// cout << "    [Poff]";
+	// for(uint32_t index = 0; index < pref_offsets.size(); ++index)
+	// {
+	// 	cout << " " << dec << pref_offsets[index];
+	// }
+	// for(uint32_t index = 0; index < pref_offsets_discarded.size(); ++index)
+	// {
+	// 	cout << " (" << dec << pref_offsets_discarded[index] << ")";
+	// }	
+	// if((100*curr_confidence) < knob::spp_max_confidence)
+	// {
+	// 	cout << " | low_conf " << FIXED_FLOAT((100*curr_confidence));
+	// }
+	// else if(depth >= knob::spp_max_depth)
+	// {
+	// 	cout << " | max_depth " << depth;
+	// }
+	// cout << endl;
+	// cout << "    [Pcnf] ";
+	// for(uint32_t index = 0; index < conf.size(); ++index)
+	// {
+	// 	cout << " " << dec << FIXED_FLOAT((100*conf[index]));
+	// }
+	// for(uint32_t index = 0; index < conf_discarded.size(); ++index)
+	// {
+	// 	cout << " (" << dec << FIXED_FLOAT((100*conf_discarded[index])) << ")";
+	// }
+	// cout << endl;
 }
 
 double SPP::compute_confidence(double prev_conf, double curr_ratio)
@@ -392,8 +494,10 @@ uint64_t SPP::compute_signature(uint64_t old_sig, int32_t new_delta)
 {
 	uint64_t new_sig = old_sig;
 	new_sig = new_sig << 3;
+	new_sig = new_sig & ((1ull << knob::spp_signature_bits) - 1);
 	new_delta = new_delta & ((1ul << 7) - 1);
 	new_sig = (new_sig ^ new_delta);
+	new_sig = new_sig & ((1ull << knob::spp_signature_bits) - 1);	
 	return	new_sig;
 }
 
@@ -416,8 +520,9 @@ void SPP::dump_stats()
 		<< "spp.pref_filter.issue_pref " << stats.pref_filter.issue_pref << endl
 		<< "spp.pref_filter.insert " << stats.pref_filter.insert << endl
 		<< "spp.pref_filter.evict " << stats.pref_filter.evict << endl
-		<< "spp.pref_filter.demand_seen_unique " << stats.pref_filter.demand_seen_unique << endl
+		<< "spp.pref_filter.evict_not_demanded " << stats.pref_filter.evict_not_demanded << endl
 		<< "spp.pref_filter.demand_seen " << stats.pref_filter.demand_seen << endl
+		<< "spp.pref_filter.demand_seen_unique " << stats.pref_filter.demand_seen_unique << endl
 		<< "spp.pref_buffer.buffered " << stats.pref_buffer.buffered << endl
 		<< "spp.pref_buffer.spilled " << stats.pref_buffer.spilled << endl
 		<< "spp.pref_buffer.issued " << stats.pref_buffer.issued << endl
@@ -425,6 +530,7 @@ void SPP::dump_stats()
 		<< "spp.ghr.hit " << stats.ghr.hit << endl
 		<< "spp.ghr.insert " << stats.ghr.insert << endl
 		<< "spp.ghr.evict " << stats.ghr.evict << endl
+		<< "spp.alpha.update " << stats.alpha.update << endl
 		<< endl;
 }
 
@@ -477,6 +583,10 @@ void SPP::evict_prefetch_filter(deque<PFEntry*>::iterator victim)
 {
 	stats.pref_filter.evict++;
 	PFEntry *pfentry = (*victim);
+	if(!pfentry->demand_hit)
+	{
+		stats.pref_filter.evict_not_demanded++;
+	}
 	prefetch_filter.erase(victim);
 	delete pfentry;
 }
@@ -495,8 +605,13 @@ void SPP::register_demand_hit(uint64_t address)
 		}
 		stats.pref_filter.demand_seen++;
 	}
-
-	alpha = (double)used_pref/total_pref;
+	demand_counter++;
+	if(demand_counter >= knob::spp_alpha_epoch)
+	{
+		alpha = (double)used_pref/total_pref;
+		demand_counter = 0;
+		stats.alpha.update++;
+	}
 }
 
 void SPP::buffer_prefetch(vector<uint64_t> pref_addr)

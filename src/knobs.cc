@@ -41,6 +41,8 @@ namespace knob
 	uint32_t spp_pref_degree = 4;
 	bool     spp_enable_ghr = true;
 	uint32_t spp_ghr_size = 8;
+	uint32_t spp_signature_bits = 12;
+	uint32_t spp_alpha_epoch = 1024;
 }
 
 char config_file_name[MAX_LEN];
@@ -200,6 +202,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "spp_ghr_size"))
 	{
 		knob::spp_ghr_size = atoi(value);
+	}
+	else if (MATCH("", "spp_signature_bits"))
+	{
+		knob::spp_signature_bits = atoi(value);
+	}
+	else if (MATCH("", "spp_alpha_epoch"))
+	{
+		knob::spp_alpha_epoch = atoi(value);
 	}
 
     else 

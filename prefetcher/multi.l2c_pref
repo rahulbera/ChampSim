@@ -15,7 +15,11 @@ vector<Prefetcher*> prefetchers;
 
 void CACHE::l2c_prefetcher_initialize() 
 {
-	if(!knob::l2c_prefetcher_type.compare("sms"))
+	if(!knob::l2c_prefetcher_type.compare("none"))
+	{
+		cout << "adding L2C_PREFETCHER: NONE" << endl;
+	}
+	else if(!knob::l2c_prefetcher_type.compare("sms"))
 	{
 		cout << "adding L2C_PREFETCHER: SMS" << endl;
 		SMSPrefetcher *pref_sms = new SMSPrefetcher(knob::l2c_prefetcher_type);

@@ -25,6 +25,7 @@ public:
 	}
 	STEntry(){reset();}
 	~STEntry(){}
+	string to_string();
 };
 
 class Outcome
@@ -50,6 +51,7 @@ public:
 	uint64_t occurence;
 	deque<Outcome*> outcomes;
 	uint32_t age;
+	string to_string();
 
 public:
 	void reset()
@@ -111,7 +113,7 @@ private:
 	deque<GHREntry*> ghr;
 
 	double alpha;
-	uint64_t total_pref, used_pref;
+	uint64_t total_pref, used_pref, demand_counter;
 
 	/* TODO: implement GHR */
 
@@ -150,6 +152,7 @@ private:
 			uint64_t evict;
 			uint64_t demand_seen_unique;
 			uint64_t demand_seen;
+			uint64_t evict_not_demanded;
 		} pref_filter;
 
 		struct
@@ -166,6 +169,11 @@ private:
 			uint64_t insert;
 			uint64_t evict;
 		} ghr;
+
+		struct
+		{
+			uint64_t update;
+		} alpha;
 
 	} stats;
 
