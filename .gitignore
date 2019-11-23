@@ -5,3 +5,4 @@ dpc3_traces/
 obj/
 runs/
 tags
+*.out

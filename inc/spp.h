@@ -72,12 +72,14 @@ class PFEntry
 public:
 	uint64_t address;
 	bool demand_hit;
+	bool from_ghr;
 
 public:
 	void reset()
 	{
 		address = 0xdeadbeef;
 		demand_hit = false;
+		from_ghr = false;
 	}
 	PFEntry(){reset();}
 	~PFEntry(){};
@@ -137,22 +139,22 @@ private:
 
 		struct
 		{
-			uint64_t called;
-			uint64_t pref_generated;
-			uint64_t pt_miss;
+			uint64_t called[2];
+			uint64_t pref_generated[2];
+			uint64_t pt_miss[2];
 			uint64_t depth;
 		} generate_prefetch;
 
 		struct
 		{
-			uint64_t lookup;
-			uint64_t hit;
-			uint64_t issue_pref;
-			uint64_t insert;
-			uint64_t evict;
-			uint64_t demand_seen_unique;
-			uint64_t demand_seen;
-			uint64_t evict_not_demanded;
+			uint64_t lookup[2];
+			uint64_t hit[2];
+			uint64_t issue_pref[2];
+			uint64_t insert[2];
+			uint64_t evict[2];
+			uint64_t demand_seen_unique[2];
+			uint64_t demand_seen[2];
+			uint64_t evict_not_demanded[2];
 		} pref_filter;
 
 		struct
@@ -195,13 +197,13 @@ private:
 	void update_age_pattern_table(deque<PTEntry*>::iterator pt_index);
 
 	deque<PFEntry*>::iterator search_prefetch_filter(uint64_t address);
-	void insert_prefetch_filter(uint64_t address);
+	void insert_prefetch_filter(uint64_t address, bool from_ghr);
 	deque<PFEntry*>::iterator search_victim_prefetch_filter();
 	void evict_prefetch_filter(deque<PFEntry*>::iterator victim);
 	void register_demand_hit(uint64_t address);
 
-	void generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr);
-	void filter_prefetch(vector<uint64_t> tmp_pref_addr, vector<uint64_t> &pref_addr);
+	void generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr, bool from_ghr);
+	void filter_prefetch(vector<uint64_t> tmp_pref_addr, vector<uint64_t> &pref_addr, bool from_ghr);
 	void buffer_prefetch(vector<uint64_t> pref_addr);
 	void issue_prefetch(vector<uint64_t> &pref_addr);
 

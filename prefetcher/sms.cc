@@ -189,6 +189,13 @@ void SMSPrefetcher::evict_acc_table(deque<ATEntry*>::iterator victim)
 	ATEntry *atentry = (*victim);
 	insert_pht_table(atentry);
 	acc_table.erase(victim);
+
+	// cout << "[PHT_INSERT] pc " << hex << setw(10) << atentry->pc
+	// 	<< " page " << hex << setw(10) << atentry->page
+	// 	<< " offset " << dec << setw(3) << atentry->trigger_offset
+	// 	<< " pattern " << BitmapHelper::to_string(atentry->pattern)
+	// 	<< endl;
+
 	delete(atentry);
 }
 

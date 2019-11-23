@@ -117,8 +117,8 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 		// cout << "    [ST_a] " << stentry->to_string() << endl;
 		
 		/* use new signature to generate prefetch */
-		generate_prefetch(page, offset, new_signature, 1.0, tmp_pref_addr);
-		filter_prefetch(tmp_pref_addr, pref_addr);
+		generate_prefetch(page, offset, new_signature, 1.0, tmp_pref_addr, false);
+		filter_prefetch(tmp_pref_addr, pref_addr, false);
 		// cout << "    [Pref] gen: " << tmp_pref_addr.size() << " filtered: " << (tmp_pref_addr.size() - pref_addr.size()) << endl;
 		if(knob::spp_enable_pref_buffer)
 		{
@@ -136,8 +136,8 @@ void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pre
 			if(lookup_ghr(offset, signature, confidence))
 			{
 				stats.ghr.hit++;
-				generate_prefetch(page, offset, signature, confidence, tmp_pref_addr);
-				filter_prefetch(tmp_pref_addr, pref_addr);
+				generate_prefetch(page, offset, signature, confidence, tmp_pref_addr, true);
+				filter_prefetch(tmp_pref_addr, pref_addr, true);
 				// cout << "    [Pref] gen: " << tmp_pref_addr.size() << " filtered: " << (tmp_pref_addr.size() - pref_addr.size()) << endl;
 				if(knob::spp_enable_pref_buffer)
 				{
@@ -365,7 +365,7 @@ string STEntry::to_string()
 	return ss.str(); 
 }
 
-void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr)
+void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, double confidence, vector<uint64_t> &pref_addr, bool from_ghr)
 {
 	double curr_confidence = confidence;
 	uint32_t depth = 0;
@@ -381,7 +381,7 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 	// 	<< " conf: " << dec << setw(4) << FIXED_FLOAT(confidence)
 	// 	<< endl; 
 
-	stats.generate_prefetch.called++;
+	stats.generate_prefetch.called[from_ghr]++;
 
 	while((100*curr_confidence) >= knob::spp_max_confidence && depth < knob::spp_max_depth)
 	{
@@ -406,7 +406,7 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 				conf.push_back(curr_confidence);
 				uint64_t addr = (page << LOG2_PAGE_SIZE) + (((uint32_t)pref_offset) << LOG2_BLOCK_SIZE);
 				pref_addr.push_back(addr);
-				stats.generate_prefetch.pref_generated++;
+				stats.generate_prefetch.pref_generated[from_ghr]++;
 			}
 			else
 			{
@@ -428,7 +428,7 @@ void SPP::generate_prefetch(uint64_t page, uint32_t offset, uint64_t signature, 
 
 	if(depth == 0)
 	{
-		stats.generate_prefetch.pt_miss++;
+		stats.generate_prefetch.pt_miss[from_ghr]++;
 	}
 	else
 	{
@@ -511,18 +511,29 @@ void SPP::dump_stats()
 		<< "spp.pt.hit " << stats.pt.hit << endl
 		<< "spp.pt.insert " << stats.pt.insert << endl
 		<< "spp.pt.evict " << stats.pt.evict << endl
-		<< "spp.generate_prefetch.called " << stats.generate_prefetch.called << endl
-		<< "spp.generate_prefetch.pref_generated " << stats.generate_prefetch.pref_generated << endl
-		<< "spp.generate_prefetch.pt_miss " << stats.generate_prefetch.pt_miss << endl
-		<< "spp.generate_prefetch.avg_depth " << FIXED_FLOAT((double)stats.generate_prefetch.depth/stats.generate_prefetch.called) << endl
-		<< "spp.pref_filter.lookup " << stats.pref_filter.lookup << endl
-		<< "spp.pref_filter.hit " << stats.pref_filter.hit << endl
-		<< "spp.pref_filter.issue_pref " << stats.pref_filter.issue_pref << endl
-		<< "spp.pref_filter.insert " << stats.pref_filter.insert << endl
-		<< "spp.pref_filter.evict " << stats.pref_filter.evict << endl
-		<< "spp.pref_filter.evict_not_demanded " << stats.pref_filter.evict_not_demanded << endl
-		<< "spp.pref_filter.demand_seen " << stats.pref_filter.demand_seen << endl
-		<< "spp.pref_filter.demand_seen_unique " << stats.pref_filter.demand_seen_unique << endl
+		<< "spp.generate_prefetch.called_PT " << stats.generate_prefetch.called[0] << endl
+		<< "spp.generate_prefetch.called_GHR " << stats.generate_prefetch.called[1] << endl
+		<< "spp.generate_prefetch.pref_generated_PT " << stats.generate_prefetch.pref_generated[0] << endl
+		<< "spp.generate_prefetch.pref_generated_GHR " << stats.generate_prefetch.pref_generated[1] << endl
+		<< "spp.generate_prefetch.pt_miss_PT " << stats.generate_prefetch.pt_miss[0] << endl
+		<< "spp.generate_prefetch.pt_miss_GHR " << stats.generate_prefetch.pt_miss[1] << endl
+		<< "spp.generate_prefetch.avg_depth " << FIXED_FLOAT((double)stats.generate_prefetch.depth/(stats.generate_prefetch.called[0]+stats.generate_prefetch.called[1])) << endl
+		<< "spp.pref_filter.lookup_PT " << stats.pref_filter.lookup[0] << endl
+		<< "spp.pref_filter.lookup_GHR " << stats.pref_filter.lookup[1] << endl
+		<< "spp.pref_filter.hit_PT " << stats.pref_filter.hit[0] << endl
+		<< "spp.pref_filter.hit_GHR " << stats.pref_filter.hit[1] << endl
+		<< "spp.pref_filter.issue_pref_PT " << stats.pref_filter.issue_pref[0] << endl
+		<< "spp.pref_filter.issue_pref_GHR " << stats.pref_filter.issue_pref[1] << endl
+		<< "spp.pref_filter.insert_PT " << stats.pref_filter.insert[0] << endl
+		<< "spp.pref_filter.insert_GHR " << stats.pref_filter.insert[1] << endl
+		<< "spp.pref_filter.evict_PT " << stats.pref_filter.evict[0] << endl
+		<< "spp.pref_filter.evict_GHR " << stats.pref_filter.evict[1] << endl
+		<< "spp.pref_filter.evict_not_demanded_PT " << stats.pref_filter.evict_not_demanded[0] << endl
+		<< "spp.pref_filter.evict_not_demanded_GHR " << stats.pref_filter.evict_not_demanded[1] << endl
+		<< "spp.pref_filter.demand_seen_PT " << stats.pref_filter.demand_seen[0] << endl
+		<< "spp.pref_filter.demand_seen_GHR " << stats.pref_filter.demand_seen[1] << endl
+		<< "spp.pref_filter.demand_seen_unique_PT " << stats.pref_filter.demand_seen_unique[0] << endl
+		<< "spp.pref_filter.demand_seen_unique_GHR " << stats.pref_filter.demand_seen_unique[1] << endl
 		<< "spp.pref_buffer.buffered " << stats.pref_buffer.buffered << endl
 		<< "spp.pref_buffer.spilled " << stats.pref_buffer.spilled << endl
 		<< "spp.pref_buffer.issued " << stats.pref_buffer.issued << endl
@@ -534,21 +545,21 @@ void SPP::dump_stats()
 		<< endl;
 }
 
-void SPP::filter_prefetch(vector<uint64_t> tmp_pref_addr, vector<uint64_t> &pref_addr)
+void SPP::filter_prefetch(vector<uint64_t> tmp_pref_addr, vector<uint64_t> &pref_addr, bool from_ghr)
 {
 	for(uint32_t index = 0; index < tmp_pref_addr.size(); ++index)
 	{
-		stats.pref_filter.lookup++;
+		stats.pref_filter.lookup[from_ghr]++;
 		auto it = search_prefetch_filter(tmp_pref_addr[index]);
 		if(it != prefetch_filter.end())
 		{
-			stats.pref_filter.hit++;
+			stats.pref_filter.hit[from_ghr]++;
 		}
 		else
 		{
 			pref_addr.push_back(tmp_pref_addr[index]);
-			stats.pref_filter.issue_pref++;
-			insert_prefetch_filter(tmp_pref_addr[index]);
+			stats.pref_filter.issue_pref[from_ghr]++;
+			insert_prefetch_filter(tmp_pref_addr[index], from_ghr);
 			incr_counter(total_pref, knob::spp_max_global_counter_value);
 		}
 	}
@@ -559,9 +570,9 @@ deque<PFEntry*>::iterator SPP::search_prefetch_filter(uint64_t address)
 	return find_if(prefetch_filter.begin(), prefetch_filter.end(), [address](PFEntry *pfentry){return (pfentry->address == address);});
 }
 
-void SPP::insert_prefetch_filter(uint64_t address)
+void SPP::insert_prefetch_filter(uint64_t address, bool from_ghr)
 {
-	stats.pref_filter.insert++;
+	stats.pref_filter.insert[from_ghr]++;
 	if(prefetch_filter.size() >= knob::spp_pf_size)
 	{
 		auto victim = search_victim_prefetch_filter();
@@ -571,6 +582,7 @@ void SPP::insert_prefetch_filter(uint64_t address)
 	PFEntry *pfentry = new PFEntry();
 	pfentry->address = address;
 	pfentry->demand_hit = false;
+	pfentry->from_ghr = from_ghr;
 	prefetch_filter.push_back(pfentry);
 }
 
@@ -581,11 +593,11 @@ deque<PFEntry*>::iterator SPP::search_victim_prefetch_filter()
 
 void SPP::evict_prefetch_filter(deque<PFEntry*>::iterator victim)
 {
-	stats.pref_filter.evict++;
 	PFEntry *pfentry = (*victim);
+	stats.pref_filter.evict[pfentry->from_ghr]++;
 	if(!pfentry->demand_hit)
 	{
-		stats.pref_filter.evict_not_demanded++;
+		stats.pref_filter.evict_not_demanded[pfentry->from_ghr]++;
 	}
 	prefetch_filter.erase(victim);
 	delete pfentry;
@@ -600,10 +612,10 @@ void SPP::register_demand_hit(uint64_t address)
 		if(!(*it)->demand_hit)
 		{
 			(*it)->demand_hit = true;
-			stats.pref_filter.demand_seen_unique++;
+			stats.pref_filter.demand_seen_unique[(*it)->from_ghr]++;
 			incr_counter(used_pref, knob::spp_max_global_counter_value);
 		}
-		stats.pref_filter.demand_seen++;
+		stats.pref_filter.demand_seen[(*it)->from_ghr]++;
 	}
 	demand_counter++;
 	if(demand_counter >= knob::spp_alpha_epoch)
