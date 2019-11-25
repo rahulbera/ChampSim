@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <string.h>
-#include <cstdint>
 #include <math.h>
 #include "knobs.h"
 #include "ini.h"
@@ -43,6 +42,26 @@ namespace knob
 	uint32_t spp_ghr_size = 8;
 	uint32_t spp_signature_bits = 12;
 	uint32_t spp_alpha_epoch = 1024;
+
+	/* Scooby */
+	float    scooby_alpha;
+	float    scooby_gamma;
+	float    scooby_epsilon;
+	uint32_t scooby_max_states;
+	uint32_t scooby_seed;
+	string   scooby_policy;
+	string   scooby_learning_type;
+	vector<int32_t> scooby_actions;
+	uint32_t scooby_max_actions;
+	uint32_t scooby_pt_size;
+	uint32_t scooby_st_size;
+	int32_t  scooby_reward_none;
+	int32_t  scooby_reward_incorrect;
+	int32_t  scooby_reward_correct_untimely;
+	int32_t  scooby_reward_correct_timely;
+	uint32_t scooby_max_pcs;
+	uint32_t scooby_max_offsets;
+	uint32_t scooby_max_deltas;
 }
 
 char config_file_name[MAX_LEN];
@@ -212,10 +231,95 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 		knob::spp_alpha_epoch = atoi(value);
 	}
 
+	/* Scooby */
+	else if (MATCH("", "scooby_alpha"))
+	{
+		knob::scooby_alpha = atof(value);
+	}
+	else if (MATCH("", "scooby_gamma"))
+	{
+		knob::scooby_gamma = atof(value);
+	}
+	else if (MATCH("", "scooby_epsilon"))
+	{
+		knob::scooby_epsilon = atof(value);
+	}
+	else if (MATCH("", "scooby_max_states"))
+	{
+		knob::scooby_max_states = atoi(value);
+	}
+	else if (MATCH("", "scooby_seed"))
+	{
+		knob::scooby_seed = atoi(value);
+	}
+	else if (MATCH("", "scooby_policy"))
+	{
+		knob::scooby_policy = string(value);
+	}
+	else if (MATCH("", "scooby_learning_type"))
+	{
+		knob::scooby_learning_type = string(value);
+	}
+	else if (MATCH("", "scooby_actions"))
+	{
+		knob::scooby_actions = get_array_int(value);
+		knob::scooby_max_actions = knob::scooby_actions.size();
+	}
+	else if (MATCH("", "scooby_pt_size"))
+	{
+		knob::scooby_pt_size = atoi(value);
+	}
+	else if (MATCH("", "scooby_st_size"))
+	{
+		knob::scooby_st_size = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_none"))
+	{
+		knob::scooby_reward_none = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_incorrect"))
+	{
+		knob::scooby_reward_incorrect = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_correct_untimely"))
+	{
+		knob::scooby_reward_correct_untimely = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_correct_timely"))
+	{
+		knob::scooby_reward_correct_timely = atoi(value);
+	}
+	else if (MATCH("", "scooby_max_pcs"))
+	{
+		knob::scooby_max_pcs = atoi(value);
+	}
+	else if (MATCH("", "scooby_max_offsets"))
+	{
+		knob::scooby_max_offsets = atoi(value);
+	}
+	else if (MATCH("", "scooby_max_deltas"))
+	{
+		knob::scooby_max_deltas = atoi(value);
+	}
+
     else 
     {
     	printf("unable to parse section: %s, name: %s, value: %s\n", section, name, value);
         return 0;
     }
     return 1;
+}
+
+std::vector<int32_t> get_array_int(const char *str)
+{
+	std::vector<int32_t> value;
+	char *tmp_str = strdup(str);
+	char *pch = strtok(tmp_str, ",");
+	while(pch)
+	{
+		value.push_back(atoi(pch));
+		pch = strtok(NULL, ",");
+	}
+	free(tmp_str);
+	return value;
 }
