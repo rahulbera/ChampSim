@@ -8,6 +8,8 @@
 
 using namespace std;
 
+#define MAX_REWARDS 16
+
 class State
 {
 public:
@@ -105,6 +107,7 @@ private:
 			uint64_t correct_untimely;
 			uint64_t no_pref;
 			uint64_t incorrect;
+			uint64_t dist[MAX_ACTIONS][MAX_REWARDS];
 		} reward;
 
 		struct

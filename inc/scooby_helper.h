@@ -24,7 +24,7 @@ public:
 		deltas.clear();
 		pattern.reset();
 	}
-	Scooby_STEntry(uint64_t pc, uint32_t offset)
+	Scooby_STEntry(uint64_t page, uint64_t pc, uint32_t offset) : page(page)
 	{
 		reset();
 		pcs.push_back(pc);

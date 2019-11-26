@@ -3,6 +3,7 @@
 
 #include <random>
 #include <string.h>
+#define MAX_ACTIONS 64
 
 /*
  * table format
@@ -46,6 +47,7 @@ private:
 	uint64_t m_seed;
 	Policy m_policy;
 	LearningType m_type;
+	float init_value;
 
     std::default_random_engine generator;
     std::bernoulli_distribution *explore;
@@ -53,14 +55,37 @@ private:
 
 	float **qtable;
 
+#ifdef LE_TRACE
+	uint32_t trace_interval;
+	FILE *trace;
+#endif
+
+	struct
+	{
+		struct
+		{
+			uint64_t called;
+			uint64_t explore;
+			uint64_t exploit;
+			uint64_t dist[MAX_ACTIONS][2]; /* 0:explored, 1:exploited */
+		} action;
+
+		struct
+		{
+			uint64_t called;
+		} learn;
+	} stats;
+
 	LearningType parseLearningType(std::string str);
 	Policy parsePolicy(std::string str);
 	float consultQ(uint32_t state, uint32_t action);
 	void updateQ(uint32_t state, uint32_t action, float value);
 	uint32_t getMaxAction(uint32_t state);
+	void print_aux_stats();
+	void dump_state_trace(uint32_t state);
 
 public:
-	LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type);
+	LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
 	~LearningEngine();
 
 	inline void setAlpha(float alpha){m_alpha = alpha;}
@@ -76,6 +101,7 @@ public:
 
 	uint32_t chooseAction(uint32_t state);
 	void learn(uint32_t state1, uint32_t action1, uint32_t reward, uint32_t state2, uint32_t action2);
+	void dump_stats();
 };
 
 #endif /* LEARNING_ENGINE */

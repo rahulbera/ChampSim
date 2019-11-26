@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <strings.h>
 #include "learning_engine.h"
+
+#define TRACE_INTERVAL 5
 
 const char* PolicyString[] = {"EGreddy"};
 const char* MapPolicyString(Policy policy)
@@ -18,7 +21,7 @@ const char* MapLearningTypeString(LearningType type)
 }
 
 
-LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type)
+LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
 	: m_alpha(alpha)
 	, m_gamma(gamma)
 	, m_epsilon(epsilon) // make it small, as true value indicates exploration
@@ -37,17 +40,33 @@ LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t
 	}
 
 	/* init Q-table */
+	if(zero_init)
+	{
+		init_value = 0;
+	}
+	else
+	{
+		init_value = (float)1ul/(1-gamma);
+	}
 	for(uint32_t row = 0; row < m_states; ++row)
 	{
 		for(uint32_t col = 0; col < m_actions; ++col)
 		{
-			qtable[row][col] = (float)1ul/(1-gamma);
+			qtable[row][col] = init_value;
 		}
 	}
 
 	generator.seed(m_seed);
 	explore = new std::bernoulli_distribution(epsilon);
 	actiongen = new std::uniform_int_distribution<int>(0, m_actions-1);
+
+#ifdef LE_TRACE
+	trace_interval = 0;
+	trace = fopen("trace.let", "w");
+	assert(trace);
+#endif
+
+	bzero(&stats, sizeof(stats));
 }
 
 LearningEngine::~LearningEngine()
@@ -57,6 +76,9 @@ LearningEngine::~LearningEngine()
 		free(qtable[row]);
 	}
 	free(qtable);
+#ifdef LE_TRACE
+	fclose(trace);
+#endif
 }
 
 LearningType LearningEngine::parseLearningType(std::string str)
@@ -78,17 +100,24 @@ Policy LearningEngine::parsePolicy(std::string str)
 
 uint32_t LearningEngine::chooseAction(uint32_t state)
 {
+	stats.action.called++;
 	assert(state < m_states);
 	uint32_t action = 0;
+	bool do_explore = false;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		if((*explore)(generator))
 		{
 			action = (*actiongen)(generator); // take random action
+			stats.action.explore++;
+			stats.action.dist[action][0]++;
+			do_explore = true;
 		}
 		else
 		{
 			action = getMaxAction(state);
+			stats.action.exploit++;
+			stats.action.dist[action][1]++;
 		}
 	}
 	else
@@ -96,11 +125,28 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 		printf("learning_type %s policy %s not supported!\n", MapLearningTypeString(m_type), MapPolicyString(m_policy));
 		assert(false);
 	}
+
+#ifdef LE_DEBUG
+	if(action == 2) /* selects -1 */
+	{
+		printf("[state: %x, action: %u] ", state, action);
+		for(uint32_t index = 0; index < m_actions; ++index)
+		{
+			printf("%8.3f,", qtable[state][index]);
+		}
+		if(do_explore)
+			printf("EXPLORE\n");
+		else
+			printf("EXPLOIT\n");
+	}
+#endif
+
 	return action;
 }
 
 void LearningEngine::learn(uint32_t state1, uint32_t action1, uint32_t reward, uint32_t state2, uint32_t action2)
 {
+	stats.learn.called++;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{	
 		float Qsa1, Qsa2;
@@ -109,12 +155,20 @@ void LearningEngine::learn(uint32_t state1, uint32_t action1, uint32_t reward, u
 		/* SARSA */
 		Qsa1 = Qsa1 + m_alpha * (reward + m_gamma * Qsa2 - Qsa1);
 		updateQ(state1, action1, Qsa1);
+
+#ifdef LE_TRACE
+		if(state1 == 0x401442 && trace_interval++ == TRACE_INTERVAL) /* some libquantum PC */
+		{
+			dump_state_trace(state1);
+			trace_interval = 0;
+		}
+#endif
 	}
 	else
 	{
 		printf("learning_type %s policy %s not supported!\n", MapLearningTypeString(m_type), MapPolicyString(m_policy));
 		assert(false);
-	}	
+	}
 }
 
 float LearningEngine::consultQ(uint32_t state, uint32_t action)
@@ -144,4 +198,52 @@ uint32_t LearningEngine::getMaxAction(uint32_t state)
 		}
 	}
 	return action;
+}
+
+void LearningEngine::print_aux_stats()
+{
+	/* compute state-action table usage
+	 * how mane state entries are actually used?
+	 * heat-map dump, etc. etc. */
+	uint32_t state_used = 0;
+	for(uint32_t state = 0; state < m_states; ++state)
+	{
+		for(uint32_t action = 0; action < m_actions; ++action)
+		{
+			if(qtable[state][action] != init_value)
+			{
+				state_used++;
+				break;
+			}
+		}
+	}
+
+	fprintf(stdout, "learning_engine.state_used %u\n", state_used);
+	fprintf(stdout, "\n");
+}
+
+void LearningEngine::dump_stats()
+{
+	fprintf(stdout, "learning_engine.action.called %llu\n", stats.action.called);
+	fprintf(stdout, "learning_engine.action.explore %llu\n", stats.action.explore);
+	fprintf(stdout, "learning_engine.action.exploit %llu\n", stats.action.exploit);
+	for(uint32_t action = 0; action < m_actions; ++action)
+	{
+		fprintf(stdout, "learning_engine.action.index_%u_explored %llu\n", action, stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine.action.index_%u_exploited %llu\n", action, stats.action.dist[action][1]);
+	}
+	fprintf(stdout, "learning_engine.learn.called %llu\n", stats.learn.called);
+	fprintf(stdout, "\n");
+
+	print_aux_stats();
+}
+
+void LearningEngine::dump_state_trace(uint32_t state)
+{
+	fprintf(trace, "%x,", state);
+	for(uint32_t index = 0; index < m_actions; ++index)
+	{
+		fprintf(trace, "%.2f,", qtable[state][index]);
+	}
+	fprintf(trace, "\n");
 }

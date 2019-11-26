@@ -62,6 +62,7 @@ namespace knob
 	uint32_t scooby_max_pcs;
 	uint32_t scooby_max_offsets;
 	uint32_t scooby_max_deltas;
+	bool     scooby_brain_zero_init;
 }
 
 char config_file_name[MAX_LEN];
@@ -300,6 +301,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_max_deltas"))
 	{
 		knob::scooby_max_deltas = atoi(value);
+	}
+	else if (MATCH("", "scooby_brain_zero_init"))
+	{
+		knob::scooby_brain_zero_init = !strcmp(value, "true") ? true : false;
 	}
 
     else 

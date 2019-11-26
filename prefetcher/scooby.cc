@@ -28,6 +28,7 @@ namespace knob
 	extern int32_t  scooby_reward_incorrect;
 	extern int32_t  scooby_reward_correct_untimely;
 	extern int32_t  scooby_reward_correct_timely;
+	extern bool		scooby_brain_zero_init;
 }
 
 uint32_t State::value()
@@ -40,6 +41,7 @@ void Scooby::init_knobs()
 	Actions.resize(knob::scooby_max_actions, 0);
 	std::copy(knob::scooby_actions.begin(), knob::scooby_actions.end(), Actions.begin());
 	assert(Actions.size() == knob::scooby_max_actions);
+	assert(Actions.size() <= MAX_ACTIONS);
 }
 
 void Scooby::init_stats()
@@ -61,7 +63,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 								knob::scooby_max_states,
 								knob::scooby_seed,
 								knob::scooby_policy,
-								knob::scooby_learning_type);
+								knob::scooby_learning_type,
+								knob::scooby_brain_zero_init);
 	printf("*****WARNING: only modulo hash of PC is implemented*****\n");
 }
 
@@ -82,7 +85,7 @@ void Scooby::print_config()
 		<< "scooby_actions ";
 	for(uint32_t index = 0; index < Actions.size(); ++index)
 	{
-		cout << " " << Actions[index];
+		cout << Actions[index] << ",";
 	}
 	cout << endl
 		<< "scooby_max_actions " << knob::scooby_max_actions << endl
@@ -95,6 +98,7 @@ void Scooby::print_config()
 		<< "scooby_reward_incorrect " << knob::scooby_reward_incorrect << endl
 		<< "scooby_reward_correct_untimely " << knob::scooby_reward_correct_untimely << endl
 		<< "scooby_reward_correct_timely " << knob::scooby_reward_correct_timely << endl
+		<< "scooby_brain_zero_init " << knob::scooby_brain_zero_init << endl
 		<< endl;
 }
 
@@ -157,7 +161,7 @@ Scooby_STEntry* Scooby::update_st(uint64_t pc, uint64_t page, uint32_t offset, u
 		}
 
 		stats.st.insert++;
-		stentry = new Scooby_STEntry(pc, offset);
+		stentry = new Scooby_STEntry(page, pc, offset);
 		signature_table.push_back(stentry);
 		return stentry;
 	}
@@ -243,11 +247,13 @@ void Scooby::reward(uint64_t address)
 	if(ptentry->is_filled) /* timely */
 	{
 		stats.reward.correct_timely++;
+		stats.reward.dist[ptentry->action_index][knob::scooby_reward_correct_timely]++;
 		ptentry->reward = knob::scooby_reward_correct_timely;
 	}
 	else
 	{
 		stats.reward.correct_untimely++;
+		stats.reward.dist[ptentry->action_index][knob::scooby_reward_correct_untimely]++;
 		ptentry->reward = knob::scooby_reward_correct_untimely;
 	}
 	ptentry->has_reward = true;
@@ -264,11 +270,13 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	if(ptentry->address == 0xdeadbeef) /* no prefetch */
 	{
 		stats.reward.no_pref++;
+		stats.reward.dist[ptentry->action_index][knob::scooby_reward_none]++;
 		ptentry->reward = knob::scooby_reward_none;
 	}
 	else /* incorrect prefetch */
 	{
 		stats.reward.incorrect++;
+		stats.reward.dist[ptentry->action_index][knob::scooby_reward_incorrect]++;
 		ptentry->reward = knob::scooby_reward_incorrect;
 	}
 	ptentry->has_reward = true;
@@ -311,32 +319,50 @@ Scooby_PTEntry* Scooby::search_pt(uint64_t address)
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
-		<< "scooby_st_lookup " << stats.st.hit << endl
-		<< "scooby_st_lookup " << stats.st.evict << endl
-		<< "scooby_st_lookup " << stats.st.insert << endl
+		<< "scooby_st_hit " << stats.st.hit << endl
+		<< "scooby_st_evict " << stats.st.evict << endl
+		<< "scooby_st_insert " << stats.st.insert << endl
 		<< endl
+		
 		<< "scooby_stats_predict_called " << stats.predict.called << endl
 		<< "scooby_stats_predict_predicted " << stats.predict.predicted << endl;
-
 	for(uint32_t index = 0; index < Actions.size(); ++index)
 	{
 		cout << "scooby_predict_action_" << Actions[index] << " " << stats.predict.action_dist[index] << endl;
 	}
-
-	cout << endl	
+	cout << endl 
 		<< "scooby_track_called " << stats.track.called << endl
 		<< "scooby_track_evict " << stats.track.evict << endl
+		<< endl
+
 		<< "scooby_reward_demand_called " << stats.reward.demand.called << endl
 		<< "scooby_reward_demand_pt_not_found " << stats.reward.demand.pt_not_found << endl
 		<< "scooby_reward_demand_has_reward " << stats.reward.demand.has_reward << endl
-		<< "scooby_reward_train.called " << stats.reward.train.called << endl
+		<< "scooby_reward_train_called " << stats.reward.train.called << endl
 		<< "scooby_reward_no_pref " << stats.reward.no_pref << endl
 		<< "scooby_reward_incorrect " << stats.reward.incorrect << endl
 		<< "scooby_reward_correct_untimely " << stats.reward.correct_untimely << endl
 		<< "scooby_reward_correct_timely " << stats.reward.correct_timely << endl
+		<< endl;
+	for(uint32_t action = 0; action < Actions.size(); ++action)
+	{
+		cout << "scooby_reward_" << Actions[action] << " ";
+		for(uint32_t reward = 0; reward < MAX_REWARDS; ++reward)
+		{
+			cout << stats.reward.dist[action][reward] << ",";
+		}
+		cout << endl;
+	}
+
+
+	cout << endl 
 		<< "scooby_train_called " << stats.train.called << endl
 		<< "scooby_train_compute_reward " << stats.train.compute_reward << endl
+		<< endl
+
 		<< "scooby_register_fill_called " << stats.register_fill.called << endl
 		<< "scooby_register_fill_set " << stats.register_fill.set << endl
 		<< endl;
+
+	brain->dump_stats();
 }
