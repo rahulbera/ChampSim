@@ -224,15 +224,15 @@ void LearningEngine::print_aux_stats()
 
 void LearningEngine::dump_stats()
 {
-	fprintf(stdout, "learning_engine.action.called %llu\n", stats.action.called);
-	fprintf(stdout, "learning_engine.action.explore %llu\n", stats.action.explore);
-	fprintf(stdout, "learning_engine.action.exploit %llu\n", stats.action.exploit);
+	fprintf(stdout, "learning_engine.action.called %lu\n", stats.action.called);
+	fprintf(stdout, "learning_engine.action.explore %lu\n", stats.action.explore);
+	fprintf(stdout, "learning_engine.action.exploit %lu\n", stats.action.exploit);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		fprintf(stdout, "learning_engine.action.index_%u_explored %llu\n", action, stats.action.dist[action][0]);
-		fprintf(stdout, "learning_engine.action.index_%u_exploited %llu\n", action, stats.action.dist[action][1]);
+		fprintf(stdout, "learning_engine.action.index_%u_explored %lu\n", action, stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine.action.index_%u_exploited %lu\n", action, stats.action.dist[action][1]);
 	}
-	fprintf(stdout, "learning_engine.learn.called %llu\n", stats.learn.called);
+	fprintf(stdout, "learning_engine.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");
 
 	print_aux_stats();
@@ -240,10 +240,12 @@ void LearningEngine::dump_stats()
 
 void LearningEngine::dump_state_trace(uint32_t state)
 {
+#ifdef LE_TRACE
 	fprintf(trace, "%x,", state);
 	for(uint32_t index = 0; index < m_actions; ++index)
 	{
 		fprintf(trace, "%.2f,", qtable[state][index]);
 	}
 	fprintf(trace, "\n");
+#endif
 }

@@ -79,6 +79,7 @@ private:
 		struct
 		{
 			uint64_t called;
+			uint64_t out_of_bounds;
 			vector<uint64_t> action_dist;
 			uint64_t predicted;
 		} predict;
