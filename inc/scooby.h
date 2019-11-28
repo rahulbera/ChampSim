@@ -47,11 +47,15 @@ public:
 	/* set when prefetched line is filled into cache 
 	 * check during reward to measure timeliness */
 	bool is_filled;
+	/* set when prefetched line is alredy found in cache
+	 * donotes extreme untimely prefetch */
+	bool pf_cache_hit;
 	uint32_t reward;
 	bool has_reward;
 	Scooby_PTEntry(uint64_t ad, State *st, uint32_t ac) : address(ad), state(st), action_index(ac)
 	{
 		is_filled = false;
+		pf_cache_hit = false;
 		reward = 0;
 		has_reward = false;
 	}
@@ -122,6 +126,13 @@ private:
 			uint64_t called;
 			uint64_t set;
 		} register_fill;
+
+		struct
+		{
+			uint64_t called;
+			uint64_t set;
+		} register_prefetch_hit;
+
 	} stats;
 
 private:
@@ -140,8 +151,9 @@ private:
 public:
 	Scooby(string type);
 	~Scooby();
-	void invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pref_addr);
+	void invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr);
 	void register_fill(uint64_t address);
+	void register_prefetch_hit(uint64_t address);
 	void dump_stats();
 	void print_config();
 };

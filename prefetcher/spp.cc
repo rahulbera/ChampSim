@@ -79,7 +79,7 @@ SPP::~SPP()
 
 }
 
-void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, vector<uint64_t> &pref_addr)
+void SPP::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
 {
 	uint64_t page = address >> LOG2_PAGE_SIZE;
 	uint32_t offset = (address >> LOG2_BLOCK_SIZE) & ((1ull << (LOG2_PAGE_SIZE - LOG2_BLOCK_SIZE)) - 1);

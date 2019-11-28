@@ -20,6 +20,11 @@ void CACHE::l1d_prefetcher_final_stats()
 
 }
 
+uint32_t CACHE::l1d_prefetcher_prefetch_hit(uint64_t addr, uint64_t ip, uint32_t metadata_in)
+{
+    return metadata_in;
+}
+
 void CACHE::l1d_prefetcher_print_config()
 {
 	

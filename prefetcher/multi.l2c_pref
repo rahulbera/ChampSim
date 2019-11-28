@@ -51,7 +51,7 @@ uint32_t CACHE::l2c_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache
 	vector<uint64_t> pref_addr;
 	for(uint32_t index = 0; index < prefetchers.size(); ++index)
 	{
-			prefetchers[index]->invoke_prefetcher(ip, addr, pref_addr);
+			prefetchers[index]->invoke_prefetcher(ip, addr, cache_hit, type, pref_addr);
 			if(!pref_addr.empty())
 			{
 				for(uint32_t addr_index = 0; addr_index < pref_addr.size(); ++addr_index)
@@ -80,6 +80,20 @@ uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t 
 	}
 
 	return metadata_in;
+}
+
+uint32_t CACHE::l2c_prefetcher_prefetch_hit(uint64_t addr, uint64_t ip, uint32_t metadata_in)
+{
+	for(uint32_t index = 0; index < prefetchers.size(); ++index)
+	{
+		if(!prefetchers[index]->get_type().compare("scooby"))
+		{
+			Scooby *pref_scooby = (Scooby*)prefetchers[index];
+			pref_scooby->register_prefetch_hit(addr);
+		}
+	}
+	
+    return metadata_in;
 }
 
 void CACHE::l2c_prefetcher_final_stats()

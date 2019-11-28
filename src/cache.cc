@@ -801,10 +801,8 @@ void CACHE::handle_prefetch()
             if (way >= 0) { // prefetch hit
 
                 // update replacement policy
-                if (cache_type == IS_LLC) {
+                if (cache_type == IS_LLC)
                     llc_update_replacement_state(prefetch_cpu, set, way, block[set][way].full_addr, PQ.entry[index].ip, 0, PQ.entry[index].type, 1);
-
-                }
                 else
                     update_replacement_state(prefetch_cpu, set, way, block[set][way].full_addr, PQ.entry[index].ip, 0, PQ.entry[index].type, 1);
 
@@ -812,24 +810,30 @@ void CACHE::handle_prefetch()
                 sim_hit[prefetch_cpu][PQ.entry[index].type]++;
                 sim_access[prefetch_cpu][PQ.entry[index].type]++;
 
-		// run prefetcher on prefetches from higher caches
-		if(PQ.entry[index].pf_origin_level < fill_level)
-		  {
-		    if (cache_type == IS_L1D)
-		      l1d_prefetcher_operate(PQ.entry[index].full_addr, PQ.entry[index].ip, 1, PREFETCH);
+                if(cache_type == IS_L1D)
+                    l1d_prefetcher_prefetch_hit(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, PQ.entry[index].pf_metadata);
+                else if(cache_type == IS_L2C)
+                    l2c_prefetcher_prefetch_hit(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, PQ.entry[index].pf_metadata);
+                if(cache_type == IS_LLC)
+                    llc_prefetcher_prefetch_hit(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, PQ.entry[index].pf_metadata);
+
+        		// run prefetcher on prefetches from higher caches
+        		if(PQ.entry[index].pf_origin_level < fill_level)
+                {
+        		    if (cache_type == IS_L1D)
+                        l1d_prefetcher_operate(PQ.entry[index].full_addr, PQ.entry[index].ip, 1, PREFETCH);
                     else if (cache_type == IS_L2C)
-                      PQ.entry[index].pf_metadata = l2c_prefetcher_operate(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, 1, PREFETCH, PQ.entry[index].pf_metadata);
+                        PQ.entry[index].pf_metadata = l2c_prefetcher_operate(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, 1, PREFETCH, PQ.entry[index].pf_metadata);
                     else if (cache_type == IS_LLC)
-		      {
-			cpu = prefetch_cpu;
-			PQ.entry[index].pf_metadata = llc_prefetcher_operate(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, 1, PREFETCH, PQ.entry[index].pf_metadata);
-			cpu = 0;
-		      }
-		  }
+                    {
+                        cpu = prefetch_cpu;
+                        PQ.entry[index].pf_metadata = llc_prefetcher_operate(block[set][way].address<<LOG2_BLOCK_SIZE, PQ.entry[index].ip, 1, PREFETCH, PQ.entry[index].pf_metadata);
+                        cpu = 0;
+                    }
+                }
 
                 // check fill level
                 if (PQ.entry[index].fill_level < fill_level) {
-
                     if (PQ.entry[index].instruction) 
                         upper_level_icache[prefetch_cpu]->return_data(&PQ.entry[index]);
                     else // data
@@ -841,7 +845,7 @@ void CACHE::handle_prefetch()
                 
                 // remove this entry from PQ
                 PQ.remove_queue(&PQ.entry[index]);
-		reads_available_this_cycle--;
+                reads_available_this_cycle--;
             }
             else { // prefetch miss
 
