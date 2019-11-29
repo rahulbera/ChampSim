@@ -10,6 +10,16 @@ using namespace std;
 
 #define MAX_REWARDS 16
 
+typedef enum
+{
+	none = 0,
+	incorrect,
+	correct_untimely,
+	correct_timely,
+
+	num_rewards
+} RewardType;
+
 class State
 {
 public:
@@ -50,7 +60,7 @@ public:
 	/* set when prefetched line is alredy found in cache
 	 * donotes extreme untimely prefetch */
 	bool pf_cache_hit;
-	uint32_t reward;
+	int32_t reward;
 	bool has_reward;
 	Scooby_PTEntry(uint64_t ad, State *st, uint32_t ac) : address(ad), state(st), action_index(ac)
 	{

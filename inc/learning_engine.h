@@ -57,6 +57,7 @@ private:
 
 #ifdef LE_TRACE
 	uint32_t trace_interval;
+	uint64_t trace_timestamp;
 	FILE *trace;
 #endif
 
@@ -100,7 +101,7 @@ public:
 	inline uint32_t getActions(){return m_actions;}
 
 	uint32_t chooseAction(uint32_t state);
-	void learn(uint32_t state1, uint32_t action1, uint32_t reward, uint32_t state2, uint32_t action2);
+	void learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2);
 	void dump_stats();
 };
 

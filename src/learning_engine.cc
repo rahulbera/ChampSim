@@ -62,7 +62,8 @@ LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t
 
 #ifdef LE_TRACE
 	trace_interval = 0;
-	trace = fopen("trace.let", "w");
+	trace_timestamp = 0;
+	trace = fopen("trace.csv", "w");
 	assert(trace);
 #endif
 
@@ -144,7 +145,7 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 	return action;
 }
 
-void LearningEngine::learn(uint32_t state1, uint32_t action1, uint32_t reward, uint32_t state2, uint32_t action2)
+void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2)
 {
 	stats.learn.called++;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
@@ -153,7 +154,7 @@ void LearningEngine::learn(uint32_t state1, uint32_t action1, uint32_t reward, u
 		Qsa1 = consultQ(state1, action1);
 		Qsa2 = consultQ(state2, action2);
 		/* SARSA */
-		Qsa1 = Qsa1 + m_alpha * (reward + m_gamma * Qsa2 - Qsa1);
+		Qsa1 = Qsa1 + m_alpha * ((float)reward + m_gamma * Qsa2 - Qsa1);
 		updateQ(state1, action1, Qsa1);
 
 #ifdef LE_TRACE
@@ -241,7 +242,8 @@ void LearningEngine::dump_stats()
 void LearningEngine::dump_state_trace(uint32_t state)
 {
 #ifdef LE_TRACE
-	fprintf(trace, "%x,", state);
+	trace_timestamp++;
+	fprintf(trace, "%lu,", trace_timestamp);
 	for(uint32_t index = 0; index < m_actions; ++index)
 	{
 		fprintf(trace, "%.2f,", qtable[state][index]);

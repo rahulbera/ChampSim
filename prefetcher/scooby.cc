@@ -253,13 +253,13 @@ void Scooby::track(uint64_t address, State *state, uint32_t action_index)
 		}
 		else
 		{
-			cout << endl;
+//			cout << endl;
 		}
 		last_evicted_tracker = ptentry;
 	}
 	else
 	{
-		cout << endl;
+//		cout << endl;
 	}
 
 	ptentry = new Scooby_PTEntry(address, state, action_index);
@@ -298,14 +298,14 @@ void Scooby::reward(uint64_t address)
 	{
 //		cout << " correct_timely" << " reward " << knob::scooby_reward_correct_timely << endl;
 		stats.reward.correct_timely++;
-		stats.reward.dist[ptentry->action_index][knob::scooby_reward_correct_timely]++;
+		stats.reward.dist[ptentry->action_index][RewardType::correct_timely]++;
 		ptentry->reward = knob::scooby_reward_correct_timely;
 	}
 	else
 	{
 //		cout << " correct_untimely" << " reward " << knob::scooby_reward_correct_untimely << endl;
 		stats.reward.correct_untimely++;
-		stats.reward.dist[ptentry->action_index][knob::scooby_reward_correct_untimely]++;
+		stats.reward.dist[ptentry->action_index][RewardType::correct_untimely]++;
 		ptentry->reward = knob::scooby_reward_correct_untimely;
 	}
 	ptentry->has_reward = true;
@@ -329,14 +329,14 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	{
 //		cout << " no_pref " << " reward " << knob::scooby_reward_none << endl;
 		stats.reward.no_pref++;
-		stats.reward.dist[ptentry->action_index][knob::scooby_reward_none]++;
+		stats.reward.dist[ptentry->action_index][RewardType::none]++;
 		ptentry->reward = knob::scooby_reward_none;
 	}
 	else /* incorrect prefetch */
 	{
 //		cout << " incorrect " << " reward " << knob::scooby_reward_incorrect << endl;
 		stats.reward.incorrect++;
-		stats.reward.dist[ptentry->action_index][knob::scooby_reward_incorrect]++;
+		stats.reward.dist[ptentry->action_index][RewardType::incorrect]++;
 		ptentry->reward = knob::scooby_reward_incorrect;
 	}
 	ptentry->has_reward = true;
@@ -448,7 +448,7 @@ void Scooby::dump_stats()
 	for(uint32_t action = 0; action < Actions.size(); ++action)
 	{
 		cout << "scooby_reward_" << Actions[action] << " ";
-		for(uint32_t reward = 0; reward < MAX_REWARDS; ++reward)
+		for(uint32_t reward = 0; reward < RewardType::num_rewards; ++reward)
 		{
 			cout << stats.reward.dist[action][reward] << ",";
 		}
