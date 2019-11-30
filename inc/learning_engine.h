@@ -55,11 +55,10 @@ private:
 
 	float **qtable;
 
-#ifdef LE_TRACE
+	/* tracing related knobs */
 	uint32_t trace_interval;
 	uint64_t trace_timestamp;
 	FILE *trace;
-#endif
 
 	struct
 	{
@@ -84,6 +83,7 @@ private:
 	uint32_t getMaxAction(uint32_t state);
 	void print_aux_stats();
 	void dump_state_trace(uint32_t state);
+	void plot_scores();
 
 public:
 	LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);

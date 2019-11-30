@@ -30,6 +30,15 @@ namespace knob
 	extern int32_t  scooby_reward_correct_untimely;
 	extern int32_t  scooby_reward_correct_timely;
 	extern bool		scooby_brain_zero_init;
+
+	/* Learning Engine knobs */
+	extern bool     le_enable_trace;
+	extern uint32_t le_trace_interval;
+	extern std::string   le_trace_file_name;
+	extern uint32_t le_trace_state;
+	extern bool     le_enable_score_plot;
+	extern std::vector<int32_t> le_plot_actions;
+	extern std::string   le_plot_file_name;
 }
 
 uint32_t State::value()
@@ -100,7 +109,19 @@ void Scooby::print_config()
 		<< "scooby_reward_correct_untimely " << knob::scooby_reward_correct_untimely << endl
 		<< "scooby_reward_correct_timely " << knob::scooby_reward_correct_timely << endl
 		<< "scooby_brain_zero_init " << knob::scooby_brain_zero_init << endl
-		<< endl;
+		<< endl
+		<< "le_enable_trace " << knob::le_enable_trace << endl
+		<< "le_trace_interval " << knob::le_trace_interval << endl
+		<< "le_trace_file_name " << knob::le_trace_file_name << endl
+		<< "le_trace_state " << hex << knob::le_trace_state << dec << endl
+		<< "le_enable_score_plot " << knob::le_enable_score_plot << endl
+		<< "le_plot_file_name " << knob::le_plot_file_name << endl
+		<< "le_plot_actions ";
+	for(uint32_t index = 0; index < knob::le_plot_actions.size(); ++index)
+	{
+		cout << knob::le_plot_actions[index] << ",";
+	}
+	cout << endl;
 }
 
 void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
@@ -136,7 +157,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->local_pc_sig = stentry->get_pc_sig();
 
 	/* predict */
-	predict(page, offset, state, pref_addr);
+	predict(address, page, offset, state, pref_addr);
 }
 
 void Scooby::update_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address)
@@ -175,12 +196,13 @@ Scooby_STEntry* Scooby::update_st(uint64_t pc, uint64_t page, uint32_t offset, u
 	}
 }
 
-uint32_t Scooby::predict(uint64_t page, uint32_t offset, State *state, vector<uint64_t> &pref_addr)
+uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, State *state, vector<uint64_t> &pref_addr)
 {
-//	cout << "   [PREDICT]"
-//		<< " page " << hex << page
-//		<< " offset " << dec << offset
-//		<< " state " << hex << state->value();
+	cout << "   [PREDICT]"
+		<< " base " << hex << base_address
+		<< " page " << hex << page
+		<< " offset " << dec << offset
+		<< " state " << hex << state->value();
 
 	stats.predict.called++;
 	uint32_t state_index = state->value();
@@ -190,32 +212,32 @@ uint32_t Scooby::predict(uint64_t page, uint32_t offset, State *state, vector<ui
 	uint32_t action_index = brain->chooseAction(state_index);
 	assert(action_index < knob::scooby_max_actions);
 
-//	cout << " act_idx " << dec << action_index << " act " << dec << Actions[action_index];
+	cout << " act_idx " << dec << action_index << " act " << dec << Actions[action_index];
 
 	uint64_t addr = 0xdeadbeef;
 	int32_t predicted_offset = 0;
 	if(Actions[action_index] != 0)
 	{
 		predicted_offset = (int32_t)offset + Actions[action_index];
-//		cout << " p_off " << predicted_offset;
+		cout << " p_off " << predicted_offset;
 		if(predicted_offset >=0 && predicted_offset < 64)
 		{
 			addr = (page << LOG2_PAGE_SIZE) + (predicted_offset << LOG2_BLOCK_SIZE);
 			pref_addr.push_back(addr);
-//			cout << " p_addr " << hex << addr << endl;
+			cout << " p_addr " << hex << addr << endl;
 			/* track prefetch */
 			track(addr, state, action_index);
 			stats.predict.action_dist[action_index]++;
 		}
 		else
 		{
-//			cout << " out_of_bounds" << endl;
+			cout << " out_of_bounds" << endl;
 			stats.predict.out_of_bounds++;
 		}
 	}
 	else
 	{
-//		cout << " no_pref" << endl;
+		cout << " no_pref" << endl;
 		/* agent decided not to prefetch */
 		addr = 0xdeadbeef;
 		/* track no prefetch */

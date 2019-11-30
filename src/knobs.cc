@@ -63,6 +63,15 @@ namespace knob
 	uint32_t scooby_max_offsets;
 	uint32_t scooby_max_deltas;
 	bool     scooby_brain_zero_init;
+
+	/* Learning Engine */
+	bool     le_enable_trace;
+	uint32_t le_trace_interval;
+	string   le_trace_file_name;
+	uint32_t le_trace_state;
+	bool     le_enable_score_plot;
+	vector<int32_t> le_plot_actions;
+	string   le_plot_file_name;
 }
 
 char config_file_name[MAX_LEN];
@@ -307,6 +316,35 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 		knob::scooby_brain_zero_init = !strcmp(value, "true") ? true : false;
 	}
 
+	/* Learning Engine */
+	else if (MATCH("", "le_enable_trace"))
+	{
+		knob::le_enable_trace = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_trace_interval"))
+	{
+		knob::le_trace_interval = atoi(value);
+	}
+	else if (MATCH("", "le_trace_file_name"))
+	{
+		knob::le_trace_file_name = string(value);
+	}
+	else if (MATCH("", "le_trace_state"))
+	{
+		knob::le_trace_state = strtoul(value, NULL, 0);
+	}
+	else if (MATCH("", "le_enable_score_plot"))
+	{
+		knob::le_enable_score_plot = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_plot_actions"))
+	{
+		knob::le_plot_actions = get_array_int(value);
+	}
+	else if (MATCH("", "le_plot_file_name"))
+	{
+		knob::le_plot_file_name = string(value);
+	}
     else 
     {
     	printf("unable to parse section: %s, name: %s, value: %s\n", section, name, value);

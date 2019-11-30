@@ -4,7 +4,30 @@
 #include <strings.h>
 #include "learning_engine.h"
 
-#define TRACE_INTERVAL 5
+namespace knob
+{
+	extern bool     le_enable_trace;
+	extern uint32_t le_trace_interval;
+	extern std::string   le_trace_file_name;
+	extern uint32_t le_trace_state;
+	extern bool     le_enable_score_plot;
+	extern std::vector<int32_t> le_plot_actions;
+	extern std::string   le_plot_file_name;
+}
+
+/* helper function */
+void gen_random(char *s, const int len) {
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    for (int i = 0; i < len; ++i) {
+        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+    
+    s[len] = 0;
+}
 
 const char* PolicyString[] = {"EGreddy"};
 const char* MapPolicyString(Policy policy)
@@ -60,12 +83,13 @@ LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t
 	explore = new std::bernoulli_distribution(epsilon);
 	actiongen = new std::uniform_int_distribution<int>(0, m_actions-1);
 
-#ifdef LE_TRACE
-	trace_interval = 0;
-	trace_timestamp = 0;
-	trace = fopen("trace.csv", "w");
-	assert(trace);
-#endif
+	if(knob::le_enable_trace)
+	{
+		trace_interval = 0;
+		trace_timestamp = 0;
+		trace = fopen(knob::le_trace_file_name.c_str(), "w");
+		assert(trace);
+	}
 
 	bzero(&stats, sizeof(stats));
 }
@@ -77,9 +101,10 @@ LearningEngine::~LearningEngine()
 		free(qtable[row]);
 	}
 	free(qtable);
-#ifdef LE_TRACE
-	fclose(trace);
-#endif
+	if(knob::le_enable_trace && trace)
+	{
+		fclose(trace);
+	}
 }
 
 LearningType LearningEngine::parseLearningType(std::string str)
@@ -157,13 +182,11 @@ void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, ui
 		Qsa1 = Qsa1 + m_alpha * ((float)reward + m_gamma * Qsa2 - Qsa1);
 		updateQ(state1, action1, Qsa1);
 
-#ifdef LE_TRACE
-		if(state1 == 0x401442 && trace_interval++ == TRACE_INTERVAL) /* some libquantum PC */
+		if(knob::le_enable_trace && state1 == knob::le_trace_state && trace_interval++ == knob::le_trace_interval)
 		{
 			dump_state_trace(state1);
 			trace_interval = 0;
 		}
-#endif
 	}
 	else
 	{
@@ -237,11 +260,15 @@ void LearningEngine::dump_stats()
 	fprintf(stdout, "\n");
 
 	print_aux_stats();
+
+	if(knob::le_enable_trace && knob::le_enable_score_plot)
+	{
+		plot_scores();
+	}
 }
 
 void LearningEngine::dump_state_trace(uint32_t state)
 {
-#ifdef LE_TRACE
 	trace_timestamp++;
 	fprintf(trace, "%lu,", trace_timestamp);
 	for(uint32_t index = 0; index < m_actions; ++index)
@@ -249,5 +276,37 @@ void LearningEngine::dump_state_trace(uint32_t state)
 		fprintf(trace, "%.2f,", qtable[state][index]);
 	}
 	fprintf(trace, "\n");
-#endif
+}
+
+void LearningEngine::plot_scores()
+{
+	char *script_file = (char*)malloc(16*sizeof(char));
+	assert(script_file);
+	gen_random(script_file, 16);
+	FILE *script = fopen(script_file, "w");
+	assert(script);
+
+	fprintf(script, "set term png\n");
+	fprintf(script, "set datafile sep ','\n");
+	fprintf(script, "set output '%s'\n", knob::le_plot_file_name.c_str());
+	fprintf(script, "set title \"Reward over time\"\n");
+	fprintf(script, "set xlabel \"Time\"\n");
+	fprintf(script, "set ylabel \"Score\"\n");
+	fprintf(script, "set grid y\n");
+	fprintf(script, "set key right bottom Left box 3\n");
+	fprintf(script, "plot ");
+	for(uint32_t index = 0; index < knob::le_plot_actions.size(); ++index)
+	{
+		if(index) fprintf(script, ", ");
+		fprintf(script, "'%s' using 1:%u with lines title \"action[%u]\"", knob::le_trace_file_name.c_str(), (knob::le_plot_actions[index]+2), knob::le_plot_actions[index]);
+	}
+	fprintf(script, "\n");
+	fclose(script);
+
+	std::string cmd = "gnuplot " + std::string(script_file);
+	// fprintf(stdout, "generating graph...\n");
+	system(cmd.c_str());
+
+	std::string cmd2 = "rm " + std::string(script_file);
+	system(cmd2.c_str());
 }
