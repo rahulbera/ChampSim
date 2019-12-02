@@ -15,6 +15,9 @@ namespace knob
 	bool  	 knob_cloudsuite = false;
 	bool     knob_low_bandwidth = false;
 	string 	 l2c_prefetcher_type;
+	bool     l1d_perfect = false;
+	bool     l2c_perfect = false;
+	bool     llc_perfect = false;
 
 	uint32_t sms_at_size = 32;
 	uint32_t sms_ft_size = 64;
@@ -140,6 +143,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "l2c_prefetcher_type"))
     {
 		knob::l2c_prefetcher_type = string(value);
+    }
+    else if (MATCH("", "l1d_perfect"))
+    {
+		knob::l1d_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "l2c_perfect"))
+    {
+		knob::l2c_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "llc_perfect"))
+    {
+		knob::llc_perfect = !strcmp(value, "true") ? true : false;
     }
 
     /* SMS */

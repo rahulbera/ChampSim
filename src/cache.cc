@@ -3,6 +3,13 @@
 
 uint64_t l2pf_access = 0;
 
+namespace knob
+{
+    extern bool l1d_perfect;
+    extern bool l2c_perfect;
+    extern bool llc_perfect;
+}
+
 void print_cache_config()
 {
     cout << "itlb_set " << ITLB_SET << endl
@@ -1059,6 +1066,14 @@ int CACHE::check_hit(PACKET *packet)
         cerr << " address: " << hex << packet->address << " full_addr: " << packet->full_addr << dec;
         cerr << " event: " << packet->event_cycle << endl;
         assert(0);
+    }
+
+    if((cache_type == IS_L1D && knob::l1d_perfect)
+        || (cache_type == IS_L2C && knob::l2c_perfect)
+        || (cache_type == IS_LLC && knob::llc_perfect))
+    {
+        match_way = 0;
+        return match_way;
     }
 
     // hit
