@@ -95,12 +95,16 @@ private:
 			uint64_t called;
 			uint64_t out_of_bounds;
 			vector<uint64_t> action_dist;
+			vector<uint64_t> issue_dist;
+			vector<uint64_t> pred_hit;
+			vector<uint64_t> out_of_bounds_dist;
 			uint64_t predicted;
 		} predict;
 
 		struct
 		{
 			uint64_t called;
+			uint64_t same_address;
 			uint64_t evict;
 		} track;
 
@@ -110,6 +114,8 @@ private:
 			{
 				uint64_t called;
 				uint64_t pt_not_found;
+				uint64_t pt_found;
+				uint64_t pt_found_total;
 				uint64_t has_reward;
 			} demand;
 
@@ -135,12 +141,14 @@ private:
 		{
 			uint64_t called;
 			uint64_t set;
+			uint64_t set_total;
 		} register_fill;
 
 		struct
 		{
 			uint64_t called;
 			uint64_t set;
+			uint64_t set_total;
 		} register_prefetch_hit;
 
 	} stats;
@@ -152,11 +160,12 @@ private:
 	void update_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
 	Scooby_STEntry* update_st(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
 	uint32_t predict(uint64_t address, uint64_t page, uint32_t offset, State *state, vector<uint64_t> &pref_addr);
-	void track(uint64_t address, State *state, uint32_t action_index);
+	bool track(uint64_t address, State *state, uint32_t action_index);
 	void reward(uint64_t address);
 	void reward(Scooby_PTEntry *ptentry);
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
-	Scooby_PTEntry* search_pt(uint64_t address);
+	// Scooby_PTEntry* search_pt(uint64_t address);
+	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
 
 public:
 	Scooby(string type);

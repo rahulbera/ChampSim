@@ -71,6 +71,7 @@ void print_roi_stats(uint32_t cpu, CACHE *cache)
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_filled " << cache->pf_filled << endl
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_useful " << cache->pf_useful << endl
         << "Core_" << cpu << "_" << cache->NAME << "_prefetch_useless " << cache->pf_useless << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_prefetch_late " << cache->pf_late << endl
         << "Core_" << cpu << "_" << cache->NAME << "_average_miss_latency " << (1.0*(cache->total_miss_latency))/TOTAL_MISS << endl
         << endl
         << "Core_" << cpu << "_" << cache->NAME << "_rq_access " << cache->RQ.ACCESS << endl

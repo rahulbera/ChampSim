@@ -63,6 +63,8 @@ namespace knob
 	uint32_t scooby_max_offsets;
 	uint32_t scooby_max_deltas;
 	bool     scooby_brain_zero_init;
+	bool     scooby_enable_reward_all;
+	bool     scooby_enable_track_multiple;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -314,6 +316,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_brain_zero_init"))
 	{
 		knob::scooby_brain_zero_init = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_enable_reward_all"))
+	{
+		knob::scooby_enable_reward_all = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_enable_track_multiple"))
+	{
+		knob::scooby_enable_track_multiple = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Learning Engine */
