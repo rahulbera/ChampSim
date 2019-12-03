@@ -19,6 +19,10 @@ namespace knob
 	bool     l2c_perfect = false;
 	bool     llc_perfect = false;
 
+	/* next-line */
+	int32_t  next_line_delta = 1;
+
+	/* SMS */
 	uint32_t sms_at_size = 32;
 	uint32_t sms_ft_size = 64;
 	uint32_t sms_pht_size = 16384;
@@ -28,6 +32,7 @@ namespace knob
 	bool     sms_enable_pref_buffer = true;
 	uint32_t sms_pref_buffer_size = 256;
 
+	/* SPP */
 	uint32_t spp_st_size = 256;
 	uint32_t spp_pt_size = 512;
 	uint32_t spp_max_outcomes = 4;
@@ -158,6 +163,12 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "llc_perfect"))
     {
 		knob::llc_perfect = !strcmp(value, "true") ? true : false;
+    }
+
+    /* next-line */
+    else if (MATCH("", "next_line_delta"))
+    {
+		knob::next_line_delta = atoi(value);
     }
 
     /* SMS */

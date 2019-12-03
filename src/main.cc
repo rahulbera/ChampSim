@@ -53,7 +53,7 @@ void print_roi_stats(uint32_t cpu, CACHE *cache)
     cout<< "Core_" << cpu << "_" << cache->NAME << "_total_access " << TOTAL_ACCESS << endl
         << "Core_" << cpu << "_" << cache->NAME << "_total_hit " << TOTAL_HIT << endl
         << "Core_" << cpu << "_" << cache->NAME << "_total_miss " << TOTAL_MISS << endl
-        << "Core_" << cpu << "_" << cache->NAME << " loads " << cache->roi_access[cpu][0] << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_loads " << cache->roi_access[cpu][0] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_load_hit " << cache->roi_hit[cpu][0] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_load_miss " << cache->roi_miss[cpu][0] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_RFOs " << cache->roi_access[cpu][1] << endl

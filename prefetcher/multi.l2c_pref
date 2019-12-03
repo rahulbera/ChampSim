@@ -4,6 +4,7 @@
 #include "sms.h"
 #include "spp.h"
 #include "scooby.h"
+#include "next_line.h"
 
 using namespace std;
 
@@ -32,12 +33,17 @@ void CACHE::l2c_prefetcher_initialize()
 		SPP *pref_spp = new SPP(knob::l2c_prefetcher_type);
 		prefetchers.push_back(pref_spp);
 	}
-
 	else if(!knob::l2c_prefetcher_type.compare("scooby"))
 	{
 		cout << "adding L2C_PREFETCHER: Scooby" << endl;
 		Scooby *pref_scooby = new Scooby(knob::l2c_prefetcher_type);
 		prefetchers.push_back(pref_scooby);
+	}
+	else if(!knob::l2c_prefetcher_type.compare("next_line"))
+	{
+		cout << "adding L2C_PREFETCHER: next_line" << endl;
+		NextLinePrefetcher *pref_nl = new NextLinePrefetcher(knob::l2c_prefetcher_type);
+		prefetchers.push_back(pref_nl);
 	}
 	else
 	{

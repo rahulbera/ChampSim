@@ -5,7 +5,7 @@
 #include "memory_class.h"
 #include "scooby.h"
 
-#if 1
+#if 0
 #	define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
 #	define LOGID() fprintf(stdout, "[%25s@%3u] ", \
 							__FUNCTION__, __LINE__ \
