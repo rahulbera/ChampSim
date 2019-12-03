@@ -5,6 +5,15 @@ namespace knob
 	extern bool knob_cloudsuite;
 }
 
+const char* GetAccessType(uint8_t type)
+{
+    if(type == 0) return "LOAD";
+    if(type == 1) return "RFO";
+    if(type == 2) return "PREFETCH";
+    if(type == 3) return "WRITEBACK";
+    else return "?";
+}
+
 // out-of-order core
 O3_CPU ooo_cpu[NUM_CPUS]; 
 uint64_t current_core_cycle[NUM_CPUS], stall_cycle[NUM_CPUS];

@@ -16,6 +16,7 @@ typedef enum
 	incorrect,
 	correct_untimely,
 	correct_timely,
+	out_of_bounds,
 
 	num_rewards
 } RewardType;
@@ -123,11 +124,17 @@ private:
 			{
 				uint64_t called;
 			} train;
+
+			struct
+			{
+				uint64_t called;
+			} assign_reward;
 			
 			uint64_t correct_timely;
 			uint64_t correct_untimely;
 			uint64_t no_pref;
 			uint64_t incorrect;
+			uint64_t out_of_bounds;
 			uint64_t dist[MAX_ACTIONS][MAX_REWARDS];
 		} reward;
 
@@ -160,9 +167,10 @@ private:
 	void update_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
 	Scooby_STEntry* update_st(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
 	uint32_t predict(uint64_t address, uint64_t page, uint32_t offset, State *state, vector<uint64_t> &pref_addr);
-	bool track(uint64_t address, State *state, uint32_t action_index);
+	bool track(uint64_t address, State *state, uint32_t action_index, Scooby_PTEntry **tracker);
 	void reward(uint64_t address);
 	void reward(Scooby_PTEntry *ptentry);
+	void assign_reward(Scooby_PTEntry *ptentry, int32_t reward);
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
 	// Scooby_PTEntry* search_pt(uint64_t address);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);

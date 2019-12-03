@@ -17,6 +17,8 @@ extern uint32_t tRP,  // Row Precharge (RP) latency
 
 extern uint64_t l2pf_access;
 
+const char* GetAccessType(uint8_t type);
+
 class MEMORY {
   public:
     // memory interface

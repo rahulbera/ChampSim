@@ -68,6 +68,9 @@ namespace knob
 	bool     scooby_brain_zero_init;
 	bool     scooby_enable_reward_all;
 	bool     scooby_enable_track_multiple;
+	bool     scooby_enable_reward_for_out_of_bounds;
+	int32_t  scooby_reward_out_of_bounds;
+	uint32_t scooby_state_type;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -339,6 +342,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_enable_track_multiple"))
 	{
 		knob::scooby_enable_track_multiple = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_enable_reward_for_out_of_bounds"))
+	{
+		knob::scooby_enable_reward_for_out_of_bounds = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_reward_out_of_bounds"))
+	{
+		knob::scooby_reward_out_of_bounds = atoi(value);
+	}
+	else if (MATCH("", "scooby_state_type"))
+	{
+		knob::scooby_state_type = atoi(value);
 	}
 
 	/* Learning Engine */
