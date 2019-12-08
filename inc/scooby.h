@@ -2,6 +2,7 @@
 #define SCOOBY_H
 
 #include <vector>
+#include <unordered_map>
 #include "prefetcher.h"
 #include "scooby_helper.h"
 #include "learning_engine.h"
@@ -164,6 +165,8 @@ private:
 
 	} stats;
 
+	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;
+
 private:
 	void init_knobs();
 	void init_stats();
@@ -176,8 +179,8 @@ private:
 	void reward(Scooby_PTEntry *ptentry);
 	void assign_reward(Scooby_PTEntry *ptentry, int32_t reward);
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
-	// Scooby_PTEntry* search_pt(uint64_t address);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
+	void update_stats(uint32_t state, uint32_t action_index);
 
 public:
 	Scooby(string type);

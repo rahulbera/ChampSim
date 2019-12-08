@@ -48,6 +48,7 @@ namespace knob
 	extern int32_t  scooby_reward_out_of_bounds;
 	extern uint32_t scooby_state_type;
 	extern bool     scooby_access_debug;
+	extern bool     scooby_enable_state_action_stats;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -98,6 +99,7 @@ void Scooby::init_stats()
 	stats.predict.issue_dist.resize(knob::scooby_max_actions, 0);
 	stats.predict.pred_hit.resize(knob::scooby_max_actions, 0);
 	stats.predict.out_of_bounds_dist.resize(knob::scooby_max_actions, 0);
+	state_action_dist.clear();
 }
 
 Scooby::Scooby(string type) : Prefetcher(type)
@@ -157,6 +159,7 @@ void Scooby::print_config()
 		<< "scooby_reward_out_of_bounds " << knob::scooby_reward_out_of_bounds << endl
 		<< "scooby_state_type " << knob::scooby_state_type << endl
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
+		<< "scooby_enable_state_action_stats " << knob::scooby_enable_reward_for_out_of_bounds << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -265,6 +268,11 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 	/* query learning engine to get the next prediction */
 	uint32_t action_index = brain->chooseAction(state_index);
 	assert(action_index < knob::scooby_max_actions);
+
+	if(knob::scooby_enable_state_action_stats)
+	{
+		update_stats(state_index, action_index);
+	}
 
 	MYLOG("act_idx %u act %d", action_index, Actions[action_index]);
 
@@ -542,6 +550,22 @@ vector<Scooby_PTEntry*> Scooby::search_pt(uint64_t address, bool search_all)
 	return entries;
 }
 
+void Scooby::update_stats(uint32_t state, uint32_t action_index)
+{
+	auto it = state_action_dist.find(state);
+	if(it != state_action_dist.end())
+	{
+		it->second[action_index]++;
+	}
+	else
+	{
+		vector<uint64_t> act_dist;
+		act_dist.resize(knob::scooby_max_actions, 0);
+		act_dist[action_index]++;
+		state_action_dist.insert(std::pair<uint32_t, vector<uint64_t> >(state, act_dist));
+	}
+}
+
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
@@ -562,8 +586,23 @@ void Scooby::dump_stats()
 	}
 
 	cout << "scooby_predict_predicted " << stats.predict.predicted << endl
-		<< endl 
-		<< "scooby_track_called " << stats.track.called << endl
+		<< endl;
+
+	if(knob::scooby_enable_state_action_stats)
+	{
+		for(auto it = state_action_dist.begin(); it != state_action_dist.end(); ++it)
+		{
+			cout << "scooby_max_state_" << hex << it->first << dec << " ";
+			for(uint32_t index = 0; index < it->second.size(); ++index)
+			{
+				cout << it->second[index] << ",";
+			}
+			cout << endl;
+		}
+	}
+	cout << endl;
+
+	cout << "scooby_track_called " << stats.track.called << endl
 		<< "scooby_track_same_address " << stats.track.same_address << endl
 		<< "scooby_track_evict " << stats.track.evict << endl
 		<< endl

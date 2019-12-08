@@ -82,6 +82,7 @@ namespace knob
 	int32_t  scooby_reward_out_of_bounds;
 	uint32_t scooby_state_type;
 	bool     scooby_access_debug;
+	bool     scooby_enable_state_action_stats;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -399,6 +400,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_access_debug"))
 	{
 		knob::scooby_access_debug = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_enable_state_action_stats"))
+	{
+		knob::scooby_enable_state_action_stats = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Learning Engine */
