@@ -80,6 +80,10 @@ private:
 	LearningEngine *brain;
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
+
+	/* for workload insights only
+	 * has nothing to do with prefetching */
+	ScoobyRecorder *recorder;
 	
 	struct
 	{
@@ -164,8 +168,8 @@ private:
 	void init_knobs();
 	void init_stats();
 
-	void update_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
-	Scooby_STEntry* update_st(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
+	void update_global_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
+	Scooby_STEntry* update_local_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address);
 	uint32_t predict(uint64_t address, uint64_t page, uint32_t offset, State *state, vector<uint64_t> &pref_addr);
 	bool track(uint64_t address, State *state, uint32_t action_index, Scooby_PTEntry **tracker);
 	void reward(uint64_t address);

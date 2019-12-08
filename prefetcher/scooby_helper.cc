@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <iostream>
 #include "scooby_helper.h"
 
 #define DELTA_SIG_MAX_BITS 12
@@ -44,6 +45,8 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 
 	/* update pattern */
 	this->pattern[offset] = 1;
+
+	unique_pcs.insert(pc);
 }
 
 uint32_t Scooby_STEntry::get_delta_sig()
@@ -84,4 +87,31 @@ uint32_t Scooby_STEntry::get_pc_sig()
 		signature = signature & ((1ull << PC_SIG_MAX_BITS) - 1);
 	}
 	return signature;
+}
+
+void ScoobyRecorder::record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset)
+{
+	unique_pcs.insert(pc);
+	unique_pages.insert(page);
+}
+
+void ScoobyRecorder::record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset)
+{
+	unique_trigger_pcs.insert(pc);
+}
+
+void ScoobyRecorder::dump_stats()
+{
+	cout << "unique_pcs " << unique_pcs.size() << endl
+		<< "unique_pages " << unique_pages.size() << endl
+		<< "unique_trigger_pcs " << unique_trigger_pcs.size() << endl
+		<< endl;
+}
+
+void print_access_debug(Scooby_STEntry *stentry)
+{
+	uint64_t trigger_pc = stentry->pcs.front();
+	uint32_t trigger_offset = stentry->offsets.front();
+	uint32_t unique_pc_count = stentry->unique_pcs.size();
+	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s\n", stentry->page, trigger_pc, trigger_offset, unique_pc_count, BitmapHelper::to_string(stentry->pattern).c_str());
 }

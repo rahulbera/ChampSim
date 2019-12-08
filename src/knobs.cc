@@ -21,6 +21,11 @@ namespace knob
 
 	/* next-line */
 	int32_t  next_line_delta = 1;
+	uint32_t next_line_pt_size = 256;
+	bool     next_line_enable_prefetch_tracking = true;
+	bool     next_line_enable_trace = false;
+	uint32_t next_line_trace_interval = 5;
+	string   next_line_trace_name = string("next_line_trace.csv");
 
 	/* SMS */
 	uint32_t sms_at_size = 32;
@@ -76,6 +81,7 @@ namespace knob
 	bool     scooby_enable_reward_for_out_of_bounds;
 	int32_t  scooby_reward_out_of_bounds;
 	uint32_t scooby_state_type;
+	bool     scooby_access_debug;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -85,6 +91,10 @@ namespace knob
 	bool     le_enable_score_plot;
 	vector<int32_t> le_plot_actions;
 	string   le_plot_file_name;
+	bool     le_enable_action_trace;
+	uint32_t le_action_trace_interval;
+	std::string le_action_trace_name;
+	bool     le_enable_action_plot;
 }
 
 char config_file_name[MAX_LEN];
@@ -169,6 +179,26 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "next_line_delta"))
     {
 		knob::next_line_delta = atoi(value);
+    }
+    else if (MATCH("", "next_line_pt_size"))
+    {
+		knob::next_line_pt_size = atoi(value);
+    }
+    else if (MATCH("", "next_line_enable_prefetch_tracking"))
+    {
+		knob::next_line_enable_prefetch_tracking = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "next_line_enable_trace"))
+    {
+		knob::next_line_enable_trace = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "next_line_trace_interval"))
+    {
+		knob::next_line_trace_interval = atoi(value);
+    }
+    else if (MATCH("", "next_line_trace_name"))
+    {
+		knob::next_line_trace_name = string(value);
     }
 
     /* SMS */
@@ -366,6 +396,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_state_type = atoi(value);
 	}
+	else if (MATCH("", "scooby_access_debug"))
+	{
+		knob::scooby_access_debug = !strcmp(value, "true") ? true : false;
+	}
 
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
@@ -395,6 +429,22 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_plot_file_name"))
 	{
 		knob::le_plot_file_name = string(value);
+	}
+	else if (MATCH("", "le_enable_action_trace"))
+	{
+		knob::le_enable_action_trace = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_action_trace_interval"))
+	{
+		knob::le_action_trace_interval = atoi(value);
+	}
+	else if (MATCH("", "le_action_trace_name"))
+	{
+		knob::le_action_trace_name = string(value);
+	}
+	else if (MATCH("", "le_enable_action_plot"))
+	{
+		knob::le_enable_action_plot = !strcmp(value, "true") ? true : false;
 	}
     else 
     {

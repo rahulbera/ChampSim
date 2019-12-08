@@ -2,7 +2,18 @@
 #include <assert.h>
 #include <string.h>
 #include <strings.h>
+#include <sstream>
 #include "learning_engine.h"
+
+#if 0
+#	define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
+#	define LOGID() fprintf(stdout, "[%25s@%3u] ", \
+							__FUNCTION__, __LINE__ \
+							);
+#	define MYLOG(...) LOCKED(LOGID(); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n");)
+#else
+#	define MYLOG(...) {}
+#endif
 
 namespace knob
 {
@@ -13,6 +24,10 @@ namespace knob
 	extern bool     le_enable_score_plot;
 	extern std::vector<int32_t> le_plot_actions;
 	extern std::string   le_plot_file_name;
+	extern bool     le_enable_action_trace;
+	extern uint32_t le_action_trace_interval;
+	extern std::string le_action_trace_name;
+	extern bool     le_enable_action_plot;
 }
 
 /* helper function */
@@ -91,6 +106,14 @@ LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t
 		assert(trace);
 	}
 
+	if(knob::le_enable_action_trace)
+	{
+		action_trace_interval = 0;
+		action_trace_timestamp = 0;
+		action_trace = fopen(knob::le_action_trace_name.c_str(), "w");
+		assert(action_trace);
+	}
+
 	bzero(&stats, sizeof(stats));
 }
 
@@ -152,20 +175,11 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 		assert(false);
 	}
 
-#ifdef LE_DEBUG
-	if(action == 2) /* selects -1 */
+	if(knob::le_enable_action_trace && action_trace_interval++ == knob::le_action_trace_interval)
 	{
-		printf("[state: %x, action: %u] ", state, action);
-		for(uint32_t index = 0; index < m_actions; ++index)
-		{
-			printf("%8.3f,", qtable[state][index]);
-		}
-		if(do_explore)
-			printf("EXPLORE\n");
-		else
-			printf("EXPLOIT\n");
+		dump_action_trace(action);
+		action_trace_interval = 0;
 	}
-#endif
 
 	return action;
 }
@@ -173,6 +187,7 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2)
 {
 	stats.learn.called++;
+	MYLOG("state1 %x act_idx1 %u reward %d state2 %x act_idx2 %u", state1, action1, reward, state2, action2);
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{	
 		float Qsa1, Qsa2;
@@ -181,6 +196,7 @@ void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, ui
 		/* SARSA */
 		Qsa1 = Qsa1 + m_alpha * ((float)reward + m_gamma * Qsa2 - Qsa1);
 		updateQ(state1, action1, Qsa1);
+		MYLOG("state %x, scores %s", state1, getStringQ(state1).c_str());
 
 		if(knob::le_enable_trace && state1 == knob::le_trace_state && trace_interval++ == knob::le_trace_interval)
 		{
@@ -222,6 +238,17 @@ uint32_t LearningEngine::getMaxAction(uint32_t state)
 		}
 	}
 	return action;
+}
+
+std::string LearningEngine::getStringQ(uint32_t state)
+{
+	assert(state < m_states);
+	std::stringstream ss;
+	for(uint32_t index = 0; index < m_actions; ++index)
+	{
+		ss << qtable[state][index] << ",";
+	}
+	return ss.str();
 }
 
 void LearningEngine::print_aux_stats()
@@ -276,6 +303,11 @@ void LearningEngine::dump_state_trace(uint32_t state)
 		fprintf(trace, "%.2f,", qtable[state][index]);
 	}
 	fprintf(trace, "\n");
+	if(trace_timestamp >= 20000)
+	{
+		plot_scores();
+		assert(false);
+	}
 }
 
 void LearningEngine::plot_scores()
@@ -309,4 +341,10 @@ void LearningEngine::plot_scores()
 
 	std::string cmd2 = "rm " + std::string(script_file);
 	system(cmd2.c_str());
+}
+
+void LearningEngine::dump_action_trace(uint32_t action)
+{
+	action_trace_timestamp++;
+	fprintf(action_trace, "%lu, %u\n", action_trace_timestamp, action);
 }

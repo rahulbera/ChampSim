@@ -59,6 +59,9 @@ private:
 	uint32_t trace_interval;
 	uint64_t trace_timestamp;
 	FILE *trace;
+	uint32_t action_trace_interval;
+	uint64_t action_trace_timestamp;
+	FILE *action_trace;
 
 	struct
 	{
@@ -80,10 +83,12 @@ private:
 	Policy parsePolicy(std::string str);
 	float consultQ(uint32_t state, uint32_t action);
 	void updateQ(uint32_t state, uint32_t action, float value);
+	std::string getStringQ(uint32_t state);
 	uint32_t getMaxAction(uint32_t state);
 	void print_aux_stats();
 	void dump_state_trace(uint32_t state);
 	void plot_scores();
+	void dump_action_trace(uint32_t action);
 
 public:
 	LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);

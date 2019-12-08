@@ -47,6 +47,7 @@ namespace knob
 	extern bool     scooby_enable_reward_for_out_of_bounds;
 	extern int32_t  scooby_reward_out_of_bounds;
 	extern uint32_t scooby_state_type;
+	extern bool     scooby_access_debug;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -56,6 +57,10 @@ namespace knob
 	extern bool     le_enable_score_plot;
 	extern std::vector<int32_t> le_plot_actions;
 	extern std::string   le_plot_file_name;
+	extern bool     le_enable_action_trace;
+	extern uint32_t le_action_trace_interval;
+	extern std::string le_action_trace_name;
+	extern bool     le_enable_action_plot;
 }
 
 uint32_t State::value()
@@ -99,6 +104,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 {
 	init_knobs();
 	init_stats();
+
+	recorder = new ScoobyRecorder();
 
 	last_evicted_tracker = NULL;
 
@@ -149,6 +156,7 @@ void Scooby::print_config()
 		<< "scooby_enable_reward_for_out_of_bounds " << knob::scooby_enable_reward_for_out_of_bounds << endl
 		<< "scooby_reward_out_of_bounds " << knob::scooby_reward_out_of_bounds << endl
 		<< "scooby_state_type " << knob::scooby_state_type << endl
+		<< "scooby_access_debug " << knob::scooby_access_debug << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -161,7 +169,12 @@ void Scooby::print_config()
 	{
 		cout << knob::le_plot_actions[index] << ",";
 	}
-	cout << endl;
+	cout << endl
+		<< "le_enable_action_trace " << knob::le_enable_action_trace << endl
+		<< "le_action_trace_interval " << knob::le_action_trace_interval << endl
+		<< "le_action_trace_name " << knob::le_action_trace_name << endl
+		<< "le_enable_action_plot " << knob::le_enable_action_plot << endl
+		<< endl;
 }
 
 void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
@@ -175,10 +188,14 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	/* compute reward on demand */
 	reward(address);
 
+	/* record the access: just to gain some insights from the workload
+	 * defined in scooby_helper.h/cc */
+	recorder->record_access(pc, address, page, offset);
+
 	/* global state tracking */
-	update_state(pc, page, offset, address);
+	update_global_state(pc, page, offset, address);
 	/* per page state tracking */
-	Scooby_STEntry *stentry = update_st(pc, page, offset, address);
+	Scooby_STEntry *stentry = update_local_state(pc, page, offset, address);
 
 	/* Measure state.
 	 * state can contain per page local information like delta signature, pc signature etc.
@@ -196,12 +213,12 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	predict(address, page, offset, state, pref_addr);
 }
 
-void Scooby::update_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address)
+void Scooby::update_global_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address)
 {
 	/* @rbera TODO: implement */
 }
 
-Scooby_STEntry* Scooby::update_st(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address)
+Scooby_STEntry* Scooby::update_local_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address)
 {
 	stats.st.lookup++;
 	Scooby_STEntry *stentry = NULL;
@@ -222,11 +239,16 @@ Scooby_STEntry* Scooby::update_st(uint64_t pc, uint64_t page, uint32_t offset, u
 			stats.st.evict++;
 			stentry = signature_table.front();
 			signature_table.pop_front();
+			if(knob::scooby_access_debug)
+			{
+				print_access_debug(stentry);
+			}
 			delete stentry;
 		}
 
 		stats.st.insert++;
 		stentry = new Scooby_STEntry(page, pc, offset);
+		recorder->record_trigger_access(page, pc, offset);
 		signature_table.push_back(stentry);
 		return stentry;
 	}
@@ -586,4 +608,5 @@ void Scooby::dump_stats()
 		<< endl;
 
 	brain->dump_stats();
+	recorder->dump_stats();
 }

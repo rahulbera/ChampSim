@@ -82,6 +82,11 @@ uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t 
 				Scooby *pref_scooby = (Scooby*)prefetchers[index];
 				pref_scooby->register_fill(addr);
 			}
+			if(!prefetchers[index]->get_type().compare("next_line"))
+			{
+				NextLinePrefetcher *pref_nl = (NextLinePrefetcher*)prefetchers[index];
+				pref_nl->register_fill(addr);
+			}
 		}
 	}
 
