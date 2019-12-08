@@ -2,8 +2,11 @@
 #define NEXT_LINE
 
 #include <deque>
+#include <random>
 #include "prefetcher.h"
 using namespace std;
+
+#define MAX_DELTAS 16
 
 class NL_PTEntry
 {
@@ -20,6 +23,9 @@ class NextLinePrefetcher : public Prefetcher
 {
 private:
 	deque<NL_PTEntry*> prefetch_tracker;
+	vector<float> delta_probability;
+	default_random_engine generator;
+	uniform_real_distribution<float> *deltagen;
 
 	uint64_t trace_timestamp;
 	uint32_t trace_interval;
@@ -29,8 +35,10 @@ private:
 	{
 		struct
 		{
-			uint64_t total;
-			uint64_t out_of_bounds;
+			uint64_t select[MAX_DELTAS];
+			uint64_t issue[MAX_DELTAS];
+			uint64_t out_of_bounds[MAX_DELTAS];
+			uint64_t tracker_hit[MAX_DELTAS];
 		} predict;
 
 		struct
@@ -69,10 +77,11 @@ private:
 private:
 	void init_knobs();
 	void init_stats();
-	void track(uint64_t address);
+	bool track(uint64_t address);
 	NL_PTEntry* search_pt(uint64_t address);
 	void measure_stats(NL_PTEntry *ptentry);
 	void record_demand(uint64_t address);
+	uint32_t gen_delta();
 
 public:
 	NextLinePrefetcher(string type);

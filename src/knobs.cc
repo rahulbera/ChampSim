@@ -20,7 +20,9 @@ namespace knob
 	bool     llc_perfect = false;
 
 	/* next-line */
-	int32_t  next_line_delta = 1;
+	vector<int32_t>  next_line_deltas;
+	vector<float>  next_line_delta_prob;
+	uint32_t next_line_seed = 255;
 	uint32_t next_line_pt_size = 256;
 	bool     next_line_enable_prefetch_tracking = true;
 	bool     next_line_enable_trace = false;
@@ -177,9 +179,17 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     }
 
     /* next-line */
-    else if (MATCH("", "next_line_delta"))
+    else if (MATCH("", "next_line_deltas"))
     {
-		knob::next_line_delta = atoi(value);
+		knob::next_line_deltas = get_array_int(value);
+    }
+    else if (MATCH("", "next_line_delta_prob"))
+    {
+		knob::next_line_delta_prob = get_array_float(value);
+    }
+    else if (MATCH("", "next_line_seed"))
+    {
+		knob::next_line_seed = atoi(value);
     }
     else if (MATCH("", "next_line_pt_size"))
     {
@@ -467,6 +477,20 @@ std::vector<int32_t> get_array_int(const char *str)
 	while(pch)
 	{
 		value.push_back(atoi(pch));
+		pch = strtok(NULL, ",");
+	}
+	free(tmp_str);
+	return value;
+}
+
+std::vector<float> get_array_float(const char *str)
+{
+	std::vector<float> value;
+	char *tmp_str = strdup(str);
+	char *pch = strtok(tmp_str, ",");
+	while(pch)
+	{
+		value.push_back(atof(pch));
 		pch = strtok(NULL, ",");
 	}
 	free(tmp_str);

@@ -12,5 +12,6 @@ int handler(void* user, const char* section, const char* name, const char* value
 
 /* auxiliary functions */
 std::vector<int32_t> get_array_int(const char *str);
+std::vector<float> get_array_float(const char *str);
 
 #endif /* KNOBS_H */

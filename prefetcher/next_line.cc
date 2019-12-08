@@ -8,7 +8,9 @@
 
 namespace knob
 {
-	extern int32_t  next_line_delta;
+	extern vector<int32_t>  next_line_deltas;
+	extern vector<float> next_line_delta_prob;
+	extern uint32_t next_line_seed;
 	extern uint32_t next_line_pt_size;
 	extern bool     next_line_enable_prefetch_tracking;
 	extern bool     next_line_enable_trace;
@@ -18,7 +20,15 @@ namespace knob
 
 void NextLinePrefetcher::init_knobs()
 {
-
+	assert(knob::next_line_delta_prob.size() == knob::next_line_deltas.size());
+	delta_probability.resize(knob::next_line_deltas.size(), 0.0);
+	float p = 0.0;
+	for(uint32_t index = 0; index < delta_probability.size(); ++index)
+	{
+		delta_probability[index] = p + knob::next_line_delta_prob[index];
+		p = delta_probability[index];
+	}
+	assert(delta_probability.back() == 1.0);
 }
 
 void NextLinePrefetcher::init_stats()
@@ -28,9 +38,25 @@ void NextLinePrefetcher::init_stats()
 
 void NextLinePrefetcher::print_config()
 {
-	cout << "next_line_delta " << knob::next_line_delta << endl
+	cout << "next_line_deltas ";
+	for(uint32_t index = 0; index < knob::next_line_deltas.size(); ++index)
+	{
+		cout << knob::next_line_deltas[index] << ",";
+	}
+	cout << endl;
+	cout << "next_line_delta_prob ";
+	for(uint32_t index = 0; index < knob::next_line_delta_prob.size(); ++index)
+	{
+		cout << knob::next_line_delta_prob[index] << ",";
+	}
+	cout << endl;
+
+	cout << "next_line_seed " << knob::next_line_seed << endl 
 		<< "next_line_pt_size " << knob::next_line_pt_size << endl
 		<< "next_line_enable_prefetch_tracking " << knob::next_line_enable_prefetch_tracking << endl
+		<< "next_line_enable_trace " << knob::next_line_enable_trace << endl
+		<< "next_line_trace_interval " << knob::next_line_trace_interval << endl
+		<< "next_line_trace_name " << knob::next_line_trace_name << endl
 		<< endl;
 }
 
@@ -38,6 +64,9 @@ NextLinePrefetcher::NextLinePrefetcher(string type) : Prefetcher(type)
 {
 	init_knobs();
 	init_stats();
+
+	generator.seed(knob::next_line_seed);
+	deltagen = new std::uniform_real_distribution<float>(0.0, 1.0);
 
 	if(knob::next_line_enable_trace)
 	{
@@ -66,24 +95,55 @@ void NextLinePrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_
 		record_demand(address);
 	}
 
-	int32_t prefetched_offset = offset + knob::next_line_delta;
+	uint32_t delta_idx = gen_delta();
+	assert(delta_idx < knob::next_line_deltas.size());
+	int32_t delta = knob::next_line_deltas[delta_idx];
+	int32_t prefetched_offset = offset + delta;
+	stats.predict.select[delta_idx]++;
 	if(prefetched_offset >= 0 && prefetched_offset < 64)
 	{
 		uint64_t addr = (page << LOG2_PAGE_SIZE) + (prefetched_offset << LOG2_BLOCK_SIZE);
-		pref_addr.push_back(addr);
-		stats.predict.total++;
 		if(knob::next_line_enable_prefetch_tracking)
 		{
-			track(addr);
+			bool new_addr = track(addr);
+			if(new_addr)
+			{
+				pref_addr.push_back(addr);
+				stats.predict.issue[delta_idx]++;
+			}
+			else
+			{
+				stats.predict.tracker_hit[delta_idx]++;
+			}
+		}
+		else
+		{
+			pref_addr.push_back(addr);
+			stats.predict.issue[delta_idx]++;
 		}
 	}
 	else
 	{
-		stats.predict.out_of_bounds++;
+		stats.predict.out_of_bounds[delta_idx]++;
 	}
 }
 
-void NextLinePrefetcher::track(uint64_t address)
+uint32_t NextLinePrefetcher::gen_delta()
+{
+	float rand = (*deltagen)(generator);
+	uint32_t delta_index = 0;
+	for(uint32_t index = 0; index < delta_probability.size(); ++index)
+	{
+		if(rand <= delta_probability[index])
+		{
+			delta_index = index;
+			break;
+		}
+	}
+	return delta_index;
+}
+
+bool NextLinePrefetcher::track(uint64_t address)
 {
 	stats.track.called++;
 	if(search_pt(address) == NULL)
@@ -99,10 +159,12 @@ void NextLinePrefetcher::track(uint64_t address)
 		}
 		prefetch_tracker.push_back(new NL_PTEntry(address, false));
 		stats.track.insert++;
+		return true;
 	}
 	else
 	{
 		stats.track.pt_hit++;
+		return false;
 	}
 }
 
@@ -176,9 +238,15 @@ void NextLinePrefetcher::measure_stats(NL_PTEntry *ptentry)
 
 void NextLinePrefetcher::dump_stats()
 {
-	cout << "next_line_predict_total " << stats.predict.total << endl
-		<< "next_line_predict_out_of_bounds " << stats.predict.out_of_bounds << endl
-		<< "next_line_track_called " << stats.track.called << endl
+	for(uint32_t index = 0; index < knob::next_line_deltas.size(); ++index)
+	{
+		cout << "next_line_delta_" << knob::next_line_deltas[index] << "_select " << stats.predict.select[index] << endl;
+		cout << "next_line_delta_" << knob::next_line_deltas[index] << "_issue " << stats.predict.issue[index] << endl;
+		cout << "next_line_delta_" << knob::next_line_deltas[index] << "_tracker_hit " << stats.predict.tracker_hit[index] << endl;
+		cout << "next_line_delta_" << knob::next_line_deltas[index] << "_out_of_bounds " << stats.predict.out_of_bounds[index] << endl;
+	}
+
+	cout<< "next_line_track_called " << stats.track.called << endl
 		<< "next_line_track_pt_miss " << stats.track.pt_miss << endl
 		<< "next_line_track_pt_hit " << stats.track.pt_hit << endl
 		<< "next_line_track_evict " << stats.track.evict << endl
