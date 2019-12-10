@@ -9,7 +9,11 @@
 
 using namespace std;
 
+#define MAX_ACTIONS 64
 #define MAX_REWARDS 16
+
+/* forward declaration */
+class LearningEngine;
 
 typedef enum
 {
@@ -18,6 +22,7 @@ typedef enum
 	correct_untimely,
 	correct_timely,
 	out_of_bounds,
+	tracker_hit,
 
 	num_rewards
 } RewardType;
@@ -140,6 +145,7 @@ private:
 			uint64_t no_pref;
 			uint64_t incorrect;
 			uint64_t out_of_bounds;
+			uint64_t tracker_hit;
 			uint64_t dist[MAX_ACTIONS][MAX_REWARDS];
 		} reward;
 
@@ -177,7 +183,7 @@ private:
 	bool track(uint64_t address, State *state, uint32_t action_index, Scooby_PTEntry **tracker);
 	void reward(uint64_t address);
 	void reward(Scooby_PTEntry *ptentry);
-	void assign_reward(Scooby_PTEntry *ptentry, int32_t reward);
+	void assign_reward(Scooby_PTEntry *ptentry, RewardType type);
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
 	void update_stats(uint32_t state, uint32_t action_index);
@@ -190,6 +196,7 @@ public:
 	void register_prefetch_hit(uint64_t address);
 	void dump_stats();
 	void print_config();
+	int32_t getAction(uint32_t action_index);
 };
 
 #endif /* SCOOBY_H */

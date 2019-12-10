@@ -59,8 +59,9 @@ const char* MapLearningTypeString(LearningType type)
 }
 
 
-LearningEngine::LearningEngine(float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
-	: m_alpha(alpha)
+LearningEngine::LearningEngine(Scooby *parent, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
+	: m_parent(parent)
+	, m_alpha(alpha)
 	, m_gamma(gamma)
 	, m_epsilon(epsilon) // make it small, as true value indicates exploration
 	, m_actions(actions)
@@ -280,8 +281,8 @@ void LearningEngine::dump_stats()
 	fprintf(stdout, "learning_engine.action.exploit %lu\n", stats.action.exploit);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		fprintf(stdout, "learning_engine.action.index_%u_explored %lu\n", action, stats.action.dist[action][0]);
-		fprintf(stdout, "learning_engine.action.index_%u_exploited %lu\n", action, stats.action.dist[action][1]);
+		fprintf(stdout, "learning_engine.action.index_%u_explored %lu\n", m_parent->getAction(action), stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine.action.index_%u_exploited %lu\n", m_parent->getAction(action), stats.action.dist[action][1]);
 	}
 	fprintf(stdout, "learning_engine.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");
@@ -330,7 +331,7 @@ void LearningEngine::plot_scores()
 	for(uint32_t index = 0; index < knob::le_plot_actions.size(); ++index)
 	{
 		if(index) fprintf(script, ", ");
-		fprintf(script, "'%s' using 1:%u with lines title \"action[%u]\"", knob::le_trace_file_name.c_str(), (knob::le_plot_actions[index]+2), knob::le_plot_actions[index]);
+		fprintf(script, "'%s' using 1:%u with lines title \"delta(%u)\"", knob::le_trace_file_name.c_str(), (knob::le_plot_actions[index]+2), m_parent->getAction(knob::le_plot_actions[index]));
 	}
 	fprintf(script, "\n");
 	fclose(script);

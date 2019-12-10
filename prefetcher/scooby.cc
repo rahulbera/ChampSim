@@ -44,11 +44,13 @@ namespace knob
 	extern bool		scooby_brain_zero_init;
 	extern bool     scooby_enable_reward_all;
 	extern bool     scooby_enable_track_multiple;
-	extern bool     scooby_enable_reward_for_out_of_bounds;
+	extern bool     scooby_enable_reward_out_of_bounds;
 	extern int32_t  scooby_reward_out_of_bounds;
 	extern uint32_t scooby_state_type;
 	extern bool     scooby_access_debug;
 	extern bool     scooby_enable_state_action_stats;
+	extern bool     scooby_enable_reward_tracker_hit;
+	extern int32_t  scooby_reward_tracker_hit;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -112,7 +114,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	last_evicted_tracker = NULL;
 
 	/* init learning engine */
-	brain = new LearningEngine(knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
+	brain = new LearningEngine( this,
+								knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
 								knob::scooby_max_actions, 
 								knob::scooby_max_states,
 								knob::scooby_seed,
@@ -155,11 +158,13 @@ void Scooby::print_config()
 		<< "scooby_brain_zero_init " << knob::scooby_brain_zero_init << endl
 		<< "scooby_enable_reward_all " << knob::scooby_enable_reward_all << endl
 		<< "scooby_enable_track_multiple " << knob::scooby_enable_track_multiple << endl
-		<< "scooby_enable_reward_for_out_of_bounds " << knob::scooby_enable_reward_for_out_of_bounds << endl
+		<< "scooby_enable_reward_out_of_bounds " << knob::scooby_enable_reward_out_of_bounds << endl
 		<< "scooby_reward_out_of_bounds " << knob::scooby_reward_out_of_bounds << endl
 		<< "scooby_state_type " << knob::scooby_state_type << endl
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
-		<< "scooby_enable_state_action_stats " << knob::scooby_enable_reward_for_out_of_bounds << endl
+		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
+		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
+		<< "scooby_reward_tracker_hit " << knob::scooby_reward_tracker_hit << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -295,7 +300,16 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 			}
 			else
 			{
+				MYLOG("pred_off %d tracker_hit", predicted_offset);
 				stats.predict.pred_hit[action_index]++;
+				if(knob::scooby_enable_reward_tracker_hit)
+				{
+					addr = 0xdeadbeef;
+					track(addr, state, action_index, &ptentry);
+					assert(ptentry);
+					// assign_reward(ptentry, knob::scooby_reward_tracker_hit);
+					assign_reward(ptentry, RewardType::tracker_hit);
+				}
 			}
 			stats.predict.action_dist[action_index]++;
 		}
@@ -304,12 +318,13 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 			MYLOG("pred_off %d out_of_bounds", predicted_offset);
 			stats.predict.out_of_bounds++;
 			stats.predict.out_of_bounds_dist[action_index]++;
-			if(knob::scooby_enable_reward_for_out_of_bounds)
+			if(knob::scooby_enable_reward_out_of_bounds)
 			{
 				addr = 0xdeadbeef;
 				track(addr, state, action_index, &ptentry);
 				assert(ptentry);
-				assign_reward(ptentry, knob::scooby_reward_out_of_bounds);
+				// assign_reward(ptentry, knob::scooby_reward_out_of_bounds);
+				assign_reward(ptentry, RewardType::out_of_bounds);
 			}
 		}
 	}
@@ -464,16 +479,35 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	ptentry->has_reward = true;
 }
 
-void Scooby::assign_reward(Scooby_PTEntry *ptentry, int32_t reward)
+void Scooby::assign_reward(Scooby_PTEntry *ptentry, RewardType type)
 {
 	MYLOG("assign_reward PT evict %lx state %x act_idx %u act %d", ptentry->address, ptentry->state->value(), ptentry->action_index, Actions[ptentry->action_index]);
 	stats.reward.assign_reward.called++;
 	assert(!ptentry->has_reward);
-	stats.reward.out_of_bounds++;
-	stats.reward.dist[ptentry->action_index][RewardType::out_of_bounds]++;
+	int32_t reward = 0;
+
+	switch(type)
+	{
+		case RewardType::out_of_bounds:
+			reward = knob::scooby_reward_out_of_bounds;
+			stats.reward.out_of_bounds++;
+			MYLOG("assigned reward out_of_bounds(%d)", reward);
+			break;
+
+		case RewardType::tracker_hit:
+			reward = knob::scooby_reward_tracker_hit;
+			stats.reward.tracker_hit++;
+			MYLOG("assigned reward tracker_hit(%d)", reward);
+			break;
+
+		default:
+			cout << "assign_reward called for invalid reward type: " << type << endl;
+			assert(false);
+	}
+
+	stats.reward.dist[ptentry->action_index][type]++;
 	ptentry->reward = reward;
 	ptentry->has_reward = true;
-	MYLOG("assigned reward out_of_bounds(%d)", ptentry->reward);
 }
 
 void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
@@ -566,6 +600,12 @@ void Scooby::update_stats(uint32_t state, uint32_t action_index)
 	}
 }
 
+int32_t Scooby::getAction(uint32_t action_index)
+{
+	assert(action_index < Actions.size());
+	return Actions[action_index];
+}
+
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
@@ -619,6 +659,7 @@ void Scooby::dump_stats()
 		<< "scooby_reward_correct_untimely " << stats.reward.correct_untimely << endl
 		<< "scooby_reward_correct_timely " << stats.reward.correct_timely << endl
 		<< "scooby_reward_out_of_bounds " << stats.reward.out_of_bounds << endl
+		<< "scooby_reward_tracker_hit " << stats.reward.tracker_hit << endl
 		<< endl;
 	for(uint32_t action = 0; action < Actions.size(); ++action)
 	{

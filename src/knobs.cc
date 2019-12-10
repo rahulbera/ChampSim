@@ -80,11 +80,13 @@ namespace knob
 	bool     scooby_brain_zero_init;
 	bool     scooby_enable_reward_all;
 	bool     scooby_enable_track_multiple;
-	bool     scooby_enable_reward_for_out_of_bounds;
+	bool     scooby_enable_reward_out_of_bounds;
 	int32_t  scooby_reward_out_of_bounds;
 	uint32_t scooby_state_type;
 	bool     scooby_access_debug;
 	bool     scooby_enable_state_action_stats;
+	bool     scooby_enable_reward_tracker_hit;
+	int32_t  scooby_reward_tracker_hit;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -395,9 +397,9 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_enable_track_multiple = !strcmp(value, "true") ? true : false;
 	}
-	else if (MATCH("", "scooby_enable_reward_for_out_of_bounds"))
+	else if (MATCH("", "scooby_enable_reward_out_of_bounds"))
 	{
-		knob::scooby_enable_reward_for_out_of_bounds = !strcmp(value, "true") ? true : false;
+		knob::scooby_enable_reward_out_of_bounds = !strcmp(value, "true") ? true : false;
 	}
 	else if (MATCH("", "scooby_reward_out_of_bounds"))
 	{
@@ -414,6 +416,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_enable_state_action_stats"))
 	{
 		knob::scooby_enable_state_action_stats = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_enable_reward_tracker_hit"))
+	{
+		knob::scooby_enable_reward_tracker_hit = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_reward_tracker_hit"))
+	{
+		knob::scooby_reward_tracker_hit = atoi(value);
 	}
 
 	/* Learning Engine */
