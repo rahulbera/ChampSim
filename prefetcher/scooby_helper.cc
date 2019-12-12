@@ -113,5 +113,5 @@ void print_access_debug(Scooby_STEntry *stentry)
 	uint64_t trigger_pc = stentry->pcs.front();
 	uint32_t trigger_offset = stentry->offsets.front();
 	uint32_t unique_pc_count = stentry->unique_pcs.size();
-	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s\n", stentry->page, trigger_pc, trigger_offset, unique_pc_count, BitmapHelper::to_string(stentry->pattern).c_str());
+	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%u\n", stentry->page, trigger_pc, trigger_offset, unique_pc_count, BitmapHelper::to_string(stentry->pattern).c_str(), BitmapHelper::count_bits_set(stentry->pattern));
 }

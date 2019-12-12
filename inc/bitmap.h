@@ -11,6 +11,7 @@ class BitmapHelper
 {
 public:
 	static std::string to_string(Bitmap bmp);
+	static uint32_t count_bits_set(Bitmap bmp);
 };
 
 #endif /* BITMAP_H */

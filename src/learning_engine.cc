@@ -153,7 +153,6 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 	stats.action.called++;
 	assert(state < m_states);
 	uint32_t action = 0;
-	bool do_explore = false;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		if((*explore)(generator))
@@ -161,7 +160,6 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 			action = (*actiongen)(generator); // take random action
 			stats.action.explore++;
 			stats.action.dist[action][0]++;
-			do_explore = true;
 		}
 		else
 		{
@@ -304,11 +302,11 @@ void LearningEngine::dump_state_trace(uint32_t state)
 		fprintf(trace, "%.2f,", qtable[state][index]);
 	}
 	fprintf(trace, "\n");
-	if(trace_timestamp >= 20000)
-	{
-		plot_scores();
-		assert(false);
-	}
+	// if(trace_timestamp >= 20000)
+	// {
+	// 	plot_scores();
+	// 	assert(false);
+	// }
 }
 
 void LearningEngine::plot_scores()
@@ -319,7 +317,7 @@ void LearningEngine::plot_scores()
 	FILE *script = fopen(script_file, "w");
 	assert(script);
 
-	fprintf(script, "set term png\n");
+	fprintf(script, "set term png size 960,720 font \"Helvetica,12\"\n");
 	fprintf(script, "set datafile sep ','\n");
 	fprintf(script, "set output '%s'\n", knob::le_plot_file_name.c_str());
 	fprintf(script, "set title \"Reward over time\"\n");
