@@ -71,13 +71,18 @@ uint32_t State::value()
 	uint32_t value = 0;
 	switch(knob::scooby_state_type)
 	{
-		case 1:
+		case 1: /* Only PC */
 			return (uint32_t)(pc % knob::scooby_max_states);
 
-		case 2:
+		case 2: /* PC+ offset */
 			value = pc;
 			value = value << 6;
 			value = value + offset;
+			value = value % knob::scooby_max_states;
+			return value;
+
+		case 3: /* Only offset */
+			value = offset;
 			value = value % knob::scooby_max_states;
 			return value;
 
