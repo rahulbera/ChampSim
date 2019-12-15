@@ -160,12 +160,14 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 			action = (*actiongen)(generator); // take random action
 			stats.action.explore++;
 			stats.action.dist[action][0]++;
+			MYLOG("action taken %u explore, state %x, scores %s", action, state, getStringQ(state).c_str());
 		}
 		else
 		{
 			action = getMaxAction(state);
 			stats.action.exploit++;
 			stats.action.dist[action][1]++;
+			MYLOG("action taken %u exploit, state %x, scores %s", action, state, getStringQ(state).c_str());
 		}
 	}
 	else
@@ -186,15 +188,16 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2)
 {
 	stats.learn.called++;
-	MYLOG("state1 %x act_idx1 %u reward %d state2 %x act_idx2 %u", state1, action1, reward, state2, action2);
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{	
-		float Qsa1, Qsa2;
+		float Qsa1, Qsa2, Qsa1_old;
 		Qsa1 = consultQ(state1, action1);
 		Qsa2 = consultQ(state2, action2);
+		Qsa1_old = Qsa1;
 		/* SARSA */
 		Qsa1 = Qsa1 + m_alpha * ((float)reward + m_gamma * Qsa2 - Qsa1);
 		updateQ(state1, action1, Qsa1);
+		MYLOG("Q(%x,%u) = %.2f, R = %d, Q(%x,%u) = %.2f, Q(%x,%u) = %.2f", state1, action1, Qsa1_old, reward, state2, action2, Qsa2, state1, action1, Qsa1);
 		MYLOG("state %x, scores %s", state1, getStringQ(state1).c_str());
 
 		if(knob::le_enable_trace && state1 == knob::le_trace_state && trace_interval++ == knob::le_trace_interval)
@@ -302,6 +305,7 @@ void LearningEngine::dump_state_trace(uint32_t state)
 		fprintf(trace, "%.2f,", qtable[state][index]);
 	}
 	fprintf(trace, "\n");
+	fflush(trace);
 	// if(trace_timestamp >= 20000)
 	// {
 	// 	plot_scores();
@@ -317,7 +321,7 @@ void LearningEngine::plot_scores()
 	FILE *script = fopen(script_file, "w");
 	assert(script);
 
-	fprintf(script, "set term png size 960,720 font \"Helvetica,12\"\n");
+	fprintf(script, "set term png size 960,720 font 'Helvetica,12'\n");
 	fprintf(script, "set datafile sep ','\n");
 	fprintf(script, "set output '%s'\n", knob::le_plot_file_name.c_str());
 	fprintf(script, "set title \"Reward over time\"\n");
