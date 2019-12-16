@@ -25,13 +25,6 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 	}
 	this->pcs.push_back(pc);
 
-	/* insert offset */
-	if(this->offsets.size() >= knob::scooby_max_offsets)
-	{
-		this->offsets.pop_front();
-	}
-	this->offsets.push_back(offset);
-
 	/* insert deltas */
 	if(!this->offsets.empty())
 	{
@@ -42,6 +35,13 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 		}
 		this->deltas.push_back(delta);		
 	}
+
+	/* insert offset */
+	if(this->offsets.size() >= knob::scooby_max_offsets)
+	{
+		this->offsets.pop_front();
+	}
+	this->offsets.push_back(offset);
 
 	/* update pattern */
 	this->pattern[offset] = 1;

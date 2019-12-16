@@ -86,6 +86,16 @@ uint32_t State::value()
 			value = value % knob::scooby_max_states;
 			return value;
 
+		case 4: /* SPP like delta-path signature */
+			value = local_delta_sig;
+			value = value % knob::scooby_max_states;
+			return value;
+
+		case 5: /* SPP like path signature, but made with shifted PC */
+			value = local_pc_sig;
+			value = value % knob::scooby_max_states;
+			return value;
+
 		default:
 			assert(false);
 	}
