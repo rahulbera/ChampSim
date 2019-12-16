@@ -1,18 +1,19 @@
 #!/usr/bin/perl
 
-use lib '/mnt/panzer/rahbera/ChampSim/scripts';
+use lib '/home/write2bera_gmail_com/ChampSim/scripts';
 use warnings;
 use Getopt::Long;
 use Trace;
 use Exp;
 
 # defaults
-my $CHAMPSIM_ROOT="/mnt/panzer/rahbera/ChampSim";
+my $CHAMPSIM_ROOT="/home/write2bera_gmail_com/ChampSim";
 my $tlist_file = "tlist";
 my $exp_file = "exp";
 my $exe;
 my $local = "0";
 my $ncores = 1;
+my $slurm_partition = "debug";
 
 GetOptions('tlist=s' => \$tlist_file,
 	   'exp=s' => \$exp_file,
@@ -77,7 +78,7 @@ foreach $trace (@trace_info)
 		}
 		else
 		{
-			$slurm_cmd = "sbatch -p slurm_part --mincpus=1 -c $ncores -J ${trace_name}_${exp_name} -o ${trace_name}_${exp_name}.out -e ${trace_name}_${exp_name}.err";
+			$slurm_cmd = "sbatch -p $slurm_partition --mincpus=1 -c $ncores -J ${trace_name}_${exp_name} -o ${trace_name}_${exp_name}.out -e ${trace_name}_${exp_name}.err";
 			$cmdline = "$slurm_cmd $CHAMPSIM_ROOT/wrapper.sh $exe \"$exp_knobs $trace_knobs -traces $trace_input\"";
 		}
 		$cmdline =~ s/\$(EXP)/$exp_name/g;
