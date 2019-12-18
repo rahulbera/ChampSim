@@ -33,6 +33,7 @@ namespace knob
 	uint32_t sms_at_size = 32;
 	uint32_t sms_ft_size = 64;
 	uint32_t sms_pht_size = 16384;
+	uint32_t sms_pht_assoc = 16;
 	uint32_t sms_pref_degree = 4;
 	uint32_t sms_region_size = 2048;
 	uint32_t sms_region_size_log = 11;
@@ -226,6 +227,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if(MATCH("", "sms_pht_size"))
 	{
 		knob::sms_pht_size = atoi(value);
+	}
+	else if(MATCH("", "sms_pht_assoc"))
+	{
+		knob::sms_pht_assoc = atoi(value);
 	}
 	else if(MATCH("", "sms_pref_degree"))
 	{
