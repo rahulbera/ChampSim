@@ -70,7 +70,8 @@ class SMSPrefetcher : public Prefetcher
 private:
 	deque<FTEntry*> filter_table;
 	deque<ATEntry*> acc_table;
-	deque<PHTEntry*> pht; /* TODO: make it set associative */
+	vector<deque<PHTEntry*> > pht;
+	uint32_t pht_sets;
 	deque<uint64_t> pref_buffer;
 
 	struct
@@ -126,10 +127,10 @@ private:
 	void update_age_acc_table(deque<ATEntry*>::iterator current);
 	void insert_acc_table(FTEntry *ftentry, uint32_t offset);
 	
-	deque<PHTEntry*>::iterator search_pht(uint64_t signature);
-	deque<PHTEntry*>::iterator search_victim_pht();
-	void evcit_pht(deque<PHTEntry*>::iterator victim);
-	void update_age_pht(deque<PHTEntry*>::iterator current);
+	deque<PHTEntry*>::iterator search_pht(uint64_t signature, int32_t *set);
+	deque<PHTEntry*>::iterator search_victim_pht(int32_t set);
+	void evcit_pht(int32_t set, deque<PHTEntry*>::iterator victim);
+	void update_age_pht(int32_t set, deque<PHTEntry*>::iterator current);
 	void insert_pht_table(ATEntry *atentry);
 
 	uint64_t create_signature(uint64_t pc, uint32_t offset);

@@ -12,6 +12,7 @@ namespace knob
 	extern uint32_t sms_at_size;
 	extern uint32_t sms_ft_size;
 	extern uint32_t sms_pht_size;
+	extern uint32_t sms_pht_assoc;
 	extern uint32_t sms_pref_degree;
 	extern uint32_t sms_region_size;
 	extern uint32_t sms_region_size_log;
@@ -21,7 +22,7 @@ namespace knob
 
 void SMSPrefetcher::init_knobs()
 {
-
+	pht_sets = knob::sms_pht_size/knob::sms_pht_assoc;
 }
 
 void SMSPrefetcher::init_stats()
@@ -34,6 +35,7 @@ void SMSPrefetcher::print_config()
 	cout << "sms_at_size " << knob::sms_at_size << endl
 		<< "sms_ft_size " << knob::sms_ft_size << endl
 		<< "sms_pht_size " << knob::sms_pht_size << endl
+		<< "sms_pht_assoc " << knob::sms_pht_assoc << endl
 		<< "sms_pref_degree " << knob::sms_pref_degree << endl
 		<< "sms_region_size " << knob::sms_region_size << endl
 		<< "sms_region_size_log " << knob::sms_region_size_log << endl
@@ -46,6 +48,10 @@ SMSPrefetcher::SMSPrefetcher(string type) : Prefetcher(type)
 {
 	init_knobs();
 	init_stats();
+
+	/* init PHT */
+	deque<PHTEntry*> d;
+	pht.resize(pht_sets, d);
 }
 
 SMSPrefetcher::~SMSPrefetcher()
@@ -218,21 +224,24 @@ void SMSPrefetcher::insert_pht_table(ATEntry *atentry)
 	// 	<< " pattern " << BitmapHelper::to_string(atentry->pattern)
 	// 	<< endl;
 
-	auto pht_index = search_pht(signature);
-	if(pht_index != pht.end())
+	int32_t set = -1;
+	auto pht_index = search_pht(signature, &set);
+	assert(set != -1);
+	if(pht_index != pht[set].end())
 	{
 		/* PHT hit */
 		stats.pht.hit++;
 		(*pht_index)->pattern = atentry->pattern;
-		update_age_pht(pht_index);
+		update_age_pht(set, pht_index);
 	}
 	else
 	{
 		/* PHT miss */
-		if(pht.size() >= knob::sms_pht_size)
+		assert(set != -1);
+		if(pht[set].size() >= knob::sms_pht_assoc)
 		{
-			auto victim = search_victim_pht();
-			evcit_pht(victim);
+			auto victim = search_victim_pht(set);
+			evcit_pht(set, victim);
 		}
 
 		stats.pht.insert++;
@@ -240,21 +249,22 @@ void SMSPrefetcher::insert_pht_table(ATEntry *atentry)
 		phtentry->signature = signature;
 		phtentry->pattern = atentry->pattern;
 		phtentry->age = 0;
-		for(uint32_t index = 0; index < pht.size(); ++index) pht[index]->age = 0;
-		pht.push_back(phtentry);
+		for(uint32_t index = 0; index < pht[set].size(); ++index) pht[set][index]->age = 0;
+		pht[set].push_back(phtentry);
 	}
 }
 
-deque<PHTEntry*>::iterator SMSPrefetcher::search_pht(uint64_t signature)
+deque<PHTEntry*>::iterator SMSPrefetcher::search_pht(uint64_t signature, int32_t *set)
 {
-	return find_if(pht.begin(), pht.end(), [signature](PHTEntry *phtentry){return (phtentry->signature == signature);});	
+	(*set) = signature % pht_sets;
+	return find_if(pht[(*set)].begin(), pht[(*set)].end(), [signature](PHTEntry *phtentry){return (phtentry->signature == signature);});	
 }
 
-deque<PHTEntry*>::iterator SMSPrefetcher::search_victim_pht()
+deque<PHTEntry*>::iterator SMSPrefetcher::search_victim_pht(int32_t set)
 {
 	uint32_t max_age = 0;
 	deque<PHTEntry*>::iterator it, victim;
-	for(it = pht.begin(); it != pht.end(); ++it)
+	for(it = pht[set].begin(); it != pht[set].end(); ++it)
 	{
 		if((*it)->age >= max_age)
 		{
@@ -265,20 +275,20 @@ deque<PHTEntry*>::iterator SMSPrefetcher::search_victim_pht()
 	return victim;
 }
 
-void SMSPrefetcher::update_age_pht(deque<PHTEntry*>::iterator current)
+void SMSPrefetcher::update_age_pht(int32_t set, deque<PHTEntry*>::iterator current)
 {
-	for(auto it = pht.begin(); it != pht.end(); ++it)
+	for(auto it = pht[set].begin(); it != pht[set].end(); ++it)
 	{
 		(*it)->age++;
 	}
 	(*current)->age = 0;
 }
 
-void SMSPrefetcher::evcit_pht(deque<PHTEntry*>::iterator victim)
+void SMSPrefetcher::evcit_pht(int32_t set, deque<PHTEntry*>::iterator victim)
 {
 	stats.pht.evict++;
 	PHTEntry *phtentry = (*victim);
-	pht.erase(victim);
+	pht[set].erase(victim);
 	delete phtentry;
 }
 
@@ -294,8 +304,10 @@ int SMSPrefetcher::generate_prefetch(uint64_t pc, uint64_t address, uint64_t pag
 {
 	stats.generate_prefetch.called++;
 	uint64_t signature = create_signature(pc, offset);
-	auto pht_index = search_pht(signature);
-	if(pht_index == pht.end())
+	int32_t set = -1;
+	auto pht_index = search_pht(signature, &set);
+	assert(set != -1);
+	if(pht_index == pht[set].end())
 	{
 		stats.generate_prefetch.pht_miss++;
 		return 0;
@@ -310,7 +322,7 @@ int SMSPrefetcher::generate_prefetch(uint64_t pc, uint64_t address, uint64_t pag
 			pref_addr.push_back(addr);
 		}
 	}
-	update_age_pht(pht_index);
+	update_age_pht(set, pht_index);
 	stats.generate_prefetch.pref_generated += pref_addr.size();
 	return pref_addr.size();
 }
