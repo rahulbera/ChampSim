@@ -17,7 +17,7 @@ libDir =
 #************************ DO NOT EDIT BELOW THIS LINE! ************************
 
 ifeq ($(debug),1)
-	debug=-g -DLE_TRACE
+	debug=-g
 else
 	debug=
 endif

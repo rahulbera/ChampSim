@@ -13,7 +13,8 @@ private:
 	vector<uint32_t> scores;
 	deque<uint64_t> pref_buffer;
 
-	uint32_t curr_round;
+	uint32_t round_counter;
+	uint32_t candidate_ptr;
 	vector<int32_t> best_offsets;
 
 	struct

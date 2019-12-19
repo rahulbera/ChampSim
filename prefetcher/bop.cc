@@ -30,6 +30,8 @@ BOPrefetcher::BOPrefetcher(string type) : Prefetcher(type)
 	init_knobs();
 	init_stats();
 
+	round_counter = 0;
+	candidate_ptr = 0;
 	scores.resize(knob::bop_candidates.size(), 0);
 	best_offsets.push_back(1); // for initial prefetches
 }
@@ -53,6 +55,7 @@ void BOPrefetcher::print_config()
 	{
 		cout << knob::bop_candidates[index] << ",";
 	}
+	cout << endl << endl;
 }
 
 void BOPrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
@@ -62,11 +65,14 @@ void BOPrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cach
 	uint64_t ca_address = (address >> LOG2_BLOCK_SIZE);
 
 	/* Evaluate a candidate offset */
-	int32_t offset_to_evaluate = knob::bop_candidates[curr_round++];
+	int32_t offset_to_evaluate = knob::bop_candidates[candidate_ptr];
 	if(search_rr(ca_address - offset_to_evaluate))
 	{
-		scores[offset_to_evaluate]++;
+		scores[candidate_ptr]++;
 	}
+	candidate_ptr++;
+       	candidate_ptr = candidate_ptr % knob::bop_candidates.size();
+	round_counter++;
 
 	/* check for end of phase */
 	if(check_end_of_phase())
@@ -97,7 +103,7 @@ void BOPrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cach
 
 bool BOPrefetcher::check_end_of_phase()
 {
-	if(curr_round == knob::bop_max_rounds)
+	if(round_counter >= knob::bop_max_rounds)
 	{
 		stats.end_phase.max_round++;
 		return true;
@@ -143,7 +149,8 @@ void BOPrefetcher::phase_end()
 	
 	scores.clear();
 	scores.resize(knob::bop_candidates.size(), 0);
-	curr_round = 0;
+	round_counter = 0;
+	candidate_ptr = 0;
 }
 
 bool BOPrefetcher::search_rr(uint64_t address)
