@@ -59,6 +59,16 @@ namespace knob
 	uint32_t spp_signature_bits = 12;
 	uint32_t spp_alpha_epoch = 1024;
 
+	/* BOP */
+	vector<int32_t> bop_candidates;
+	uint32_t bop_max_rounds = 100;
+	uint32_t bop_max_score = 31;
+	uint32_t bop_top_n = 1;
+	bool     bop_enable_pref_buffer = false;
+	uint32_t bop_pref_buffer_size = 256;
+	uint32_t bop_pref_degree = 4;
+	uint32_t bop_rr_size = 256;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -318,6 +328,40 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "spp_alpha_epoch"))
 	{
 		knob::spp_alpha_epoch = atoi(value);
+	}
+
+	/* BOP */
+	else if (MATCH("", "bop_candidates"))
+	{
+		knob::bop_candidates = get_array_int(value);
+	}
+	else if (MATCH("", "bop_max_rounds"))
+	{
+		knob::bop_max_rounds = atoi(value);
+	}
+	else if (MATCH("", "bop_max_score"))
+	{
+		knob::bop_max_score = atoi(value);
+	}
+	else if (MATCH("", "bop_top_n"))
+	{
+		knob::bop_top_n = atoi(value);
+	}
+	else if (MATCH("", "bop_enable_pref_buffer"))
+	{
+		knob::bop_enable_pref_buffer = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "bop_pref_buffer_size"))
+	{
+		knob::bop_pref_buffer_size = atoi(value);
+	}
+	else if (MATCH("", "bop_pref_degree"))
+	{
+		knob::bop_pref_degree = atoi(value);
+	}
+	else if (MATCH("", "bop_rr_size"))
+	{
+		knob::bop_rr_size = atoi(value);
 	}
 
 	/* Scooby */
