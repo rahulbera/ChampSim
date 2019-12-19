@@ -126,10 +126,10 @@ void print_access_debug(Scooby_STEntry *stentry)
 															BitmapHelper::count_bits_set(stentry->pattern));
 	for (const uint64_t& pc: stentry->unique_pcs)
 	{
-		fprintf(stdout, "%x,", pc);
+		fprintf(stdout, "%lx,", pc);
 	}
 	fprintf(stdout, "|");
-	for (const uint64_t& delta: stentry->unique_deltas)
+	for (const int32_t& delta: stentry->unique_deltas)
 	{
 		fprintf(stdout, "%d,", delta);
 	}
