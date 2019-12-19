@@ -16,6 +16,7 @@ public:
 	deque<int32_t> deltas;
 	Bitmap pattern;
 	unordered_set <uint64_t> unique_pcs;
+	unordered_set <int32_t> unique_deltas;
 
 public:
 	Scooby_STEntry(uint64_t p, uint64_t pc, uint32_t offset) : page(p)
@@ -25,6 +26,7 @@ public:
 		deltas.clear();
 		pattern.reset();
 		unique_pcs.clear();
+		unique_deltas.clear();
 
 		pcs.push_back(pc);
 		offsets.push_back(offset);
