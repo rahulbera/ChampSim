@@ -6,6 +6,7 @@
 #include "prefetcher.h"
 #include "scooby_helper.h"
 #include "learning_engine.h"
+#include "shaggy.h"
 
 using namespace std;
 
@@ -86,6 +87,7 @@ private:
 	LearningEngine *brain;
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
+	Shaggy *shaggy;
 
 	/* for workload insights only
 	 * has nothing to do with prefetching */
@@ -110,6 +112,7 @@ private:
 			vector<uint64_t> pred_hit;
 			vector<uint64_t> out_of_bounds_dist;
 			uint64_t predicted;
+			uint64_t shaggy_called;
 		} predict;
 
 		struct

@@ -98,6 +98,7 @@ namespace knob
 	bool     scooby_enable_state_action_stats;
 	bool     scooby_enable_reward_tracker_hit;
 	int32_t  scooby_reward_tracker_hit;
+	bool     scooby_enable_shaggy;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -111,6 +112,14 @@ namespace knob
 	uint32_t le_action_trace_interval;
 	std::string le_action_trace_name;
 	bool     le_enable_action_plot;
+
+	/* Shaggy */
+	uint32_t shaggy_pb_size;
+	uint32_t shaggy_st_size;
+	uint32_t shaggy_degree;
+	uint32_t shaggy_sig_length;
+	uint32_t shaggy_sig_type;
+	uint32_t shaggy_page_access_threshold;
 }
 
 char config_file_name[MAX_LEN];
@@ -474,6 +483,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_reward_tracker_hit = atoi(value);
 	}
+	else if (MATCH("", "scooby_enable_shaggy"))
+	{
+		knob::scooby_enable_shaggy = !strcmp(value, "true") ? true : false;
+	}
 
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
@@ -520,6 +533,33 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::le_enable_action_plot = !strcmp(value, "true") ? true : false;
 	}
+
+	/* Shaggy knobs */
+	else if (MATCH("", "shaggy_pb_size"))
+	{
+		knob::shaggy_pb_size = atoi(value);
+	}
+	else if (MATCH("", "shaggy_st_size"))
+	{
+		knob::shaggy_st_size = atoi(value);
+	}
+	else if (MATCH("", "shaggy_degree"))
+	{
+		knob::shaggy_degree = atoi(value);
+	}
+	else if (MATCH("", "shaggy_sig_length"))
+	{
+		knob::shaggy_sig_length = atoi(value);
+	}
+	else if (MATCH("", "shaggy_sig_type"))
+	{
+		knob::shaggy_sig_type = atoi(value);
+	}
+	else if (MATCH("", "shaggy_page_access_threshold"))
+	{
+		knob::shaggy_page_access_threshold = atoi(value);
+	}
+
     else 
     {
     	printf("unable to parse section: %s, name: %s, value: %s\n", section, name, value);

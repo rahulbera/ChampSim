@@ -51,6 +51,7 @@ namespace knob
 	extern bool     scooby_enable_state_action_stats;
 	extern bool     scooby_enable_reward_tracker_hit;
 	extern int32_t  scooby_reward_tracker_hit;
+	extern bool     scooby_enable_shaggy;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -137,7 +138,12 @@ Scooby::Scooby(string type) : Prefetcher(type)
 								knob::scooby_policy,
 								knob::scooby_learning_type,
 								knob::scooby_brain_zero_init);
-	printf("*****WARNING: only modulo hash of PC is implemented*****\n");
+
+	/* init Shaggy */
+	if(knob::scooby_enable_shaggy)
+	{
+		shaggy = new Shaggy();	
+	}
 }
 
 Scooby::~Scooby()
@@ -180,6 +186,7 @@ void Scooby::print_config()
 		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
 		<< "scooby_reward_tracker_hit " << knob::scooby_reward_tracker_hit << endl
+		<< "scooby_enable_shaggy " << knob::scooby_enable_shaggy << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -198,6 +205,11 @@ void Scooby::print_config()
 		<< "le_action_trace_name " << knob::le_action_trace_name << endl
 		<< "le_enable_action_plot " << knob::le_enable_action_plot << endl
 		<< endl;
+
+	if(knob::scooby_enable_shaggy)
+	{
+		shaggy->print_config();
+	}
 }
 
 void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
@@ -232,8 +244,17 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->local_delta_sig = stentry->get_delta_sig();
 	state->local_pc_sig = stentry->get_pc_sig();
 
-	/* predict */
-	predict(address, page, offset, state, pref_addr);
+	/* Shaggy only predicts for streaming accesses */
+	if(knob::scooby_enable_shaggy && stentry->streaming)
+	{
+		stats.predict.shaggy_called++;
+		shaggy->predict(page, offset, pref_addr);
+	}
+	else
+	{
+		/* if not streaming, let the agent predict */
+		predict(address, page, offset, state, pref_addr);
+	}
 }
 
 void Scooby::update_global_state(uint64_t pc, uint64_t page, uint32_t offset, uint64_t address)
@@ -266,12 +287,20 @@ Scooby_STEntry* Scooby::update_local_state(uint64_t pc, uint64_t page, uint32_t 
 			{
 				print_access_debug(stentry);
 			}
+			if(knob::scooby_enable_shaggy)
+			{
+				shaggy->record_signature(stentry);
+			}
 			delete stentry;
 		}
 
 		stats.st.insert++;
 		stentry = new Scooby_STEntry(page, pc, offset);
 		recorder->record_trigger_access(page, pc, offset);
+		if(knob::scooby_enable_shaggy)
+		{
+			stentry->streaming = shaggy->lookup_signature(pc, page, offset);
+		}
 		signature_table.push_back(stentry);
 		return stentry;
 	}
@@ -630,6 +659,7 @@ void Scooby::dump_stats()
 		<< endl
 		
 		<< "scooby_predict_called " << stats.predict.called << endl
+		<< "scooby_predict_shaggy_called " << stats.predict.shaggy_called << endl
 		<< "scooby_predict_out_of_bounds " << stats.predict.out_of_bounds << endl;
 
 	for(uint32_t index = 0; index < Actions.size(); ++index)
@@ -704,4 +734,9 @@ void Scooby::dump_stats()
 
 	brain->dump_stats();
 	recorder->dump_stats();
+
+	if(knob::scooby_enable_shaggy)
+	{
+		shaggy->dump_stats();
+	}
 }

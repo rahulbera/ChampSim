@@ -17,6 +17,9 @@ public:
 	Bitmap pattern;
 	unordered_set <uint64_t> unique_pcs;
 	unordered_set <int32_t> unique_deltas;
+	uint64_t trigger_pc;
+	uint32_t trigger_offset;
+	bool streaming;
 
 public:
 	Scooby_STEntry(uint64_t p, uint64_t pc, uint32_t offset) : page(p)
@@ -27,6 +30,9 @@ public:
 		pattern.reset();
 		unique_pcs.clear();
 		unique_deltas.clear();
+		trigger_pc = pc;
+		trigger_offset = offset;
+		streaming = false;
 
 		pcs.push_back(pc);
 		offsets.push_back(offset);
