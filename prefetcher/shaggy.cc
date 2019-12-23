@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <algorithm>
 #include "shaggy.h"
 #include "champsim.h"
 
