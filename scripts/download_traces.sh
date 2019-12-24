@@ -1,8 +1,7 @@
 #!/bin/bash
 
-mkdir -p $PWD/../traces
 i=0
 while read LINE
 do
-    wget -P $PWD/../traces -c http://hpca23.cse.tamu.edu/champsim-traces/speccpu/$LINE
-done < dpc3_selected.txt
+    echo "axel -n 16 -a http://hpca23.cse.tamu.edu/champsim-traces/speccpu/$LINE"
+done < selected

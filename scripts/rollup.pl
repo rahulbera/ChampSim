@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib '/mnt/panzer/rahbera/sniper/tools';
+use lib '/home/write2bera_gmail_com/ChampSim/scripts';
 use warnings;
 use Getopt::Long;
 use Trace;
@@ -10,7 +10,7 @@ use Statistics::Descriptive;
 use Data::Dumper;
 
 # defaults
-my $CHAMPSIM_ROOT="/mnt/panzer/rahbera/ChampSim";
+my $CHAMPSIM_ROOT="/home/write2bera_gmail_com/ChampSim";
 my $tlist_file = "tlist";
 my $exp_file = "exp";
 my $mfile = "mfile";

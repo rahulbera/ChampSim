@@ -24,6 +24,7 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 		this->pcs.pop_front();
 	}
 	this->pcs.push_back(pc);
+	this->unique_pcs.insert(pc);
 
 	/* insert deltas */
 	if(!this->offsets.empty())
@@ -33,7 +34,8 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 		{
 			this->deltas.pop_front();
 		}
-		this->deltas.push_back(delta);		
+		this->deltas.push_back(delta);
+		this->unique_deltas.insert(delta);
 	}
 
 	/* insert offset */
@@ -45,8 +47,6 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 
 	/* update pattern */
 	this->pattern[offset] = 1;
-
-	unique_pcs.insert(pc);
 }
 
 uint32_t Scooby_STEntry::get_delta_sig()
@@ -111,7 +111,27 @@ void ScoobyRecorder::dump_stats()
 void print_access_debug(Scooby_STEntry *stentry)
 {
 	uint64_t trigger_pc = stentry->pcs.front();
+	/*some streaming PC of 432.milc-274B*/
+	// if(trigger_pc != 0x40e7b8 && trigger_pc != 0x40e7ad) 
+	// {
+	// 	return;
+	// }
 	uint32_t trigger_offset = stentry->offsets.front();
 	uint32_t unique_pc_count = stentry->unique_pcs.size();
-	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%u\n", stentry->page, trigger_pc, trigger_offset, unique_pc_count, BitmapHelper::to_string(stentry->pattern).c_str(), BitmapHelper::count_bits_set(stentry->pattern));
+	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%2u|", stentry->page, 
+															trigger_pc, 
+															trigger_offset, 
+															unique_pc_count, 
+															BitmapHelper::to_string(stentry->pattern).c_str(), 
+															BitmapHelper::count_bits_set(stentry->pattern));
+	for (const uint64_t& pc: stentry->unique_pcs)
+	{
+		fprintf(stdout, "%lx,", pc);
+	}
+	fprintf(stdout, "|");
+	for (const int32_t& delta: stentry->unique_deltas)
+	{
+		fprintf(stdout, "%d,", delta);
+	}
+	fprintf(stdout, "\n");
 }
