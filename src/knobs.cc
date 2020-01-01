@@ -73,6 +73,7 @@ namespace knob
 	float    scooby_alpha;
 	float    scooby_gamma;
 	float    scooby_epsilon;
+	uint32_t scooby_state_num_bits;
 	uint32_t scooby_max_states;
 	uint32_t scooby_seed;
 	string   scooby_policy;
@@ -386,9 +387,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_epsilon = atof(value);
 	}
-	else if (MATCH("", "scooby_max_states"))
+	else if (MATCH("", "scooby_state_num_bits"))
 	{
-		knob::scooby_max_states = atoi(value);
+		knob::scooby_state_num_bits = atoi(value);
+		knob::scooby_max_states = pow(2.0, knob::scooby_state_num_bits);
 	}
 	else if (MATCH("", "scooby_seed"))
 	{

@@ -26,6 +26,7 @@ namespace knob
 	extern float    scooby_alpha;
 	extern float    scooby_gamma;
 	extern float    scooby_epsilon;
+	extern uint32_t scooby_state_num_bits;
 	extern uint32_t scooby_max_states;
 	extern uint32_t scooby_seed;
 	extern string   scooby_policy;
@@ -156,6 +157,7 @@ void Scooby::print_config()
 	cout << "scooby_alpha " << knob::scooby_alpha << endl
 		<< "scooby_gamma " << knob::scooby_gamma << endl
 		<< "scooby_epsilon " << knob::scooby_epsilon << endl
+		<< "scooby_state_num_bits " << knob::scooby_state_num_bits << endl
 		<< "scooby_max_states " << knob::scooby_max_states << endl
 		<< "scooby_seed " << knob::scooby_seed << endl
 		<< "scooby_policy " << knob::scooby_policy << endl
