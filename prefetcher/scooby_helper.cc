@@ -147,12 +147,14 @@ uint32_t ScoobyHash::jenkins(uint32_t key)
     key ^= (key >> 2);
     key += (key << 7);
     key ^= (key >> 12);
+    return key;
 }
 
 uint32_t ScoobyHash::knuth(uint32_t key)
 {
     // Knuth's multiplicative method
     key = (key >> 3) * 2654435761;
+    return key;
 }
 
 uint32_t ScoobyHash::murmur3(uint32_t key)
@@ -274,5 +276,5 @@ uint32_t ScoobyHash::Wang3shift( uint32_t key)
 
 uint32_t ScoobyHash::hybrid1(uint32_t key)
 {
-	knuth(jenkins(key));
+	return knuth(jenkins(key));
 }
