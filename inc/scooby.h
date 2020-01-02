@@ -53,7 +53,8 @@ public:
 	}
 	State(){reset();}
 	~State(){}
-	uint32_t value(); /* apply as many hash as you want */
+	uint32_t value(); /* apply as many state types as you want */
+	uint32_t get_hash(uint64_t value); /* play wild with hashes */
 };
 
 class Scooby_PTEntry

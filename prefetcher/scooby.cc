@@ -53,6 +53,7 @@ namespace knob
 	extern bool     scooby_enable_reward_tracker_hit;
 	extern int32_t  scooby_reward_tracker_hit;
 	extern bool     scooby_enable_shaggy;
+	extern uint32_t scooby_state_hash_type;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -70,37 +71,134 @@ namespace knob
 
 uint32_t State::value()
 {
-	uint32_t value = 0;
+	uint64_t value = 0;
 	switch(knob::scooby_state_type)
 	{
 		case 1: /* Only PC */
-			return (uint32_t)(pc % knob::scooby_max_states);
+			// return (uint32_t)(pc % knob::scooby_max_states);
+			value = pc;
+			break;
 
 		case 2: /* PC+ offset */
 			value = pc;
 			value = value << 6;
 			value = value + offset;
-			value = value % knob::scooby_max_states;
-			return value;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
 
 		case 3: /* Only offset */
 			value = offset;
-			value = value % knob::scooby_max_states;
-			return value;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
 
 		case 4: /* SPP like delta-path signature */
 			value = local_delta_sig;
-			value = value % knob::scooby_max_states;
-			return value;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
 
 		case 5: /* SPP like path signature, but made with shifted PC */
 			value = local_pc_sig;
-			value = value % knob::scooby_max_states;
-			return value;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
 
 		default:
 			assert(false);
 	}
+
+	uint32_t hashed_value = get_hash(value);
+	assert(hashed_value < knob::scooby_max_states);
+
+	return hashed_value;
+}
+
+uint32_t State::get_hash(uint64_t key)
+{
+	uint32_t value = 0;
+	switch(knob::scooby_state_hash_type)
+	{
+		case 1: /* simple modulo */
+			value = (uint32_t)(key % knob::scooby_max_states);
+			break;
+
+		case 2:
+			value = ScoobyHash::jenkins((uint32_t)key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+
+		case 3:
+			value = ScoobyHash::knuth((uint32_t)key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+
+		case 4:
+			value = ScoobyHash::murmur3(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 5:
+			value = ScoobyHash::jenkins32(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 6:
+			value = ScoobyHash::hash32shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 7:
+			value = ScoobyHash::hash32shiftmult(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 8:
+			value = ScoobyHash::hash64shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 9:
+			value = ScoobyHash::hash5shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 10:
+			value = ScoobyHash::hash7shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 11:
+			value = ScoobyHash::Wang6shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 12:
+			value = ScoobyHash::Wang5shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 13:
+			value = ScoobyHash::Wang4shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 14:
+			value = ScoobyHash::Wang3shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+	
+		case 15:
+			value = ScoobyHash::hybrid1((uint32_t)key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+
+		default:
+			assert(false);
+	}
+
+	return value;
 }
 
 void Scooby::init_knobs()
@@ -184,6 +282,7 @@ void Scooby::print_config()
 		<< "scooby_enable_reward_out_of_bounds " << knob::scooby_enable_reward_out_of_bounds << endl
 		<< "scooby_reward_out_of_bounds " << knob::scooby_reward_out_of_bounds << endl
 		<< "scooby_state_type " << knob::scooby_state_type << endl
+		<< "scooby_state_hash_type " << knob::scooby_state_hash_type << endl
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
 		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
