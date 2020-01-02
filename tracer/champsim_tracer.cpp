@@ -11,6 +11,8 @@
 #include <string.h>
 #include <string>
 
+using namespace std;
+
 #define NUM_INSTR_DESTINATIONS 2
 #define NUM_INSTR_SOURCES 4
 
