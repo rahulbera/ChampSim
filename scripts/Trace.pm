@@ -17,7 +17,10 @@ sub parse
 	{
 		if($elem ne "")
 		{
-			my ($key, $value) = split(/=/, $elem);
+			my $idx = index($elem, "=");
+			my $key = substr($elem, 0, $idx);
+			my $value = substr($elem, $idx+1);
+			# my ($key, $value) = split(/=/, $elem);
 			if($key eq "NAME")
 			{
 				if(defined $rec)
