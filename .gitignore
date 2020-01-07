@@ -6,3 +6,4 @@ obj/
 runs/
 tags
 *.out
+traces/
