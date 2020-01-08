@@ -122,9 +122,11 @@ namespace knob
 	uint32_t shaggy_sig_length;
 	uint32_t shaggy_sig_type;
 	uint32_t shaggy_page_access_threshold;
-}
 
-char config_file_name[MAX_LEN];
+	/* Velma */
+	vector<string> velma_candidate_prefetchers;
+	uint32_t velma_pref_selection_type;
+}
 
 void parse_args(int argc, char *argv[])
 {
@@ -145,6 +147,8 @@ void parse_args(int argc, char *argv[])
 
 int handler(void* user, const char* section, const char* name, const char* value)
 {
+	char config_file_name[MAX_LEN];
+
 	if(MATCH("", "config"))
 	{
 		strcpy(config_file_name, value);
@@ -169,7 +173,14 @@ void parse_config(char *config_file_name)
 
 int parse_knobs(void* user, const char* section, const char* name, const char* value)
 {
-    if (MATCH("", "warmup_instructions"))
+	char config_file_name[MAX_LEN];
+
+	if(MATCH("", "config"))
+	{
+		strcpy(config_file_name, value);
+		parse_config(config_file_name);
+	}
+    else if (MATCH("", "warmup_instructions"))
     {
 		knob::warmup_instructions = atol(value);
     }
@@ -565,6 +576,16 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "shaggy_page_access_threshold"))
 	{
 		knob::shaggy_page_access_threshold = atoi(value);
+	}
+
+	/* Velma */
+	else if (MATCH("", "velma_candidate_prefetchers"))
+	{
+		knob::velma_candidate_prefetchers.push_back(string(value));
+	}
+	else if (MATCH("", "velma_pref_selection_type"))
+	{
+		knob::velma_pref_selection_type = atoi(value);
 	}
 
     else 

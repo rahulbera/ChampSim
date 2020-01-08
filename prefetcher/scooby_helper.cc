@@ -45,8 +45,8 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 	}
 	this->offsets.push_back(offset);
 
-	/* update pattern */
-	this->pattern[offset] = 1;
+	/* update demanded pattern */
+	this->bmp_real[offset] = 1;
 }
 
 uint32_t Scooby_STEntry::get_delta_sig()
@@ -89,6 +89,15 @@ uint32_t Scooby_STEntry::get_pc_sig()
 	return signature;
 }
 
+void Scooby_STEntry::track_prefetch(uint32_t pred_offset)
+{
+	if(!bmp_pred[pred_offset])
+	{
+		bmp_pred[pred_offset] = 1;
+		total_prefetches++;
+	}
+}
+
 void ScoobyRecorder::record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset)
 {
 	unique_pcs.insert(pc);
@@ -118,12 +127,19 @@ void print_access_debug(Scooby_STEntry *stentry)
 	// }
 	uint32_t trigger_offset = stentry->offsets.front();
 	uint32_t unique_pc_count = stentry->unique_pcs.size();
-	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%2u|", stentry->page, 
-															trigger_pc, 
-															trigger_offset, 
-															unique_pc_count, 
-															BitmapHelper::to_string(stentry->pattern).c_str(), 
-															BitmapHelper::count_bits_set(stentry->pattern));
+	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%64s|%2u|%2u|%2u|%2u|%2u|", 
+		stentry->page, 
+		trigger_pc, 
+		trigger_offset, 
+		unique_pc_count, 
+		BitmapHelper::to_string(stentry->bmp_real).c_str(), 
+		BitmapHelper::to_string(stentry->bmp_pred).c_str(), 
+		BitmapHelper::count_bits_set(stentry->bmp_real),
+		BitmapHelper::count_bits_set(stentry->bmp_pred),
+		BitmapHelper::count_bits_same(stentry->bmp_real, stentry->bmp_pred), /* covered */
+		BitmapHelper::count_bits_diff(stentry->bmp_real, stentry->bmp_pred), /* uncovered */
+		BitmapHelper::count_bits_diff(stentry->bmp_pred, stentry->bmp_real)  /* over prediction */
+	);
 	for (const uint64_t& pc: stentry->unique_pcs)
 	{
 		fprintf(stdout, "%lx,", pc);

@@ -7,6 +7,7 @@
 #include "scooby.h"
 #include "next_line.h"
 #include "bop.h"
+#include "velma.h"
 
 using namespace std;
 
@@ -54,6 +55,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: next_line" << endl;
 			NextLinePrefetcher *pref_nl = new NextLinePrefetcher(knob::l2c_prefetcher_types[index]);
 			prefetchers.push_back(pref_nl);
+		}
+		else if(!knob::l2c_prefetcher_types[index].compare("velma"))
+		{
+			cout << "adding L2C_PREFETCHER: Velma" << endl;
+			Velma *pref_velma = new Velma(knob::l2c_prefetcher_types[index]);
+			prefetchers.push_back(pref_velma);
 		}
 		else
 		{
@@ -105,6 +112,11 @@ uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t 
 				BOPrefetcher *pref_bop = (BOPrefetcher*)prefetchers[index];
 				pref_bop->register_fill(addr);
 			}
+			if(!prefetchers[index]->get_type().compare("velma"))
+			{
+				Velma *pref_velma = (Velma*)prefetchers[index];
+				pref_velma->register_fill(addr);
+			}
 		}
 	}
 
@@ -119,6 +131,11 @@ uint32_t CACHE::l2c_prefetcher_prefetch_hit(uint64_t addr, uint64_t ip, uint32_t
 		{
 			Scooby *pref_scooby = (Scooby*)prefetchers[index];
 			pref_scooby->register_prefetch_hit(addr);
+		}
+		if(!prefetchers[index]->get_type().compare("velma"))
+		{
+			Velma *pref_velma = (Velma*)prefetchers[index];
+			pref_velma->register_prefetch_hit(addr);
 		}
 	}
 	

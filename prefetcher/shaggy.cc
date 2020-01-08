@@ -87,7 +87,7 @@ Shaggy_PBEntry* Shaggy::search_pb(uint64_t page)
 void Shaggy::record_signature(Scooby_STEntry *stentry)
 {
 	stats.record_signature.called++;
-	if (BitmapHelper::count_bits_set(stentry->pattern) < knob::shaggy_page_access_threshold)
+	if (BitmapHelper::count_bits_set(stentry->bmp_real) < knob::shaggy_page_access_threshold)
 	{
 		stats.record_signature.cond_not_met++;
 		return;

@@ -441,6 +441,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 			if(new_addr)
 			{
 				pref_addr.push_back(addr);
+				track_in_st(page, predicted_offset); /* will be used for debugging */
 				stats.predict.issue_dist[action_index]++;
 			}
 			else
@@ -749,6 +750,15 @@ int32_t Scooby::getAction(uint32_t action_index)
 {
 	assert(action_index < Actions.size());
 	return Actions[action_index];
+}
+
+void Scooby::track_in_st(uint64_t page, uint32_t pred_offset)
+{
+	auto st_index = find_if(signature_table.begin(), signature_table.end(), [page](Scooby_STEntry *stentry){return stentry->page == page;});
+	if(st_index != signature_table.end())
+	{
+		(*st_index)->track_prefetch(pred_offset);
+	}
 }
 
 void Scooby::dump_stats()

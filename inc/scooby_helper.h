@@ -14,12 +14,15 @@ public:
 	deque<uint64_t> pcs;
 	deque<uint32_t> offsets;
 	deque<int32_t> deltas;
-	Bitmap pattern;
+	Bitmap bmp_real;
+	Bitmap bmp_pred;
 	unordered_set <uint64_t> unique_pcs;
 	unordered_set <int32_t> unique_deltas;
 	uint64_t trigger_pc;
 	uint32_t trigger_offset;
 	bool streaming;
+
+	uint32_t total_prefetches;
 
 public:
 	Scooby_STEntry(uint64_t p, uint64_t pc, uint32_t offset) : page(p)
@@ -27,7 +30,7 @@ public:
 		pcs.clear();
 		offsets.clear();
 		deltas.clear();
-		pattern.reset();
+		bmp_real.reset();
 		unique_pcs.clear();
 		unique_deltas.clear();
 		trigger_pc = pc;
@@ -37,12 +40,13 @@ public:
 		pcs.push_back(pc);
 		offsets.push_back(offset);
 		unique_pcs.insert(pc);
-		pattern[offset] = 1;
+		bmp_real[offset] = 1;
 	}
 	~Scooby_STEntry(){}
 	uint32_t get_delta_sig();
 	uint32_t get_pc_sig();
 	void update(uint64_t page, uint64_t pc, uint32_t offset, uint64_t address);
+	void track_prefetch(uint32_t offset);
 };
 
 /* some data structures to mine information from workloads */

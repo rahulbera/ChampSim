@@ -191,6 +191,7 @@ private:
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
 	void update_stats(uint32_t state, uint32_t action_index);
+	void track_in_st(uint64_t page, uint32_t pred_offset);
 
 public:
 	Scooby(string type);
