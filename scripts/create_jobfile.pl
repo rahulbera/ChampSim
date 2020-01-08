@@ -1,19 +1,19 @@
 #!/usr/bin/perl
 
-use lib '/home/write2bera_gmail_com/ChampSim/scripts';
+use lib '/mnt/panzer/rahbera/ChampSim/scripts';
 use warnings;
 use Getopt::Long;
 use Trace;
 use Exp;
 
 # defaults
-my $CHAMPSIM_ROOT="/home/write2bera_gmail_com/ChampSim";
+my $CHAMPSIM_ROOT="/mnt/panzer/rahbera/ChampSim";
 my $tlist_file = "tlist";
 my $exp_file = "exp";
 my $exe;
 my $local = "0";
 my $ncores = 1;
-my $slurm_partition = "debug";
+my $slurm_partition = "slurm_part";
 
 GetOptions('tlist=s' => \$tlist_file,
 	   'exp=s' => \$exp_file,
