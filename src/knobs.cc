@@ -126,6 +126,15 @@ namespace knob
 	/* Velma */
 	vector<string> velma_candidate_prefetchers;
 	uint32_t velma_pref_selection_type;
+	double   velma_alpha;
+	double   velma_gamma;
+	double   velma_epsilon;
+	uint32_t velma_max_actions = 0;
+	uint32_t velma_max_states;
+	uint32_t velma_seed;
+	string	 velma_policy;
+	string	 velma_learning_type;
+	bool	 velma_brain_zero_init;
 }
 
 void parse_args(int argc, char *argv[])
@@ -582,10 +591,43 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "velma_candidate_prefetchers"))
 	{
 		knob::velma_candidate_prefetchers.push_back(string(value));
+		knob::velma_max_actions++;
 	}
 	else if (MATCH("", "velma_pref_selection_type"))
 	{
 		knob::velma_pref_selection_type = atoi(value);
+	}
+	else if (MATCH("", "velma_alpha"))
+	{
+		knob::velma_alpha = atof(value);
+	}
+	else if (MATCH("", "velma_gamma"))
+	{
+		knob::velma_gamma = atof(value);
+	}
+	else if (MATCH("", "velma_epsilon"))
+	{
+		knob::velma_epsilon = atof(value);
+	}
+	else if (MATCH("", "velma_max_states"))
+	{
+		knob::velma_max_states = atoi(value);
+	}
+	else if (MATCH("", "velma_seed"))
+	{
+		knob::velma_seed = atoi(value);
+	}
+	else if (MATCH("", "velma_policy"))
+	{
+		knob::velma_policy = string(value);
+	}
+	else if (MATCH("", "velma_learning_type"))
+	{
+		knob::velma_learning_type = string(value);
+	}
+	else if (MATCH("", "velma_brain_zero_init"))
+	{
+		knob::velma_brain_zero_init = !strcmp(value, "true") ? true : false;
 	}
 
     else 

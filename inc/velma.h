@@ -2,6 +2,7 @@
 #define VELMA_H
 
 #include <vector>
+#include <unordered_set>
 #include "prefetcher.h"
 #include "learning_engine.h"
 
@@ -13,6 +14,7 @@ class Velma : public Prefetcher
 {
 private:
 	vector<Prefetcher*> m_prefetchers;
+	LearningEngine *brain;
 
 	/* staistics */
 	struct
@@ -34,7 +36,8 @@ private:
 private:
 	void init_knobs();
 	void init_stats();
-	void select_prefetch(vector<vector<uint64_t> > pref_candidates, vector<uint64_t> &pref_addr);
+	unordered_set<uint32_t> select_prefetchers();
+	void populate_prefetch_list(vector<vector<uint64_t> > pref_candidates, unordered_set<uint32_t> selected_pref_list, vector<uint64_t> &pref_addr);
 
 public:
 	Velma(string type);
@@ -44,6 +47,7 @@ public:
 	void register_prefetch_hit(uint64_t address);
 	void dump_stats();
 	void print_config();
+	int32_t getAction(uint32_t action_index);
 };
 
 

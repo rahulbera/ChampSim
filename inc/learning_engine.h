@@ -3,7 +3,7 @@
 
 #include <random>
 #include <string.h>
-#include "scooby.h"
+#include "prefetcher.h"
 
 #define MAX_ACTIONS 64
 
@@ -21,9 +21,6 @@ state 1 |
 		|                             
 state m |
 */
-
-/* forward declaration */
-class Scooby;
 
 enum Policy
 {
@@ -44,7 +41,7 @@ const char* MapLearningTypeString(LearningType type);
 class LearningEngine
 {
 private:
-	Scooby *m_parent;
+	Prefetcher *m_parent;
 	float m_alpha;
 	float m_gamma;
 	float m_epsilon;
@@ -97,7 +94,7 @@ private:
 	void dump_action_trace(uint32_t action);
 
 public:
-	LearningEngine(Scooby *s, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
+	LearningEngine(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
 	~LearningEngine();
 
 	inline void setAlpha(float alpha){m_alpha = alpha;}
