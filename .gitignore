@@ -7,3 +7,4 @@ runs/
 tags
 *.out
 traces/
+tracer/obj-intel64/
