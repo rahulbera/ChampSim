@@ -356,10 +356,10 @@ void Velma::train(VelmaPTEntry *curr_evicted_tracker, VelmaPTEntry *last_evicted
 	MYLOG("train done");
 }
 
+/* this reward function is called after seeing a demand access */
 void Velma::reward(uint64_t address)
 {
 	stats.reward.demand.called++;
-	/* this reward function is called after seeing a demand access */
 	auto pt_index = find_if(prefetch_tracker.begin(), prefetch_tracker.end(), [address](VelmaPTEntry *ptentry){return (ptentry->address == address);});
 	if(pt_index != prefetch_tracker.end())
 	{
@@ -371,6 +371,7 @@ void Velma::reward(uint64_t address)
 			ptentry->reward = knob::velma_reward_accurate;
 			ptentry->has_reward = true;
 			stats.reward.dist[VelmaRewardType::Accurate]++;
+			stats.reward.action_reward_dist[ptentry->action_index][VelmaRewardType::Accurate]++;
 		}
 		else
 		{
@@ -383,15 +384,16 @@ void Velma::reward(uint64_t address)
 	}
 }
 
+/* this reward function is called when pt_entry is getting evicted from tracker list
+ * and yet has not computed reward, i.e., hasn't seen any demand access to the cacheline */
 void Velma::reward(VelmaPTEntry *ptentry)
 {
-	/* this reward function is called when pt_entry is getting evicted from tracker list
-	 * and yet has not computed reward, i.e., hasn't seen any demand access to the cacheline */
 	stats.reward.pt_evict.called++;
 	assert(!ptentry->has_reward);
 	ptentry->reward = knob::velma_reward_inaccurate;
 	ptentry->has_reward = true;
 	stats.reward.dist[VelmaRewardType::Inaccurate]++;
+	stats.reward.action_reward_dist[ptentry->action_index][VelmaRewardType::Inaccurate]++;
 }
 
 void Velma::register_fill(uint64_t address)
@@ -465,6 +467,16 @@ void Velma::dump_stats()
 	for(uint32_t index = 0; index < NumVelmaRewardTypes; ++index)
 	{
 		cout << "velma_reward_dist_type_" << MapVelmaRewardTypeString((VelmaRewardType)index) << " " << stats.reward.dist[index] << endl;
+	}
+	cout << endl;
+	for(uint32_t index = 0; index < knob::velma_max_actions; ++index)
+	{
+		cout << "velma_action_reward_dist_action_" << index << " ";
+		for(uint32_t index2 = 0; index2 < NumVelmaRewardTypes; ++index2)
+		{
+			cout << stats.reward.action_reward_dist[index][index2] << ",";
+		}
+		cout << endl;
 	}
 	cout << endl;
 

@@ -10,6 +10,8 @@
 using namespace std;
 
 #define MAX_CANDIDATE_PREFETCHERS 8
+#define VELMA_MAX_ACTIONS 8
+#define VELMA_MAX_REWARDS 8
 
 typedef enum 
 {
@@ -106,6 +108,7 @@ private:
 			} pt_evict;
 
 			uint64_t dist[NumVelmaRewardTypes];
+			uint64_t action_reward_dist[VELMA_MAX_ACTIONS][VELMA_MAX_REWARDS];
 		} reward;
 
 	} stats;
