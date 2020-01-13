@@ -173,6 +173,12 @@ private:
 			uint64_t set_total;
 		} register_prefetch_hit;
 
+		struct
+		{
+			uint64_t scooby;
+			uint64_t shaggy;
+		} pref_issue;
+
 	} stats;
 
 	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;

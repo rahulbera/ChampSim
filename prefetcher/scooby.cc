@@ -54,6 +54,7 @@ namespace knob
 	extern int32_t  scooby_reward_tracker_hit;
 	extern bool     scooby_enable_shaggy;
 	extern uint32_t scooby_state_hash_type;
+	extern bool     scooby_prefetch_with_shaggy;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -288,6 +289,7 @@ void Scooby::print_config()
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
 		<< "scooby_reward_tracker_hit " << knob::scooby_reward_tracker_hit << endl
 		<< "scooby_enable_shaggy " << knob::scooby_enable_shaggy << endl
+		<< "scooby_prefetch_with_shaggy " << knob::scooby_prefetch_with_shaggy << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -346,15 +348,22 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->local_pc_sig = stentry->get_pc_sig();
 
 	/* Shaggy only predicts for streaming accesses */
-	if(knob::scooby_enable_shaggy && stentry->streaming)
+	bool cond_streaming = (knob::scooby_enable_shaggy && stentry->streaming);
+	if(cond_streaming)
 	{
-		stats.predict.shaggy_called++;
 		shaggy->predict(page, offset, pref_addr);
+		stats.predict.shaggy_called++;
+		stats.pref_issue.shaggy += pref_addr.size();
 	}
-	else
+
+	/* call Scooby's prediction in two cases:
+	 * 1. The page is not streaming
+	 * 2. The page is streaming, but still want to invoke scooby so that Scooby's learning doesn't get hampered */
+	if(!cond_streaming || knob::scooby_prefetch_with_shaggy)
 	{
-		/* if not streaming, let the agent predict */
+		uint32_t count = pref_addr.size();
 		predict(address, page, offset, state, pref_addr);
+		stats.pref_issue.scooby += (pref_addr.size() - count);
 	}
 }
 
@@ -841,6 +850,10 @@ void Scooby::dump_stats()
 		<< "scooby_register_prefetch_hit_called " << stats.register_prefetch_hit.called << endl
 		<< "scooby_register_prefetch_hit_set " << stats.register_prefetch_hit.set << endl
 		<< "scooby_register_prefetch_hit_set_total " << stats.register_prefetch_hit.set_total << endl
+		<< endl
+
+		<< "scooby_pref_issue_scooby " << stats.pref_issue.scooby << endl
+		<< "scooby_pref_issue_shaggy " << stats.pref_issue.shaggy << endl
 		<< endl;
 
 	brain->dump_stats();
