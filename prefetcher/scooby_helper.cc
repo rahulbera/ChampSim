@@ -7,6 +7,11 @@
 #define PC_SIG_MAX_BITS 16
 #define PC_SIG_SHIFT 4
 
+#define SIG_SHIFT 3
+#define SIG_BIT 12
+#define SIG_MASK ((1 << SIG_BIT) - 1)
+#define SIG_DELTA_BIT 7
+
 namespace knob
 {
 	extern uint32_t scooby_max_pcs;
@@ -67,6 +72,24 @@ uint32_t Scooby_STEntry::get_delta_sig()
 		signature = signature & ((1ull << DELTA_SIG_MAX_BITS) - 1);
 	}
 	return signature;
+}
+
+/* This is directly inspired by SPP's signature */
+uint32_t Scooby_STEntry::get_delta_sig2()
+{
+	uint32_t curr_sig = 0;
+
+	/* compute signature only using last 4 deltas */
+	uint32_t n = deltas.size();
+	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
+	
+	for(uint32_t index = ptr; index < deltas.size(); ++index)
+	{
+		int sig_delta = (deltas[index] < 0) ? (((-1) * deltas[index]) + (1 << (SIG_DELTA_BIT - 1))) : deltas[index];
+		curr_sig = ((curr_sig << SIG_SHIFT) ^ sig_delta) & SIG_MASK;
+	}
+
+	return curr_sig;
 }
 
 uint32_t Scooby_STEntry::get_pc_sig()

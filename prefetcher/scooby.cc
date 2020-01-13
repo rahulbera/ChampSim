@@ -106,6 +106,12 @@ uint32_t State::value()
 			// return value;
 			break;
 
+		case 6: /* SPP's delta-path signature */
+			value = local_delta_sig2;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
+
 		default:
 			assert(false);
 	}
@@ -327,7 +333,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	reward(address);
 
 	/* record the access: just to gain some insights from the workload
-	 * defined in scooby_helper.h/cc */
+	 * defined in scooby_helper.h(cc) */
 	recorder->record_access(pc, address, page, offset);
 
 	/* global state tracking */
@@ -345,6 +351,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->offset = offset;
 	state->delta = !stentry->deltas.empty() ? stentry->deltas.back() : 0;
 	state->local_delta_sig = stentry->get_delta_sig();
+	state->local_delta_sig2 = stentry->get_delta_sig2();
 	state->local_pc_sig = stentry->get_pc_sig();
 
 	/* Shaggy only predicts for streaming accesses */
@@ -410,6 +417,7 @@ Scooby_STEntry* Scooby::update_local_state(uint64_t pc, uint64_t page, uint32_t 
 		if(knob::scooby_enable_shaggy)
 		{
 			stentry->streaming = shaggy->lookup_signature(pc, page, offset);
+			stats.st.streaming++;
 		}
 		signature_table.push_back(stentry);
 		return stentry;
@@ -776,6 +784,7 @@ void Scooby::dump_stats()
 		<< "scooby_st_hit " << stats.st.hit << endl
 		<< "scooby_st_evict " << stats.st.evict << endl
 		<< "scooby_st_insert " << stats.st.insert << endl
+		<< "scooby_st_streaming " << stats.st.streaming << endl
 		<< endl
 		
 		<< "scooby_predict_called " << stats.predict.called << endl

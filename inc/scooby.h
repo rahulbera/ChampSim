@@ -36,6 +36,7 @@ public:
 	uint32_t offset;
 	int32_t	 delta;
 	uint32_t local_delta_sig;
+	uint32_t local_delta_sig2;
 	uint32_t local_pc_sig;
 	
 	/* 
@@ -49,6 +50,7 @@ public:
 		offset = 0;
 		delta = 0;
 		local_delta_sig = 0;
+		local_delta_sig2 = 0;
 		local_pc_sig = 0;
 	}
 	State(){reset();}
@@ -102,6 +104,7 @@ private:
 			uint64_t hit;
 			uint64_t evict;
 			uint64_t insert;
+			uint64_t streaming;
 		} st;
 
 		struct
