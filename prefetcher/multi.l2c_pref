@@ -8,6 +8,7 @@
 #include "next_line.h"
 #include "bop.h"
 #include "velma.h"
+#include "sandbox.h"
 
 using namespace std;
 
@@ -61,6 +62,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: Velma" << endl;
 			Velma *pref_velma = new Velma(knob::l2c_prefetcher_types[index]);
 			prefetchers.push_back(pref_velma);
+		}
+		else if(!knob::l2c_prefetcher_types[index].compare("sandbox"))
+		{
+			cout << "adding L2C_PREFETCHER: Sandbox" << endl;
+			SandboxPrefetcher *pref_sandbox = new SandboxPrefetcher(knob::l2c_prefetcher_types[index]);
+			prefetchers.push_back(pref_sandbox);
 		}
 		else
 		{

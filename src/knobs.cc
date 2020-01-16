@@ -69,6 +69,15 @@ namespace knob
 	uint32_t bop_pref_degree = 4;
 	uint32_t bop_rr_size = 256;
 
+	/* Sandbox */
+	uint32_t sandbox_pref_degree = 4;
+	bool     sandbox_enable_stream_detect = false;
+	uint32_t sandbox_stream_detect_length = 4;
+	uint32_t sandbox_num_access_in_phase = 256;
+	uint32_t sandbox_num_cycle_offsets = 4;
+	uint32_t sandbox_bloom_filter_size = 2048;
+	uint32_t sandbox_seed = 200;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -399,6 +408,36 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "bop_rr_size"))
 	{
 		knob::bop_rr_size = atoi(value);
+	}
+
+	/* Sandbox */
+	else if (MATCH("", "sandbox_pref_degree"))
+	{
+		knob::sandbox_pref_degree = atoi(value);
+	}
+	else if (MATCH("", "sandbox_enable_stream_detect"))
+	{
+		knob::sandbox_enable_stream_detect = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "sandbox_stream_detect_length"))
+	{
+		knob::sandbox_stream_detect_length = atoi(value);
+	}
+	else if (MATCH("", "sandbox_num_access_in_phase"))
+	{
+		knob::sandbox_num_access_in_phase = atoi(value);
+	}
+	else if (MATCH("", "sandbox_num_cycle_offsets"))
+	{
+		knob::sandbox_num_cycle_offsets = atoi(value);
+	}
+	else if (MATCH("", "sandbox_bloom_filter_size"))
+	{
+		knob::sandbox_bloom_filter_size = atoi(value);
+	}
+	else if (MATCH("", "sandbox_seed"))
+	{
+		knob::sandbox_seed = atoi(value);
 	}
 
 	/* Scooby */

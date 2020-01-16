@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export CPATH=/mnt/panzer/rahbera/local/include
+export LIBRARY_PATH=/mnt/panzer/rahbera/local/lib
+
 if [ "$#" -ne 3 ]; then
     echo "Illegal number of parameters"
     #echo "Usage: ./build_champsim.sh [branch_pred] [l1d_pref] [l2c_pref] [llc_pref] [llc_repl] [num_core]"
