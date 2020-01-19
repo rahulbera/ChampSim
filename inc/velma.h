@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include "prefetcher.h"
 #include "learning_engine.h"
+#include "fred.h"
 
 using namespace std;
 
@@ -55,6 +56,8 @@ private:
 	LearningEngine *m_brain;
 	deque<VelmaPTEntry*> prefetch_tracker;
 	VelmaPTEntry *last_evicted_tracker;
+
+	Fred *m_fred;
 
 	/* staistics */
 	struct

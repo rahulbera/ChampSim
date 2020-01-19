@@ -150,6 +150,14 @@ namespace knob
 	uint32_t velma_pt_size;
 	int32_t  velma_reward_accurate;
 	int32_t  velma_reward_inaccurate;
+
+	/* Fred */
+	uint32_t fred_bloom_filter_size = 4096;
+	uint32_t fred_num_access_in_round = 256;
+	uint32_t fred_seed = 200;
+	uint32_t fred_init_pref_selection_type = 1;
+	uint32_t fred_num_access_in_apply_phase = 10000;
+	float    fred_score_cutoff = 0.5;
 }
 
 void parse_args(int argc, char *argv[])
@@ -697,6 +705,32 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "velma_reward_inaccurate"))
 	{
 		knob::velma_reward_inaccurate = atoi(value);
+	}
+
+	/* Fred */
+	else if (MATCH("", "fred_bloom_filter_size"))
+	{
+		knob::fred_bloom_filter_size = atoi(value);
+	}
+	else if (MATCH("", "fred_num_access_in_round"))
+	{
+		knob::fred_num_access_in_round = atoi(value);
+	}
+	else if (MATCH("", "fred_seed"))
+	{
+		knob::fred_seed = atoi(value);
+	}
+	else if (MATCH("", "fred_init_pref_selection_type"))
+	{
+		knob::fred_init_pref_selection_type = atoi(value);
+	}
+	else if (MATCH("", "fred_num_access_in_apply_phase"))
+	{
+		knob::fred_num_access_in_apply_phase = atoi(value);
+	}
+	else if (MATCH("", "fred_score_cutoff"))
+	{
+		knob::fred_score_cutoff = atof(value);
 	}
 
     else 
