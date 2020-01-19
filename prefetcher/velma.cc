@@ -115,20 +115,32 @@ Velma::Velma(string type) : Prefetcher(type)
 	}
 
 	/* init Velma's brain */
-	m_brain = new LearningEngine(this,
-								knob::velma_alpha, knob::velma_gamma, knob::velma_epsilon, 
-								knob::velma_max_actions, 
-								knob::velma_max_states,
-								knob::velma_seed,
-								knob::velma_policy,
-								knob::velma_learning_type,
-								knob::velma_brain_zero_init);
+	m_brain = NULL;
+	if(knob::velma_pref_selection_type == 2)
+	{
+		m_brain = new LearningEngine(this,
+									knob::velma_alpha, knob::velma_gamma, knob::velma_epsilon, 
+									knob::velma_max_actions, 
+									knob::velma_max_states,
+									knob::velma_seed,
+									knob::velma_policy,
+									knob::velma_learning_type,
+									knob::velma_brain_zero_init);
+	}
 	last_evicted_tracker = NULL;
+
+	/* init Fred */
+	m_fred = NULL;
+	if(knob::velma_pref_selection_type == 3)
+	{
+		m_fred = new Fred();
+	}
 }
 
 Velma::~Velma()
 {
-	delete m_brain;
+	if(m_brain) delete m_brain;
+	if(m_fred)	delete m_fred;
 }
 
 void Velma::print_config()
@@ -168,7 +180,13 @@ void Velma::print_config()
 		<< "velma_pt_size " << knob::velma_pt_size << endl
 		<< "velma_reward_accurate " << knob::velma_reward_accurate << endl
 		<< "velma_reward_inaccurate " << knob::velma_reward_inaccurate << endl
-		;
+		<< endl;
+
+	if(m_fred)
+	{
+		m_fred->print_config();
+		cout << endl;
+	}
 }
 
 void Velma::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
@@ -203,6 +221,12 @@ void Velma::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, 
 	assert(pref_candidates.size() == m_prefetchers.size());
 	MYLOG("generated prefetches: %lu %lu", pref_candidates[0].size(), pref_candidates[1].size()); /* WARNING: hard-coded array access */
 
+	/* call Fred */
+	if(knob::velma_pref_selection_type == 3)
+	{
+		m_fred->invoke(pc, address, cache_hit, type, pref_candidates);
+	}
+
 	/* record the state attributes */
 	VelmaState *vstate = new VelmaState();
 	vstate->pc = pc;
@@ -215,17 +239,6 @@ void Velma::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, 
 	unordered_set<uint32_t> selected_pref_list = select_prefetchers(vstate, action_index);
 
 	/* prepare the final prefetch candidate list */
-	// cout << "pref_candidates: ";
-	// for(uint32_t index = 0; index < pref_candidates.size(); ++index)
-	// {
-	// 	cout << "(";
-	// 	for(uint32_t index2 = 0; index2 < pref_candidates[index].size(); ++index2)
-	// 	{
-	// 		cout << pref_candidates[index][index2] << ",";
-	// 	}
-	// 	cout << ")";
-	// }
-	// cout << endl;
 	populate_prefetch_list(vstate, action_index, selected_pref_list, pref_candidates, pref_addr);
 	
 	/* destroy vstate object, as the clone is already stored */
@@ -258,6 +271,19 @@ unordered_set<uint32_t> Velma::select_prefetchers(VelmaState *vstate, uint32_t &
 
 		selected_pref_list.insert(m_actions[action_index]);
 		stats.selection.dist[m_actions[action_index]]++;
+	}
+	else if (knob::velma_pref_selection_type == 3) /* Bloom filter based selection */
+	{
+		vector<bool> active_prefetchers = m_fred->get_active_prefetchers();
+		assert(active_prefetchers.size() == m_prefetchers.size());
+		for(uint32_t index = 0; index < m_prefetchers.size(); ++index)
+		{
+			if(active_prefetchers[index])
+			{
+				selected_pref_list.insert(index);
+				stats.selection.dist[index]++;
+			}
+		}
 	}
 	else
 	{
@@ -480,6 +506,15 @@ void Velma::dump_stats()
 	}
 	cout << endl;
 
-	/* dump stats from Velma's brain */ 	
-	m_brain->dump_stats();
+	/* dump stats from Velma's brain */
+	if(m_brain)
+	{	
+		m_brain->dump_stats();
+	}
+
+	/* Fred stats */
+	if(m_fred)
+	{
+		m_fred->dump_stats();
+	}
 }
