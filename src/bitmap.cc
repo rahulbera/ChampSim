@@ -35,3 +35,37 @@ uint32_t BitmapHelper::count_bits_diff(Bitmap bmp1, Bitmap bmp2)
 	}
 	return count_diff;
 }
+
+uint64_t BitmapHelper::value(Bitmap bmp)
+{
+	return bmp.to_ullong();
+}
+
+Bitmap BitmapHelper::rotate_left(Bitmap bmp, uint32_t amount)
+{
+	Bitmap result;
+	for(uint32_t index = 0; index < BITMAP_MAX_SIZE - amount; ++index)
+	{
+		result[index+amount] = bmp[index];
+	}
+	for(uint32_t index = 0; index < amount; ++index)
+	{
+		result[index] = bmp[index+BITMAP_MAX_SIZE-amount];
+	}
+	return result;
+}
+
+Bitmap BitmapHelper::rotate_right(Bitmap bmp, uint32_t amount)
+{
+	Bitmap result;
+	for(uint32_t index = 0; index < BITMAP_MAX_SIZE - amount; ++index)
+	{
+		result[index] = bmp[index+amount];
+	}
+	for(uint32_t index = 0; index < amount; ++index)
+	{
+		result[BITMAP_MAX_SIZE-amount+index] = bmp[index];
+	}
+	return result;
+
+}

@@ -105,6 +105,7 @@ namespace knob
 	int32_t  scooby_reward_out_of_bounds;
 	uint32_t scooby_state_type;
 	bool     scooby_access_debug;
+	bool     scooby_print_access_debug;
 	bool     scooby_enable_state_action_stats;
 	bool     scooby_enable_reward_tracker_hit;
 	int32_t  scooby_reward_tracker_hit;
@@ -222,7 +223,7 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     }
     else if (MATCH("", "knob_cloudsuite"))
     {
-		knob::knob_cloudsuite = atoi(value);
+		knob::knob_cloudsuite = !strcmp(value, "true") ? true : false;
     }
     else if (MATCH("", "knob_low_bandwidth"))
     {
@@ -546,6 +547,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_access_debug"))
 	{
 		knob::scooby_access_debug = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_print_access_debug"))
+	{
+		knob::scooby_print_access_debug = !strcmp(value, "true") ? true : false;
 	}
 	else if (MATCH("", "scooby_enable_state_action_stats"))
 	{

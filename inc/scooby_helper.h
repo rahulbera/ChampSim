@@ -3,6 +3,8 @@
 
 #include <deque>
 #include <unordered_set>
+#include <unordered_map>
+#include <vector>
 #include "bitmap.h"
 
 using namespace std;
@@ -57,10 +59,14 @@ public:
 	unordered_set<uint64_t> unique_pcs;
 	unordered_set<uint64_t> unique_trigger_pcs;
 	unordered_set<uint64_t> unique_pages;
+	unordered_map<uint64_t, uint64_t> access_bitmap_dist;
+	uint64_t total_bitmaps_seen;
+	uint64_t unique_bitmaps_seen;
 	ScoobyRecorder(){}
 	~ScoobyRecorder(){}	
 	void record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset);
 	void record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset);
+	void record_access_knowledge(Scooby_STEntry *stentry);
 	void dump_stats();
 };
 

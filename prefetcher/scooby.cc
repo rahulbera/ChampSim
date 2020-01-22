@@ -49,6 +49,7 @@ namespace knob
 	extern int32_t  scooby_reward_out_of_bounds;
 	extern uint32_t scooby_state_type;
 	extern bool     scooby_access_debug;
+	extern bool     scooby_print_access_debug;
 	extern bool     scooby_enable_state_action_stats;
 	extern bool     scooby_enable_reward_tracker_hit;
 	extern int32_t  scooby_reward_tracker_hit;
@@ -214,6 +215,13 @@ void Scooby::init_knobs()
 	std::copy(knob::scooby_actions.begin(), knob::scooby_actions.end(), Actions.begin());
 	assert(Actions.size() == knob::scooby_max_actions);
 	assert(Actions.size() <= MAX_ACTIONS);
+	if(knob::scooby_access_debug)
+	{
+		cout << "***WARNING*** setting knob::scooby_max_pcs, knob::scooby_max_offsets, and knob::scooby_max_deltas to large value as knob::scooby_access_debug is true" << endl;
+		knob::scooby_max_pcs = 1024;
+		knob::scooby_max_offsets = 1024;
+		knob::scooby_max_deltas = 1024;
+	}
 }
 
 void Scooby::init_stats()
@@ -291,6 +299,7 @@ void Scooby::print_config()
 		<< "scooby_state_type " << knob::scooby_state_type << endl
 		<< "scooby_state_hash_type " << knob::scooby_state_hash_type << endl
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
+		<< "scooby_print_access_debug " << knob::scooby_print_access_debug << endl
 		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
 		<< "scooby_reward_tracker_hit " << knob::scooby_reward_tracker_hit << endl
@@ -402,7 +411,11 @@ Scooby_STEntry* Scooby::update_local_state(uint64_t pc, uint64_t page, uint32_t 
 			signature_table.pop_front();
 			if(knob::scooby_access_debug)
 			{
-				print_access_debug(stentry);
+				recorder->record_access_knowledge(stentry);
+				if(knob::scooby_print_access_debug)
+				{
+					print_access_debug(stentry);
+				}
 			}
 			if(knob::scooby_enable_shaggy)
 			{

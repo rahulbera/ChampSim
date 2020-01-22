@@ -1,5 +1,7 @@
 #include <assert.h>
 #include <iostream>
+#include <algorithm>
+#include <iomanip>
 #include "scooby_helper.h"
 
 #define DELTA_SIG_MAX_BITS 12
@@ -132,12 +134,43 @@ void ScoobyRecorder::record_trigger_access(uint64_t page, uint64_t pc, uint32_t 
 	unique_trigger_pcs.insert(pc);
 }
 
+void ScoobyRecorder::record_access_knowledge(Scooby_STEntry *stentry)
+{
+	Bitmap bmp_real = stentry->bmp_real;
+	uint32_t trigger_offset = stentry->offsets.front();
+	uint64_t bmp_real_rot_value = BitmapHelper::value(BitmapHelper::rotate_left(bmp_real, trigger_offset));
+	auto it = access_bitmap_dist.find(bmp_real_rot_value);
+	if(it != access_bitmap_dist.end())
+	{
+		it->second++;
+	}
+	else
+	{
+		access_bitmap_dist.insert(std::pair<uint64_t, uint64_t>(bmp_real_rot_value, 1));
+		unique_bitmaps_seen++;
+	}
+	total_bitmaps_seen++;
+}
+
 void ScoobyRecorder::dump_stats()
 {
 	cout << "unique_pcs " << unique_pcs.size() << endl
 		<< "unique_pages " << unique_pages.size() << endl
 		<< "unique_trigger_pcs " << unique_trigger_pcs.size() << endl
+		<< "total_bitmaps_seen " << total_bitmaps_seen << endl
+		<< "unique_bitmaps_seen " << unique_bitmaps_seen << endl
 		<< endl;
+
+	std::vector<std::pair<uint64_t, uint64_t>> pairs;
+	for (auto itr = access_bitmap_dist.begin(); itr != access_bitmap_dist.end(); ++itr)
+	    pairs.push_back(*itr);
+
+	sort(pairs.begin(), pairs.end(), [](std::pair<uint64_t, uint64_t>& a, std::pair<uint64_t, uint64_t>& b){return a.second > b.second;});
+
+	for(uint32_t index = 0; index < pairs.size(); ++index)
+	{
+		cout << setw(20) << hex << pairs[index].first << dec << "," << pairs[index].second << endl;
+	}
 }
 
 void print_access_debug(Scooby_STEntry *stentry)
