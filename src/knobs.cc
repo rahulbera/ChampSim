@@ -112,6 +112,7 @@ namespace knob
 	bool     scooby_enable_shaggy;
 	uint32_t scooby_state_hash_type;
 	bool     scooby_prefetch_with_shaggy;
+	bool     scooby_enable_cmac_engine;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -575,6 +576,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_prefetch_with_shaggy"))
 	{
 		knob::scooby_prefetch_with_shaggy = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_enable_cmac_engine"))
+	{
+		knob::scooby_enable_cmac_engine = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Learning Engine */

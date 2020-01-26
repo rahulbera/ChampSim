@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include "prefetcher.h"
 #include "scooby_helper.h"
-#include "learning_engine.h"
+#include "learning_engine_basic.h"
+// #include "learning_engine_cmac.h"
 #include "shaggy.h"
 
 using namespace std;
@@ -87,7 +88,8 @@ class Scooby : public Prefetcher
 {
 private:
 	deque<Scooby_STEntry*> signature_table;
-	LearningEngine *brain;
+	LearningEngineBasic *brain;
+	// LearningEngineCMAC *brain_cmac;
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
 	Shaggy *shaggy;

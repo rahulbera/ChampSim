@@ -5,7 +5,7 @@
 #include <deque>
 #include <unordered_set>
 #include "prefetcher.h"
-#include "learning_engine.h"
+#include "learning_engine_basic.h"
 #include "fred.h"
 
 using namespace std;
@@ -53,7 +53,7 @@ class Velma : public Prefetcher
 private:
 	vector<Prefetcher*> m_prefetchers;
 	vector<int32_t> m_actions;
-	LearningEngine *m_brain;
+	LearningEngineBasic *m_brain;
 	deque<VelmaPTEntry*> prefetch_tracker;
 	VelmaPTEntry *last_evicted_tracker;
 

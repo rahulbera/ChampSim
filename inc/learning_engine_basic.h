@@ -4,6 +4,7 @@
 #include <random>
 #include <string.h>
 #include "prefetcher.h"
+#include "learning_engine_base.h"
 
 #define MAX_ACTIONS 64
 
@@ -22,34 +23,9 @@ state 1 |
 state m |
 */
 
-enum Policy
-{
-	EGreedy = 0,
-	NumPolicies
-};
-
-enum LearningType
-{
-	QLearning = 0,
-	SARSA,
-	NumLearningTypes
-};
-
-const char* MapPolicyString(Policy policy);
-const char* MapLearningTypeString(LearningType type);
-
-class LearningEngine
+class LearningEngineBasic : public LearningEngineBase
 {
 private:
-	Prefetcher *m_parent;
-	float m_alpha;
-	float m_gamma;
-	float m_epsilon;
-	uint32_t m_actions;
-	uint32_t m_states;
-	uint64_t m_seed;
-	Policy m_policy;
-	LearningType m_type;
 	float init_value;
 
     std::default_random_engine generator;
@@ -82,8 +58,6 @@ private:
 		} learn;
 	} stats;
 
-	LearningType parseLearningType(std::string str);
-	Policy parsePolicy(std::string str);
 	float consultQ(uint32_t state, uint32_t action);
 	void updateQ(uint32_t state, uint32_t action, float value);
 	std::string getStringQ(uint32_t state);
@@ -94,19 +68,8 @@ private:
 	void dump_action_trace(uint32_t action);
 
 public:
-	LearningEngine(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
-	~LearningEngine();
-
-	inline void setAlpha(float alpha){m_alpha = alpha;}
-	inline float getAlpha(){return m_alpha;}
-	inline void setGamma(float gamma){m_gamma = gamma;}
-	inline float getGamma(){return m_gamma;}
-	inline void setEpsilon(float epsilon){m_epsilon = epsilon;}
-	inline float getEpsilon(){return m_epsilon;}
-	inline void setStates(uint32_t states){m_states = states;}
-	inline uint32_t getStates(){return m_states;}
-	inline void setActions(uint32_t actions){m_actions = actions;}
-	inline uint32_t getActions(){return m_actions;}
+	LearningEngineBasic(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
+	~LearningEngineBasic();
 
 	uint32_t chooseAction(uint32_t state);
 	void learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2);

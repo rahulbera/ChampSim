@@ -3,7 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sstream>
-#include "learning_engine.h"
+#include "learning_engine_basic.h"
 #include "scooby.h"
 #include "velma.h"
 
@@ -46,31 +46,8 @@ void gen_random(char *s, const int len) {
     s[len] = 0;
 }
 
-const char* PolicyString[] = {"EGreddy"};
-const char* MapPolicyString(Policy policy)
-{
-	assert((uint32_t)policy < Policy::NumPolicies);
-	return PolicyString[(uint32_t)policy];
-}
-
-const char* LearningTypeString[] = {"QLearning", "SARSA"};
-const char* MapLearningTypeString(LearningType type)
-{
-	assert((uint32_t)type < LearningType::NumLearningTypes);
-	return LearningTypeString[(uint32_t)type];
-}
-
-
-LearningEngine::LearningEngine(Prefetcher *parent, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
-	: m_parent(parent)
-	, m_alpha(alpha)
-	, m_gamma(gamma)
-	, m_epsilon(epsilon) // make it small, as true value indicates exploration
-	, m_actions(actions)
-	, m_states(states)
-	, m_seed(seed)
-	, m_policy(parsePolicy(policy))
-	, m_type(parseLearningType(type))
+LearningEngineBasic::LearningEngineBasic(Prefetcher *parent, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
+	: LearningEngineBase(parent, alpha, gamma, epsilon, actions, states, seed, policy, type)
 {
 	qtable = (float**)calloc(m_states, sizeof(float*));
 	assert(qtable);
@@ -120,7 +97,7 @@ LearningEngine::LearningEngine(Prefetcher *parent, float alpha, float gamma, flo
 	bzero(&stats, sizeof(stats));
 }
 
-LearningEngine::~LearningEngine()
+LearningEngineBasic::~LearningEngineBasic()
 {
 	for(uint32_t row = 0; row < m_states; ++row)
 	{
@@ -133,24 +110,7 @@ LearningEngine::~LearningEngine()
 	}
 }
 
-LearningType LearningEngine::parseLearningType(std::string str)
-{
-	if(!str.compare("QLearning"))	return LearningType::QLearning;
-	if(!str.compare("SARSA"))		return LearningType::SARSA;
-
-	printf("unsupported learning_type %s\n", str.c_str());
-	assert(false);
-}
-
-Policy LearningEngine::parsePolicy(std::string str)
-{
-	if(!str.compare("EGreedy"))		return Policy::EGreedy;
-
-	printf("unsupported policy %s\n", str.c_str());
-	assert(false);
-}
-
-uint32_t LearningEngine::chooseAction(uint32_t state)
+uint32_t LearningEngineBasic::chooseAction(uint32_t state)
 {
 	stats.action.called++;
 	assert(state < m_states);
@@ -187,7 +147,7 @@ uint32_t LearningEngine::chooseAction(uint32_t state)
 	return action;
 }
 
-void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2)
+void LearningEngineBasic::learn(uint32_t state1, uint32_t action1, int32_t reward, uint32_t state2, uint32_t action2)
 {
 	stats.learn.called++;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
@@ -215,20 +175,20 @@ void LearningEngine::learn(uint32_t state1, uint32_t action1, int32_t reward, ui
 	}
 }
 
-float LearningEngine::consultQ(uint32_t state, uint32_t action)
+float LearningEngineBasic::consultQ(uint32_t state, uint32_t action)
 {
 	assert(state < m_states && action < m_actions);
 	float value = qtable[state][action];
 	return value;
 }
 
-void LearningEngine::updateQ(uint32_t state, uint32_t action, float value)
+void LearningEngineBasic::updateQ(uint32_t state, uint32_t action, float value)
 {
 	assert(state < m_states && action < m_actions);
 	qtable[state][action] = value;	
 }
 
-uint32_t LearningEngine::getMaxAction(uint32_t state)
+uint32_t LearningEngineBasic::getMaxAction(uint32_t state)
 {
 	assert(state < m_states);
 	float max = qtable[state][0];
@@ -244,7 +204,7 @@ uint32_t LearningEngine::getMaxAction(uint32_t state)
 	return action;
 }
 
-std::string LearningEngine::getStringQ(uint32_t state)
+std::string LearningEngineBasic::getStringQ(uint32_t state)
 {
 	assert(state < m_states);
 	std::stringstream ss;
@@ -255,7 +215,7 @@ std::string LearningEngine::getStringQ(uint32_t state)
 	return ss.str();
 }
 
-void LearningEngine::print_aux_stats()
+void LearningEngineBasic::print_aux_stats()
 {
 	/* compute state-action table usage
 	 * how mane state entries are actually used?
@@ -277,7 +237,7 @@ void LearningEngine::print_aux_stats()
 	fprintf(stdout, "\n");
 }
 
-void LearningEngine::dump_stats()
+void LearningEngineBasic::dump_stats()
 {
 	fprintf(stdout, "learning_engine.action.called %lu\n", stats.action.called);
 	fprintf(stdout, "learning_engine.action.explore %lu\n", stats.action.explore);
@@ -298,7 +258,7 @@ void LearningEngine::dump_stats()
 	}
 }
 
-void LearningEngine::dump_state_trace(uint32_t state)
+void LearningEngineBasic::dump_state_trace(uint32_t state)
 {
 	trace_timestamp++;
 	fprintf(trace, "%lu,", trace_timestamp);
@@ -308,14 +268,9 @@ void LearningEngine::dump_state_trace(uint32_t state)
 	}
 	fprintf(trace, "\n");
 	fflush(trace);
-	// if(trace_timestamp >= 20000)
-	// {
-	// 	plot_scores();
-	// 	assert(false);
-	// }
 }
 
-void LearningEngine::plot_scores()
+void LearningEngineBasic::plot_scores()
 {
 	char *script_file = (char*)malloc(16*sizeof(char));
 	assert(script_file);
@@ -341,14 +296,13 @@ void LearningEngine::plot_scores()
 	fclose(script);
 
 	std::string cmd = "gnuplot " + std::string(script_file);
-	// fprintf(stdout, "generating graph...\n");
 	system(cmd.c_str());
 
 	std::string cmd2 = "rm " + std::string(script_file);
 	system(cmd2.c_str());
 }
 
-void LearningEngine::dump_action_trace(uint32_t action)
+void LearningEngineBasic::dump_action_trace(uint32_t action)
 {
 	action_trace_timestamp++;
 	fprintf(action_trace, "%lu, %u\n", action_trace_timestamp, action);

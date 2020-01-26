@@ -56,6 +56,7 @@ namespace knob
 	extern bool     scooby_enable_shaggy;
 	extern uint32_t scooby_state_hash_type;
 	extern bool     scooby_prefetch_with_shaggy;
+	extern bool     scooby_enable_cmac_engine;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -244,14 +245,35 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	last_evicted_tracker = NULL;
 
 	/* init learning engine */
-	brain = new LearningEngine( this,
-								knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
-								knob::scooby_max_actions, 
-								knob::scooby_max_states,
-								knob::scooby_seed,
-								knob::scooby_policy,
-								knob::scooby_learning_type,
-								knob::scooby_brain_zero_init);
+	// brain_cmac = NULL;
+	brain = NULL;
+	if(knob::scooby_enable_cmac_engine)
+	{
+		assert(false);
+		// CMACConfig config;
+		// config.num_planes = knob::scooby_cmac_num_planes;
+
+		// brain_cmac = new LearningEngineCMAC(config,
+		// 									this,
+		// 									knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
+		// 									knob::scooby_max_actions, 
+		// 									knob::scooby_max_states,
+		// 									knob::scooby_seed,
+		// 									knob::scooby_policy,
+		// 									knob::scooby_learning_type,
+		// 									knob::scooby_brain_zero_init);
+	}
+	else
+	{
+		brain = new LearningEngineBasic( this,
+									knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
+									knob::scooby_max_actions, 
+									knob::scooby_max_states,
+									knob::scooby_seed,
+									knob::scooby_policy,
+									knob::scooby_learning_type,
+									knob::scooby_brain_zero_init);
+	}
 
 	/* init Shaggy */
 	if(knob::scooby_enable_shaggy)
@@ -262,7 +284,14 @@ Scooby::Scooby(string type) : Prefetcher(type)
 
 Scooby::~Scooby()
 {
-
+	// if(brain_cmac)
+	// {
+	// 	delete brain_cmac;
+	// }
+	if(brain)
+	{
+		delete brain;
+	}
 }
 
 void Scooby::print_config()
@@ -446,7 +475,16 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 	assert(state_index < knob::scooby_max_states);
 
 	/* query learning engine to get the next prediction */
-	uint32_t action_index = brain->chooseAction(state_index);
+	uint32_t action_index = 0;
+	if(knob::scooby_enable_cmac_engine)
+	{
+		assert(false);
+		// action_index = brain_cmac->chooseAction(state);
+	}
+	else
+	{
+		action_index = brain->chooseAction(state_index);
+	}
 	assert(action_index < knob::scooby_max_actions);
 
 	if(knob::scooby_enable_state_action_stats)
@@ -703,7 +741,15 @@ void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
 	MYLOG("===SARSA=== S1: %x A1: %u R1: %d S2: %x A2: %u", last_evicted->state->value(), last_evicted->action_index, 
 															last_evicted->reward, 
 															curr_evicted->state->value(), curr_evicted->action_index);
-	brain->learn(last_evicted->state->value(), last_evicted->action_index, last_evicted->reward, curr_evicted->state->value(), curr_evicted->action_index);
+	if(knob::scooby_enable_cmac_engine)
+	{
+		assert(false);
+		// brain_cmac->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index);
+	}
+	else
+	{
+		brain->learn(last_evicted->state->value(), last_evicted->action_index, last_evicted->reward, curr_evicted->state->value(), curr_evicted->action_index);
+	}
 	MYLOG("train done");
 }
 
@@ -878,7 +924,15 @@ void Scooby::dump_stats()
 		<< "scooby_pref_issue_shaggy " << stats.pref_issue.shaggy << endl
 		<< endl;
 
-	brain->dump_stats();
+	// if(brain_cmac)
+	// {
+	// 	assert(false);
+	// 	brain_cmac->dump_stats();
+	// }
+	if(brain)
+	{
+		brain->dump_stats();
+	}
 	recorder->dump_stats();
 
 	if(knob::scooby_enable_shaggy)

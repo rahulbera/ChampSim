@@ -118,7 +118,7 @@ Velma::Velma(string type) : Prefetcher(type)
 	m_brain = NULL;
 	if(knob::velma_pref_selection_type == 2)
 	{
-		m_brain = new LearningEngine(this,
+		m_brain = new LearningEngineBasic(this,
 									knob::velma_alpha, knob::velma_gamma, knob::velma_epsilon, 
 									knob::velma_max_actions, 
 									knob::velma_max_states,
