@@ -6,7 +6,7 @@
 #include "prefetcher.h"
 #include "scooby_helper.h"
 #include "learning_engine_basic.h"
-// #include "learning_engine_cmac.h"
+#include "learning_engine_cmac.h"
 #include "shaggy.h"
 
 using namespace std;
@@ -28,37 +28,6 @@ typedef enum
 
 	num_rewards
 } RewardType;
-
-class State
-{
-public:
-	uint64_t pc;
-	uint64_t page;
-	uint32_t offset;
-	int32_t	 delta;
-	uint32_t local_delta_sig;
-	uint32_t local_delta_sig2;
-	uint32_t local_pc_sig;
-	
-	/* 
-	 * Add more states here
-	 */
-
-	void reset()
-	{
-		pc = 0xdeadbeef;
-		page = 0xdeadbeef;
-		offset = 0;
-		delta = 0;
-		local_delta_sig = 0;
-		local_delta_sig2 = 0;
-		local_pc_sig = 0;
-	}
-	State(){reset();}
-	~State(){}
-	uint32_t value(); /* apply as many state types as you want */
-	uint32_t get_hash(uint64_t value); /* play wild with hashes */
-};
 
 class Scooby_PTEntry
 {
@@ -89,7 +58,7 @@ class Scooby : public Prefetcher
 private:
 	deque<Scooby_STEntry*> signature_table;
 	LearningEngineBasic *brain;
-	// LearningEngineCMAC *brain_cmac;
+	LearningEngineCMAC *brain_cmac;
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
 	Shaggy *shaggy;

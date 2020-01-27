@@ -9,6 +9,38 @@
 
 using namespace std;
 
+class State
+{
+public:
+	uint64_t pc;
+	uint64_t page;
+	uint32_t offset;
+	int32_t	 delta;
+	uint32_t local_delta_sig;
+	uint32_t local_delta_sig2;
+	uint32_t local_pc_sig;
+	
+	/* 
+	 * Add more states here
+	 */
+
+	void reset()
+	{
+		pc = 0xdeadbeef;
+		page = 0xdeadbeef;
+		offset = 0;
+		delta = 0;
+		local_delta_sig = 0;
+		local_delta_sig2 = 0;
+		local_pc_sig = 0;
+	}
+	State(){reset();}
+	~State(){}
+	uint32_t value(); /* apply as many state types as you want */
+	uint32_t get_hash(uint64_t value); /* play wild with hashes */
+	std::string to_string();
+};
+
 class Scooby_STEntry
 {
 public:
@@ -68,25 +100,6 @@ public:
 	void record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset);
 	void record_access_knowledge(Scooby_STEntry *stentry);
 	void dump_stats();
-};
-
-class ScoobyHash
-{
-public:
-	static uint32_t jenkins(uint32_t value);
-	static uint32_t knuth(uint32_t value);
-	static uint32_t murmur3(uint32_t value);
-	static uint32_t jenkins32(uint32_t key);
-	static uint32_t hash32shift(uint32_t key);
-	static uint32_t hash32shiftmult(uint32_t key);
-	static uint32_t hash64shift(uint32_t key);
-	static uint32_t hash5shift(uint32_t key);
-	static uint32_t hash7shift(uint32_t key);
-	static uint32_t Wang6shift(uint32_t key);
-	static uint32_t Wang5shift(uint32_t key);
-	static uint32_t Wang4shift( uint32_t key);
-	static uint32_t Wang3shift( uint32_t key);
-	static uint32_t hybrid1(uint32_t value);
 };
 
 /* auxiliary functions to get insights from workloads */

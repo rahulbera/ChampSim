@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iomanip>
 #include "scooby_helper.h"
+#include "util.h"
 
 #define DELTA_SIG_MAX_BITS 12
 #define DELTA_SIG_SHIFT 3
@@ -19,6 +20,153 @@ namespace knob
 	extern uint32_t scooby_max_pcs;
 	extern uint32_t scooby_max_offsets;
 	extern uint32_t scooby_max_deltas;
+	extern uint32_t scooby_state_type;
+	extern uint32_t scooby_max_states;
+	extern uint32_t scooby_state_hash_type;
+}
+
+uint32_t State::value()
+{
+	uint64_t value = 0;
+	switch(knob::scooby_state_type)
+	{
+		case 1: /* Only PC */
+			// return (uint32_t)(pc % knob::scooby_max_states);
+			value = pc;
+			break;
+
+		case 2: /* PC+ offset */
+			value = pc;
+			value = value << 6;
+			value = value + offset;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
+
+		case 3: /* Only offset */
+			value = offset;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
+
+		case 4: /* SPP like delta-path signature */
+			value = local_delta_sig;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
+
+		case 5: /* SPP like path signature, but made with shifted PC */
+			value = local_pc_sig;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
+
+		case 6: /* SPP's delta-path signature */
+			value = local_delta_sig2;
+			// value = value % knob::scooby_max_states;
+			// return value;
+			break;
+
+		default:
+			assert(false);
+	}
+
+	uint32_t hashed_value = get_hash(value);
+	assert(hashed_value < knob::scooby_max_states);
+
+	return hashed_value;
+}
+
+uint32_t State::get_hash(uint64_t key)
+{
+	uint32_t value = 0;
+	switch(knob::scooby_state_hash_type)
+	{
+		case 1: /* simple modulo */
+			value = (uint32_t)(key % knob::scooby_max_states);
+			break;
+
+		case 2:
+			value = HashZoo::jenkins((uint32_t)key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+
+		case 3:
+			value = HashZoo::knuth((uint32_t)key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+
+		case 4:
+			value = HashZoo::murmur3(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 5:
+			value = HashZoo::jenkins32(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 6:
+			value = HashZoo::hash32shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 7:
+			value = HashZoo::hash32shiftmult(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 8:
+			value = HashZoo::hash64shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 9:
+			value = HashZoo::hash5shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 10:
+			value = HashZoo::hash7shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 11:
+			value = HashZoo::Wang6shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 12:
+			value = HashZoo::Wang5shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 13:
+			value = HashZoo::Wang4shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+			
+		case 14:
+			value = HashZoo::Wang3shift(key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+	
+		case 15:
+			value = HashZoo::hybrid1((uint32_t)key);
+			value = (uint32_t)(value % knob::scooby_max_states);
+			break;
+
+		default:
+			assert(false);
+	}
+
+	return value;
+}
+
+std::string State::to_string()
+{
+	assert(false);
+	return string();
 }
 
 void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_t address)
@@ -206,147 +354,4 @@ void print_access_debug(Scooby_STEntry *stentry)
 		fprintf(stdout, "%d,", delta);
 	}
 	fprintf(stdout, "\n");
-}
-
-uint32_t ScoobyHash::jenkins(uint32_t key)
-{
-    // Robert Jenkins' 32 bit mix function
-    key += (key << 12);
-    key ^= (key >> 22);
-    key += (key << 4);
-    key ^= (key >> 9);
-    key += (key << 10);
-    key ^= (key >> 2);
-    key += (key << 7);
-    key ^= (key >> 12);
-    return key;
-}
-
-uint32_t ScoobyHash::knuth(uint32_t key)
-{
-    // Knuth's multiplicative method
-    key = (key >> 3) * 2654435761;
-    return key;
-}
-
-uint32_t ScoobyHash::murmur3(uint32_t key)
-{
-	/* TODO: define it using murmur3's finilization steps */
-	assert(false);
-}
-
-/* originally ment for 32b key */
-uint32_t ScoobyHash::jenkins32(uint32_t key)
-{
-   key = (key+0x7ed55d16) + (key<<12);
-   key = (key^0xc761c23c) ^ (key>>19);
-   key = (key+0x165667b1) + (key<<5);
-   key = (key+0xd3a2646c) ^ (key<<9);
-   key = (key+0xfd7046c5) + (key<<3);
-   key = (key^0xb55a4f09) ^ (key>>16);
-   return key;
-}
-
-/* originally ment for 32b key */
-uint32_t ScoobyHash::hash32shift(uint32_t key)
-{
-	key = ~key + (key << 15); // key = (key << 15) - key - 1;
-	key = key ^ (key >> 12);
-	key = key + (key << 2);
-	key = key ^ (key >> 4);
-	key = key * 2057; // key = (key + (key << 3)) + (key << 11);
-	key = key ^ (key >> 16);
-	return key;
-}
-
-/* originally ment for 32b key */
-uint32_t ScoobyHash::hash32shiftmult(uint32_t key)
-{
-	int c2=0x27d4eb2d; // a prime or an odd constant
-	key = (key ^ 61) ^ (key >> 16);
-	key = key + (key << 3);
-	key = key ^ (key >> 4);
-	key = key * c2;
-	key = key ^ (key >> 15);
-	return key;
-}
-
-uint32_t ScoobyHash::hash64shift(uint32_t key)
-{
-	key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-	key = key ^ (key >> 24);
-	key = (key + (key << 3)) + (key << 8); // key * 265
-	key = key ^ (key >> 14);
-	key = (key + (key << 2)) + (key << 4); // key * 21
-	key = key ^ (key >> 28);
-	key = key + (key << 31);
-	return key;
-}
-
-uint32_t ScoobyHash::hash5shift(uint32_t key)
-{
-	key = (key ^ 61) ^ (key >> 16);
-    key = key + (key << 3);
-    key = key ^ (key >> 4);
-    key = key * 0x27d4eb2d;
-    key = key ^ (key >> 15);
-    return key;
-}
-
-/* hash6shift is jenkin32 */
-
-uint32_t ScoobyHash::hash7shift(uint32_t key)
-{
-    key -= (key << 6);
-    key ^= (key >> 17);
-    key -= (key << 9);
-    key ^= (key << 4);
-    key -= (key << 3);
-    key ^= (key << 10);
-    key ^= (key >> 15);
-    return key ;
-}
-
-/* use low bit values */
-uint32_t ScoobyHash::Wang6shift(uint32_t key)
-{
-    key += ~(key << 15);
-    key ^=  (key >> 10);
-    key +=  (key << 3);
-    key ^=  (key >> 6);
-    key += ~(key << 11);
-    key ^=  (key >> 16);
-    return key;
-}
-
-uint32_t ScoobyHash::Wang5shift(uint32_t key)
-{
-    key = (key + 0x479ab41d) + (key << 8);
-    key = (key ^ 0xe4aa10ce) ^ (key >> 5);
-    key = (key + 0x9942f0a6) - (key << 14);
-    key = (key ^ 0x5aedd67d) ^ (key >> 3);
-    key = (key + 0x17bea992) + (key << 7);
-    return key;
-}
-
-uint32_t ScoobyHash::Wang4shift( uint32_t key)
-{
-    key = (key ^ 0xdeadbeef) + (key << 4);
-    key = key ^ (key >> 10);
-    key = key + (key << 7);
-    key = key ^ (key >> 13);
-    return key;
-}
-
-uint32_t ScoobyHash::Wang3shift( uint32_t key)
-{
-    key = key ^ (key >> 4);
-    key = (key ^ 0xdeadbeef) + (key << 5);
-    key = key ^ (key >> 11);
-    return key;
-}
-
-uint32_t ScoobyHash::hybrid1(uint32_t key)
-{
-	return knuth(jenkins(key));
 }

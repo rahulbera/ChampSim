@@ -127,6 +127,14 @@ namespace knob
 	std::string le_action_trace_name;
 	bool     le_enable_action_plot;
 
+	/* CMAC Engine */
+	uint32_t scooby_cmac_num_planes;
+	uint32_t scooby_cmac_num_entries_per_plane;
+	vector<int32_t> scooby_cmac_plane_offsets;
+	vector<int32_t> scooby_cmac_dim_granularities;
+	vector<int32_t> scooby_cmac_action_factors;
+	uint32_t scooby_cmac_hash_type;
+
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
 	uint32_t shaggy_st_size;
@@ -626,6 +634,32 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_enable_action_plot"))
 	{
 		knob::le_enable_action_plot = !strcmp(value, "true") ? true : false;
+	}
+
+	/* CMAC Engine */
+	else if (MATCH("", "scooby_cmac_num_planes"))
+	{
+		knob::scooby_cmac_num_planes = atoi(value);
+	}
+	else if (MATCH("", "scooby_cmac_num_entries_per_plane"))
+	{
+		knob::scooby_cmac_num_entries_per_plane = atoi(value);
+	}
+	else if (MATCH("", "scooby_cmac_plane_offsets"))
+	{
+		knob::scooby_cmac_plane_offsets = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_cmac_dim_granularities"))
+	{
+		knob::scooby_cmac_dim_granularities = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_cmac_action_factors"))
+	{
+		knob::scooby_cmac_action_factors = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_cmac_hash_type"))
+	{
+		knob::scooby_cmac_hash_type = atoi(value);
 	}
 
 	/* Shaggy knobs */

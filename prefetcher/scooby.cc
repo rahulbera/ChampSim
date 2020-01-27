@@ -4,6 +4,7 @@
 #include "champsim.h"
 #include "memory_class.h"
 #include "scooby.h"
+#include "util.h"
 
 #if 0
 #	define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
@@ -70,144 +71,14 @@ namespace knob
 	extern uint32_t le_action_trace_interval;
 	extern std::string le_action_trace_name;
 	extern bool     le_enable_action_plot;
-}
 
-uint32_t State::value()
-{
-	uint64_t value = 0;
-	switch(knob::scooby_state_type)
-	{
-		case 1: /* Only PC */
-			// return (uint32_t)(pc % knob::scooby_max_states);
-			value = pc;
-			break;
-
-		case 2: /* PC+ offset */
-			value = pc;
-			value = value << 6;
-			value = value + offset;
-			// value = value % knob::scooby_max_states;
-			// return value;
-			break;
-
-		case 3: /* Only offset */
-			value = offset;
-			// value = value % knob::scooby_max_states;
-			// return value;
-			break;
-
-		case 4: /* SPP like delta-path signature */
-			value = local_delta_sig;
-			// value = value % knob::scooby_max_states;
-			// return value;
-			break;
-
-		case 5: /* SPP like path signature, but made with shifted PC */
-			value = local_pc_sig;
-			// value = value % knob::scooby_max_states;
-			// return value;
-			break;
-
-		case 6: /* SPP's delta-path signature */
-			value = local_delta_sig2;
-			// value = value % knob::scooby_max_states;
-			// return value;
-			break;
-
-		default:
-			assert(false);
-	}
-
-	uint32_t hashed_value = get_hash(value);
-	assert(hashed_value < knob::scooby_max_states);
-
-	return hashed_value;
-}
-
-uint32_t State::get_hash(uint64_t key)
-{
-	uint32_t value = 0;
-	switch(knob::scooby_state_hash_type)
-	{
-		case 1: /* simple modulo */
-			value = (uint32_t)(key % knob::scooby_max_states);
-			break;
-
-		case 2:
-			value = ScoobyHash::jenkins((uint32_t)key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-
-		case 3:
-			value = ScoobyHash::knuth((uint32_t)key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-
-		case 4:
-			value = ScoobyHash::murmur3(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 5:
-			value = ScoobyHash::jenkins32(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 6:
-			value = ScoobyHash::hash32shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 7:
-			value = ScoobyHash::hash32shiftmult(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 8:
-			value = ScoobyHash::hash64shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 9:
-			value = ScoobyHash::hash5shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 10:
-			value = ScoobyHash::hash7shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 11:
-			value = ScoobyHash::Wang6shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 12:
-			value = ScoobyHash::Wang5shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 13:
-			value = ScoobyHash::Wang4shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-			
-		case 14:
-			value = ScoobyHash::Wang3shift(key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-	
-		case 15:
-			value = ScoobyHash::hybrid1((uint32_t)key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
-
-		default:
-			assert(false);
-	}
-
-	return value;
+	/* CMAC engine knobs */
+	extern uint32_t scooby_cmac_num_planes;
+	extern uint32_t scooby_cmac_num_entries_per_plane;
+	extern vector<int32_t> scooby_cmac_plane_offsets;
+	extern vector<int32_t> scooby_cmac_dim_granularities;
+	extern vector<int32_t> scooby_cmac_action_factors;
+	extern uint32_t scooby_cmac_hash_type;
 }
 
 void Scooby::init_knobs()
@@ -250,18 +121,23 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	if(knob::scooby_enable_cmac_engine)
 	{
 		assert(false);
-		// CMACConfig config;
-		// config.num_planes = knob::scooby_cmac_num_planes;
+		CMACConfig config;
+		config.num_planes = knob::scooby_cmac_num_planes;
+		config.num_entries_per_plane = knob::scooby_cmac_num_entries_per_plane;
+		config.plane_offsets = knob::scooby_cmac_plane_offsets;
+		config.dim_granularities = knob::scooby_cmac_dim_granularities;
+		config.action_factors = knob::scooby_cmac_action_factors;
+		config.hash_type = knob::scooby_cmac_hash_type;
 
-		// brain_cmac = new LearningEngineCMAC(config,
-		// 									this,
-		// 									knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
-		// 									knob::scooby_max_actions, 
-		// 									knob::scooby_max_states,
-		// 									knob::scooby_seed,
-		// 									knob::scooby_policy,
-		// 									knob::scooby_learning_type,
-		// 									knob::scooby_brain_zero_init);
+		brain_cmac = new LearningEngineCMAC(config,
+											this,
+											knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
+											knob::scooby_max_actions, 
+											knob::scooby_max_states,
+											knob::scooby_seed,
+											knob::scooby_policy,
+											knob::scooby_learning_type,
+											knob::scooby_brain_zero_init);
 	}
 	else
 	{
