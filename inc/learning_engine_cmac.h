@@ -5,12 +5,11 @@
 #include "learning_engine_base.h"
 #include "scooby_helper.h"
 
-#define MAX_CMAC_PLANES 16
+#define MAX_CMAC_PLANES 128
 
 typedef enum
 {
-	InvalDim = 0,
-	PC,
+	PC = 0,
 	Offset,
 	Delta,
 
@@ -36,7 +35,7 @@ public:
 		action_factors.clear();
 		hash_type = 0;
 	}
-	~CMACConfig();
+	~CMACConfig(){}
 };
 
 class LearningEngineCMAC : public LearningEngineBase

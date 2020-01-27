@@ -32,8 +32,11 @@ LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float a
 	m_action_factors = config.action_factors;
 	m_hash_type = config.hash_type;
 
+	/* check integrity */
 	assert(m_num_planes <= MAX_CMAC_PLANES);
 	assert(m_plane_offsets.size() == m_num_planes);
+	assert(m_dim_granularities.size() == Dimension::NumDimensions);
+	assert(m_action_factors.size() == m_actions);
 
 	/* init Q-tables
 	 * Each Q-table is a one-dimentional array.

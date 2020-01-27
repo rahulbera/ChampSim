@@ -1,4 +1,5 @@
 #include <cassert>
+#include <sstream>
 #include "util.h"
 
 uint32_t folded_xor(uint64_t value, uint32_t num_folds)

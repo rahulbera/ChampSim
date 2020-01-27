@@ -116,11 +116,10 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	last_evicted_tracker = NULL;
 
 	/* init learning engine */
-	// brain_cmac = NULL;
+	brain_cmac = NULL;
 	brain = NULL;
 	if(knob::scooby_enable_cmac_engine)
 	{
-		assert(false);
 		CMACConfig config;
 		config.num_planes = knob::scooby_cmac_num_planes;
 		config.num_entries_per_plane = knob::scooby_cmac_num_entries_per_plane;
@@ -160,10 +159,10 @@ Scooby::Scooby(string type) : Prefetcher(type)
 
 Scooby::~Scooby()
 {
-	// if(brain_cmac)
-	// {
-	// 	delete brain_cmac;
-	// }
+	if(brain_cmac)
+	{
+		delete brain_cmac;
+	}
 	if(brain)
 	{
 		delete brain;
@@ -180,12 +179,7 @@ void Scooby::print_config()
 		<< "scooby_seed " << knob::scooby_seed << endl
 		<< "scooby_policy " << knob::scooby_policy << endl
 		<< "scooby_learning_type " << knob::scooby_learning_type << endl
-		<< "scooby_actions ";
-	for(uint32_t index = 0; index < Actions.size(); ++index)
-	{
-		cout << Actions[index] << ",";
-	}
-	cout << endl
+		<< "scooby_actions " << array_to_string<int32_t>(Actions) << endl
 		<< "scooby_max_actions " << knob::scooby_max_actions << endl
 		<< "scooby_pt_size " << knob::scooby_pt_size << endl
 		<< "scooby_st_size " << knob::scooby_st_size << endl
@@ -217,16 +211,18 @@ void Scooby::print_config()
 		<< "le_trace_state " << hex << knob::le_trace_state << dec << endl
 		<< "le_enable_score_plot " << knob::le_enable_score_plot << endl
 		<< "le_plot_file_name " << knob::le_plot_file_name << endl
-		<< "le_plot_actions ";
-	for(uint32_t index = 0; index < knob::le_plot_actions.size(); ++index)
-	{
-		cout << knob::le_plot_actions[index] << ",";
-	}
-	cout << endl
+		<< "le_plot_actions " << array_to_string<int32_t>(knob::le_plot_actions) << endl
 		<< "le_enable_action_trace " << knob::le_enable_action_trace << endl
 		<< "le_action_trace_interval " << knob::le_action_trace_interval << endl
 		<< "le_action_trace_name " << knob::le_action_trace_name << endl
 		<< "le_enable_action_plot " << knob::le_enable_action_plot << endl
+		<< endl
+		<< "scooby_cmac_num_planes " << knob::scooby_cmac_num_planes << endl
+		<< "scooby_cmac_num_entries_per_plane " << knob::scooby_cmac_num_entries_per_plane << endl
+		<< "scooby_cmac_plane_offsets " << array_to_string(knob::scooby_cmac_plane_offsets) << endl
+		<< "scooby_cmac_dim_granularities " << array_to_string(knob::scooby_cmac_dim_granularities) << endl
+		<< "scooby_cmac_action_factors " << array_to_string(knob::scooby_cmac_action_factors) << endl
+		<< "scooby_cmac_hash_type " << knob::scooby_cmac_hash_type << endl
 		<< endl;
 
 	if(knob::scooby_enable_shaggy)
@@ -354,8 +350,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 	uint32_t action_index = 0;
 	if(knob::scooby_enable_cmac_engine)
 	{
-		assert(false);
-		// action_index = brain_cmac->chooseAction(state);
+		action_index = brain_cmac->chooseAction(state);
 	}
 	else
 	{
@@ -619,8 +614,7 @@ void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
 															curr_evicted->state->value(), curr_evicted->action_index);
 	if(knob::scooby_enable_cmac_engine)
 	{
-		assert(false);
-		// brain_cmac->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index);
+		brain_cmac->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index);
 	}
 	else
 	{
@@ -800,11 +794,10 @@ void Scooby::dump_stats()
 		<< "scooby_pref_issue_shaggy " << stats.pref_issue.shaggy << endl
 		<< endl;
 
-	// if(brain_cmac)
-	// {
-	// 	assert(false);
-	// 	brain_cmac->dump_stats();
-	// }
+	if(brain_cmac)
+	{
+		brain_cmac->dump_stats();
+	}
 	if(brain)
 	{
 		brain->dump_stats();
