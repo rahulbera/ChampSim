@@ -179,7 +179,7 @@ void Scooby::print_config()
 		<< "scooby_seed " << knob::scooby_seed << endl
 		<< "scooby_policy " << knob::scooby_policy << endl
 		<< "scooby_learning_type " << knob::scooby_learning_type << endl
-		<< "scooby_actions " << array_to_string<int32_t>(Actions) << endl
+		<< "scooby_actions " << array_to_string(Actions) << endl
 		<< "scooby_max_actions " << knob::scooby_max_actions << endl
 		<< "scooby_pt_size " << knob::scooby_pt_size << endl
 		<< "scooby_st_size " << knob::scooby_st_size << endl
@@ -211,7 +211,7 @@ void Scooby::print_config()
 		<< "le_trace_state " << hex << knob::le_trace_state << dec << endl
 		<< "le_enable_score_plot " << knob::le_enable_score_plot << endl
 		<< "le_plot_file_name " << knob::le_plot_file_name << endl
-		<< "le_plot_actions " << array_to_string<int32_t>(knob::le_plot_actions) << endl
+		<< "le_plot_actions " << array_to_string(knob::le_plot_actions) << endl
 		<< "le_enable_action_trace " << knob::le_enable_action_trace << endl
 		<< "le_action_trace_interval " << knob::le_action_trace_interval << endl
 		<< "le_action_trace_name " << knob::le_action_trace_name << endl
@@ -221,7 +221,7 @@ void Scooby::print_config()
 		<< "scooby_cmac_num_entries_per_plane " << knob::scooby_cmac_num_entries_per_plane << endl
 		<< "scooby_cmac_plane_offsets " << array_to_string(knob::scooby_cmac_plane_offsets) << endl
 		<< "scooby_cmac_dim_granularities " << array_to_string(knob::scooby_cmac_dim_granularities) << endl
-		<< "scooby_cmac_action_factors " << array_to_string(knob::scooby_cmac_action_factors) << endl
+		<< "scooby_cmac_action_factors " << array_to_string(knob::scooby_cmac_action_factors, true) << endl
 		<< "scooby_cmac_hash_type " << knob::scooby_cmac_hash_type << endl
 		<< endl;
 

@@ -4,6 +4,7 @@
 #include <strings.h>
 #include "learning_engine_cmac.h"
 #include "util.h"
+#include "scooby.h"
 
 #define DELTA_BITS 7
 
@@ -223,8 +224,9 @@ void LearningEngineCMAC::dump_stats()
 	fprintf(stdout, "learning_engine_cmac.action.exploit %lu\n", stats.action.exploit);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		fprintf(stdout, "learning_engine_cmac.action.index_%u_explored %lu\n", action, stats.action.dist[action][0]);
-		fprintf(stdout, "learning_engine_cmac.action.index_%u_exploited %lu\n", action, stats.action.dist[action][1]);
+		Scooby *scooby = (Scooby*)m_parent;
+		fprintf(stdout, "learning_engine_cmac.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine_cmac.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
 	fprintf(stdout, "learning_engine_cmac.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");

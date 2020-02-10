@@ -792,7 +792,7 @@ std::vector<int32_t> get_array_int(const char *str)
 	char *pch = strtok(tmp_str, ",");
 	while(pch)
 	{
-		value.push_back(atoi(pch));
+		value.push_back(strtol(pch, NULL, 0));
 		pch = strtok(NULL, ",");
 	}
 	free(tmp_str);
