@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
+#include <sstream>
 #include "scooby_helper.h"
 #include "util.h"
 
@@ -165,8 +166,13 @@ uint32_t State::get_hash(uint64_t key)
 
 std::string State::to_string()
 {
-	assert(false);
-	return string();
+	std::stringstream ss;
+
+	ss << std::hex << pc << std::dec << "|"
+		<< offset << "|"
+		<< delta;
+
+	return ss.str();
 }
 
 void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_t address)

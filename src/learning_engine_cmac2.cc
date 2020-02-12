@@ -1,9 +1,8 @@
-#include <iostream>
 #include <vector>
 #include <cassert>
 #include <deque>
 #include <strings.h>
-#include "learning_engine_cmac.h"
+#include "learning_engine_cmac2.h"
 #include "util.h"
 #include "scooby.h"
 
@@ -24,30 +23,33 @@ namespace knob
 
 }
 
-LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
+LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
 	: LearningEngineBase(p, alpha, gamma, epsilon, actions, states, seed, policy, type)
 {
 	m_num_planes = config.num_planes;
 	m_num_entries_per_plane = config.num_entries_per_plane;
 	m_plane_offsets = config.plane_offsets;
 	m_dim_granularities = config.dim_granularities;
-	m_action_factors = config.action_factors;
 	m_hash_type = config.hash_type;
 
 	/* check integrity */
 	assert(m_num_planes <= MAX_CMAC_PLANES);
-	cout << "m_plane_offsets " << m_plane_offsets.size() << " m_num_planes " << m_num_planes << endl;
 	assert(m_plane_offsets.size() == m_num_planes);
 	assert(m_dim_granularities.size() == Dimension::NumDimensions);
-	assert(m_action_factors.size() == m_actions);
 
 	/* init Q-tables
-	 * Each Q-table is a one-dimentional array.
-	 * It uses a random constant per action to separate learnings for each action */ 
-	m_qtables = (float**)calloc(m_num_planes, sizeof(float*));
+	 * Unlike CMAC engine 1.0, each Q-table is a two-dimentional array in CMAC 2.0*/
+	m_qtables = (float***)calloc(m_num_planes, sizeof(float**));
+	assert(m_qtables);
 	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
 	{
-		m_qtables[plane] = (float*)calloc(m_num_entries_per_plane, sizeof(float));
+		m_qtables[plane] = (float**)calloc(m_num_entries_per_plane, sizeof(float*));
+		assert(m_qtables[plane]);
+		for(uint32_t entry = 0; entry < m_num_entries_per_plane; ++entry)
+		{
+			m_qtables[plane][entry] = (float*)calloc(m_actions, sizeof(float));
+			assert(m_qtables[plane][entry]);
+		}
 	}
 
 	/* init Q-value */
@@ -63,7 +65,10 @@ LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float a
 	{
 		for(uint32_t entry = 0; entry < m_num_entries_per_plane; ++entry)
 		{
-			m_qtables[plane][entry] = m_init_value;
+			for(uint32_t action = 0; action < m_actions; ++action)
+			{
+				m_qtables[plane][entry][action] = m_init_value;
+			}
 		}
 	}
 
@@ -76,52 +81,52 @@ LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float a
 	bzero(&stats, sizeof(stats));
 
 	/* Some debugging */
-	State *state = new State();
-	state->pc = 0x401442;
-	state->offset = 60;
-	state->delta = 1;
-	cout << state->to_string() << ":";
-	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-	{
-		uint32_t index = generatePlaneIndex(plane, state, 9);
-		cout << index << ",";
-	}
-	cout << endl;
-	state->offset = 43;
-	cout << state->to_string() << ":";
-	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-	{
-		uint32_t index = generatePlaneIndex(plane, state, 9);
-		cout << index << ",";
-	}
-	cout << endl;
-	state->offset = 44;
-	cout << state->to_string() << ":";
-	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-	{
-		uint32_t index = generatePlaneIndex(plane, state, 9);
-		cout << index << ",";
-	}
-	cout << endl;
+	// State *state = new State();
+	// state->pc = 0x401442;
+	// state->offset = 60;
+	// state->delta = 1;
+	// cout << state->to_string() << ":";
+	// for(uint32_t plane = 0; plane < m_num_planes; ++plane)
+	// {
+	// 	uint32_t index = generatePlaneIndex(plane, state, 9);
+	// 	cout << index << ",";
+	// }
+	// cout << endl;
+	// state->offset = 43;
+	// cout << state->to_string() << ":";
+	// for(uint32_t plane = 0; plane < m_num_planes; ++plane)
+	// {
+	// 	uint32_t index = generatePlaneIndex(plane, state, 9);
+	// 	cout << index << ",";
+	// }
+	// cout << endl;
+	// state->offset = 44;
+	// cout << state->to_string() << ":";
+	// for(uint32_t plane = 0; plane < m_num_planes; ++plane)
+	// {
+	// 	uint32_t index = generatePlaneIndex(plane, state, 9);
+	// 	cout << index << ",";
+	// }
+	// cout << endl;
 
-	/* Who else is aliasing to index 172 in plane 0? */
-	state->pc = 0x401442;
-	state->delta = 1;
-	for(uint32_t offset = 0; offset < 64; ++offset)
-	{
-		state->offset = offset;
-		for(uint32_t action = 0; action < m_actions; ++action)
-		{
-			uint32_t index = generatePlaneIndex(0, state, action);
-			if(index == 172)
-			{
-				cout << "state " << state->to_string() << " action " << action << " generated same index 172 in plane 0" << endl;
-			}
-		}
-	}
+	// /* Who else is aliasing to index 172 in plane 0? */
+	// state->pc = 0x401442;
+	// state->delta = 1;
+	// for(uint32_t offset = 0; offset < 64; ++offset)
+	// {
+	// 	state->offset = offset;
+	// 	for(uint32_t action = 0; action < m_actions; ++action)
+	// 	{
+	// 		uint32_t index = generatePlaneIndex(0, state, action);
+	// 		if(index == 172)
+	// 		{
+	// 			cout << "state " << state->to_string() << " action " << action << " generated same index 172 in plane 0" << endl;
+	// 		}
+	// 	}
+	// }
 }
 
-LearningEngineCMAC::~LearningEngineCMAC()
+LearningEngineCMAC2::~LearningEngineCMAC2()
 {
 	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
 	{
@@ -129,7 +134,7 @@ LearningEngineCMAC::~LearningEngineCMAC()
 	}
 }
 
-uint32_t LearningEngineCMAC::chooseAction(State *state)
+uint32_t LearningEngineCMAC2::chooseAction(State *state)
 {
 	stats.action.called++;
 	uint32_t action = 0;
@@ -159,7 +164,7 @@ uint32_t LearningEngineCMAC::chooseAction(State *state)
 	return action;
 }
 
-uint32_t LearningEngineCMAC::getMaxAction(State *state)
+uint32_t LearningEngineCMAC2::getMaxAction(State *state)
 {
 	float max_q_value = 0.0, q_value = 0.0;
 	uint32_t selected_action = 0;
@@ -184,25 +189,25 @@ uint32_t LearningEngineCMAC::getMaxAction(State *state)
 	return selected_action;
 }
 
-float LearningEngineCMAC::consultPlane(uint32_t plane, State *state, uint32_t action)
+float LearningEngineCMAC2::consultPlane(uint32_t plane, State *state, uint32_t action)
 {
 	assert(plane < m_num_planes);
 	assert(action < m_actions);
 	uint32_t index = generatePlaneIndex(plane, state, action);
 	assert(index < m_num_entries_per_plane);
-	return m_qtables[plane][index];
+	return m_qtables[plane][index][action];
 }
 
-void LearningEngineCMAC::updatePlane(uint32_t plane, State *state, uint32_t action, float value)
+void LearningEngineCMAC2::updatePlane(uint32_t plane, State *state, uint32_t action, float value)
 {
 	assert(plane < m_num_planes);
 	assert(action < m_actions);
 	uint32_t index = generatePlaneIndex(plane, state, action);
 	assert(index < m_num_entries_per_plane);
-	m_qtables[plane][index] = value;
+	m_qtables[plane][index][action] = value;
 }
 
-uint32_t LearningEngineCMAC::generatePlaneIndex(uint32_t plane, State *state, uint32_t action)
+uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, uint32_t action)
 {
 	MYLOG("plane: %u, state: %s, action: %u", plane, state->to_string().c_str(), action);
 
@@ -234,8 +239,8 @@ uint32_t LearningEngineCMAC::generatePlaneIndex(uint32_t plane, State *state, ui
 	MYLOG("state: %s, initial index: %x", state->to_string().c_str(), initial_index);
 
 	/* XOR the constant factor for action */
-	initial_index = initial_index ^ m_action_factors[action];
-	MYLOG("state: %s, action: %u, XOR'ed index: %x", state->to_string().c_str(), action, initial_index);	
+	// initial_index = initial_index ^ m_action_factors[action];
+	// MYLOG("state: %s, action: %u, XOR'ed index: %x", state->to_string().c_str(), action, initial_index);	
 
 	/* Finally hash */
 	uint32_t hashed_index = getHash(initial_index);
@@ -244,7 +249,7 @@ uint32_t LearningEngineCMAC::generatePlaneIndex(uint32_t plane, State *state, ui
 	return (hashed_index % m_num_entries_per_plane);
 }
 
-void LearningEngineCMAC::learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2)
+void LearningEngineCMAC2::learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2)
 {
 	stats.learn.called++;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
@@ -273,22 +278,22 @@ void LearningEngineCMAC::learn(State *state1, uint32_t action1, int32_t reward, 
 	}
 }
 
-void LearningEngineCMAC::dump_stats()
+void LearningEngineCMAC2::dump_stats()
 {
-	fprintf(stdout, "learning_engine_cmac.action.called %lu\n", stats.action.called);
-	fprintf(stdout, "learning_engine_cmac.action.explore %lu\n", stats.action.explore);
-	fprintf(stdout, "learning_engine_cmac.action.exploit %lu\n", stats.action.exploit);
+	fprintf(stdout, "learning_engine_cmac2.action.called %lu\n", stats.action.called);
+	fprintf(stdout, "learning_engine_cmac2.action.explore %lu\n", stats.action.explore);
+	fprintf(stdout, "learning_engine_cmac2.action.exploit %lu\n", stats.action.exploit);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		Scooby *scooby = (Scooby*)m_parent;
-		fprintf(stdout, "learning_engine_cmac.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
-		fprintf(stdout, "learning_engine_cmac.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
+		fprintf(stdout, "learning_engine_cmac2.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine_cmac2.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
-	fprintf(stdout, "learning_engine_cmac.learn.called %lu\n", stats.learn.called);
+	fprintf(stdout, "learning_engine_cmac2.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");
 }
 
-uint32_t LearningEngineCMAC::getHash(uint32_t key)
+uint32_t LearningEngineCMAC2::getHash(uint32_t key)
 {
 	switch(m_hash_type)
 	{

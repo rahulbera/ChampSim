@@ -7,6 +7,7 @@
 #include "scooby_helper.h"
 #include "learning_engine_basic.h"
 #include "learning_engine_cmac.h"
+#include "learning_engine_cmac2.h"
 #include "shaggy.h"
 
 using namespace std;
@@ -59,6 +60,7 @@ private:
 	deque<Scooby_STEntry*> signature_table;
 	LearningEngineBasic *brain;
 	LearningEngineCMAC *brain_cmac;
+	LearningEngineCMAC2 *brain_cmac2;
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
 	Shaggy *shaggy;
@@ -66,6 +68,9 @@ private:
 	/* for workload insights only
 	 * has nothing to do with prefetching */
 	ScoobyRecorder *recorder;
+
+	/* Data structures for debugging */
+	unordered_map<string, uint64_t> target_action_state;
 	
 	struct
 	{
@@ -156,6 +161,7 @@ private:
 	} stats;
 
 	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;
+	unordered_map<std::string, vector<uint64_t> > state_action_dist2;
 
 private:
 	void init_knobs();
@@ -171,6 +177,7 @@ private:
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
 	void update_stats(uint32_t state, uint32_t action_index);
+	void update_stats(State *state, uint32_t action_index);
 	void track_in_st(uint64_t page, uint32_t pred_offset);
 
 public:

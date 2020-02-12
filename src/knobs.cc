@@ -113,6 +113,7 @@ namespace knob
 	uint32_t scooby_state_hash_type;
 	bool     scooby_prefetch_with_shaggy;
 	bool     scooby_enable_cmac_engine;
+	bool     scooby_enable_cmac2_engine;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -134,6 +135,13 @@ namespace knob
 	vector<int32_t> scooby_cmac_dim_granularities;
 	vector<int32_t> scooby_cmac_action_factors;
 	uint32_t scooby_cmac_hash_type;
+
+	/* CMAC Engine 2.0 */
+	uint32_t scooby_cmac2_num_planes;
+	uint32_t scooby_cmac2_num_entries_per_plane;
+	vector<int32_t> scooby_cmac2_plane_offsets;
+	vector<int32_t> scooby_cmac2_dim_granularities;
+	uint32_t scooby_cmac2_hash_type;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -589,6 +597,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_enable_cmac_engine = !strcmp(value, "true") ? true : false;
 	}
+	else if (MATCH("", "scooby_enable_cmac2_engine"))
+	{
+		knob::scooby_enable_cmac2_engine = !strcmp(value, "true") ? true : false;
+	}
 
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
@@ -648,6 +660,8 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_cmac_plane_offsets"))
 	{
 		knob::scooby_cmac_plane_offsets = get_array_int(value);
+		cout << "scooby_cmac_plane_offsets " << knob::scooby_cmac_plane_offsets.size() << endl;
+		cout << value << endl;
 	}
 	else if (MATCH("", "scooby_cmac_dim_granularities"))
 	{
@@ -660,6 +674,28 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_cmac_hash_type"))
 	{
 		knob::scooby_cmac_hash_type = atoi(value);
+	}
+
+	/* CMAC Engine 2.0 */
+	else if (MATCH("", "scooby_cmac2_num_planes"))
+	{
+		knob::scooby_cmac2_num_planes = atoi(value);
+	}
+	else if (MATCH("", "scooby_cmac2_num_entries_per_plane"))
+	{
+		knob::scooby_cmac2_num_entries_per_plane = atoi(value);
+	}
+	else if (MATCH("", "scooby_cmac2_plane_offsets"))
+	{
+		knob::scooby_cmac2_plane_offsets = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_cmac2_dim_granularities"))
+	{
+		knob::scooby_cmac2_dim_granularities = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_cmac2_hash_type"))
+	{
+		knob::scooby_cmac2_hash_type = atoi(value);
 	}
 
 	/* Shaggy knobs */
