@@ -6,6 +6,7 @@
 #include "learning_engine_basic.h"
 #include "scooby.h"
 #include "velma.h"
+#include "util.h"
 
 #if 0
 #	define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
@@ -30,20 +31,6 @@ namespace knob
 	extern uint32_t le_action_trace_interval;
 	extern std::string le_action_trace_name;
 	extern bool     le_enable_action_plot;
-}
-
-/* helper function */
-void gen_random(char *s, const int len) {
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-
-    for (int i = 0; i < len; ++i) {
-        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
-    }
-    
-    s[len] = 0;
 }
 
 LearningEngineBasic::LearningEngineBasic(Prefetcher *parent, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
@@ -239,13 +226,14 @@ void LearningEngineBasic::print_aux_stats()
 
 void LearningEngineBasic::dump_stats()
 {
+	Scooby *scooby = (Scooby*)m_parent;
 	fprintf(stdout, "learning_engine.action.called %lu\n", stats.action.called);
 	fprintf(stdout, "learning_engine.action.explore %lu\n", stats.action.explore);
 	fprintf(stdout, "learning_engine.action.exploit %lu\n", stats.action.exploit);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		fprintf(stdout, "learning_engine.action.index_%u_explored %lu\n", action, stats.action.dist[action][0]);
-		fprintf(stdout, "learning_engine.action.index_%u_exploited %lu\n", action, stats.action.dist[action][1]);
+		fprintf(stdout, "learning_engine.action.index_%u_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine.action.index_%u_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
 	fprintf(stdout, "learning_engine.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");

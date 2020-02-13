@@ -1,6 +1,7 @@
 #ifndef SCOOBY_HELPER_H
 #define SCOOBY_HELPER_H
 
+#include <string>
 #include <deque>
 #include <unordered_set>
 #include <unordered_map>

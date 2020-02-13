@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 
+void gen_random(char *s, const int len);
 uint32_t folded_xor(uint64_t value, uint32_t num_folds);
 
 template <class T> std::string array_to_string(std::vector<T> array, bool hex = false, uint32_t size = 0)

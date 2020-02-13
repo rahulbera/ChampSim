@@ -14,6 +14,7 @@ private:
 	uint32_t m_hash_type;
 
 	float m_init_value;
+	vector<uint32_t> plane_offset, dimension_granularity, action_factor;
 
     std::default_random_engine m_generator;
     std::bernoulli_distribution *m_explore;
@@ -21,7 +22,10 @@ private:
 
 	float ***m_qtables;
 
-	vector<uint32_t> plane_offset, dimension_granularity, action_factor;
+	/* tracing related knobs */
+	uint32_t trace_interval;
+	uint64_t trace_timestamp;
+	FILE *trace;
 
 	/* stats */
 	struct
@@ -42,10 +46,13 @@ private:
 
 private:
 	uint32_t getMaxAction(State *state);
+	float consultQ(State *state, uint32_t action);
 	float consultPlane(uint32_t plane, State *state, uint32_t action);
 	void updatePlane(uint32_t plane, State *state, uint32_t action, float value);
 	uint32_t generatePlaneIndex(uint32_t plane, State *state, uint32_t action);
 	uint32_t getHash(uint32_t key);
+	void dump_state_trace(State *state);
+	void plot_scores();
 
 public:
 	LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);

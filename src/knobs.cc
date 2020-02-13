@@ -142,6 +142,13 @@ namespace knob
 	vector<int32_t> scooby_cmac2_plane_offsets;
 	vector<int32_t> scooby_cmac2_dim_granularities;
 	uint32_t scooby_cmac2_hash_type;
+	bool 		le_cmac2_enable_trace;
+	string 		le_cmac2_trace_state;
+	uint32_t 	le_cmac2_trace_interval;
+	bool 		le_cmac2_enable_score_plot;
+	vector<int32_t> le_cmac2_plot_actions;
+	std::string 	le_cmac2_trace_file_name;
+	std::string 	le_cmac2_plot_file_name;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -696,6 +703,34 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_cmac2_hash_type"))
 	{
 		knob::scooby_cmac2_hash_type = atoi(value);
+	}
+	else if (MATCH("", "le_cmac2_enable_trace"))
+	{
+		knob::le_cmac2_enable_trace = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_cmac2_trace_state"))
+	{
+		knob::le_cmac2_trace_state = string(value);
+	}
+	else if (MATCH("", "le_cmac2_trace_interval"))
+	{
+		knob::le_cmac2_trace_interval = atoi(value);
+	}
+	else if (MATCH("", "le_cmac2_enable_score_plot"))
+	{
+		knob::le_cmac2_enable_score_plot = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_cmac2_plot_actions"))
+	{
+		knob::le_cmac2_plot_actions = get_array_int(value);
+	}
+	else if (MATCH("", "le_cmac2_trace_file_name"))
+	{
+		knob::le_cmac2_trace_file_name = string(value);
+	}
+	else if (MATCH("", "le_cmac2_plot_file_name"))
+	{
+		knob::le_cmac2_plot_file_name = string(value);
 	}
 
 	/* Shaggy knobs */

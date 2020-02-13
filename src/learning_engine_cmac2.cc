@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cassert>
 #include <deque>
@@ -20,7 +21,13 @@
 
 namespace knob
 {
-
+	extern bool 		le_cmac2_enable_trace;
+	extern string 		le_cmac2_trace_state;
+	extern uint32_t 	le_cmac2_trace_interval;
+	extern bool 		le_cmac2_enable_score_plot;
+	extern vector<int32_t> le_cmac2_plot_actions;
+	extern std::string 	le_cmac2_trace_file_name;
+	extern std::string 	le_cmac2_plot_file_name;
 }
 
 LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
@@ -77,53 +84,17 @@ LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float
 	m_explore = new std::bernoulli_distribution(epsilon);
 	m_actiongen = new std::uniform_int_distribution<int>(0, m_actions-1);
 
+	/* reward tracing */
+	if(knob::le_cmac2_enable_trace)
+	{
+		trace_interval = 0;
+		trace_timestamp = 0;
+		trace = fopen(knob::le_cmac2_trace_file_name.c_str(), "w");
+		assert(trace);
+	}
+
 	/* init stats */
 	bzero(&stats, sizeof(stats));
-
-	/* Some debugging */
-	// State *state = new State();
-	// state->pc = 0x401442;
-	// state->offset = 60;
-	// state->delta = 1;
-	// cout << state->to_string() << ":";
-	// for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-	// {
-	// 	uint32_t index = generatePlaneIndex(plane, state, 9);
-	// 	cout << index << ",";
-	// }
-	// cout << endl;
-	// state->offset = 43;
-	// cout << state->to_string() << ":";
-	// for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-	// {
-	// 	uint32_t index = generatePlaneIndex(plane, state, 9);
-	// 	cout << index << ",";
-	// }
-	// cout << endl;
-	// state->offset = 44;
-	// cout << state->to_string() << ":";
-	// for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-	// {
-	// 	uint32_t index = generatePlaneIndex(plane, state, 9);
-	// 	cout << index << ",";
-	// }
-	// cout << endl;
-
-	// /* Who else is aliasing to index 172 in plane 0? */
-	// state->pc = 0x401442;
-	// state->delta = 1;
-	// for(uint32_t offset = 0; offset < 64; ++offset)
-	// {
-	// 	state->offset = offset;
-	// 	for(uint32_t action = 0; action < m_actions; ++action)
-	// 	{
-	// 		uint32_t index = generatePlaneIndex(0, state, action);
-	// 		if(index == 172)
-	// 		{
-	// 			cout << "state " << state->to_string() << " action " << action << " generated same index 172 in plane 0" << endl;
-	// 		}
-	// 	}
-	// }
 }
 
 LearningEngineCMAC2::~LearningEngineCMAC2()
@@ -171,14 +142,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state)
 
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		q_value = 0.0;
-		for(uint32_t plane = 0; plane < m_num_planes; ++plane)
-		{
-			/* aggregate */
-			q_value += consultPlane(plane, state, action);
-		}
-
-		/* select max */
+		q_value = consultQ(state, action);
 		if(q_value > max_q_value)
 		{
 			max_q_value = q_value;
@@ -187,6 +151,17 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state)
 	}
 
 	return selected_action;
+}
+
+float LearningEngineCMAC2::consultQ(State *state, uint32_t action)
+{
+	assert(action < m_actions);
+	float q_value = 0.0;
+	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
+	{
+		q_value += consultPlane(plane, state, action);
+	}
+	return q_value;
 }
 
 float LearningEngineCMAC2::consultPlane(uint32_t plane, State *state, uint32_t action)
@@ -209,8 +184,6 @@ void LearningEngineCMAC2::updatePlane(uint32_t plane, State *state, uint32_t act
 
 uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, uint32_t action)
 {
-	MYLOG("plane: %u, state: %s, action: %u", plane, state->to_string().c_str(), action);
-
 	/* extract state dimensions */
 	uint64_t pc = state->pc;
 	uint32_t offset = state->offset;
@@ -221,22 +194,22 @@ uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, u
 	uint32_t folded_pc = folded_xor(pc, 2); /* 32b folded XOR */
 	folded_pc += m_plane_offsets[plane]; /* add CMAC plane offset */
 	folded_pc >>= m_dim_granularities[Dimension::PC];
-	MYLOG("PC feature %x", folded_pc);
+	// MYLOG("PC feature %x", folded_pc);
 
 	/* 2. Offset */
 	offset += m_plane_offsets[plane];
 	offset >>= m_dim_granularities[Dimension::Offset];
-	MYLOG("Offset feature %x", offset);
+	// MYLOG("Offset feature %x", offset);
 
 	/* 3. Delta */
 	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta; /* converts into 7 bit signed representation */ 
 	unsigned_delta += m_plane_offsets[plane];
 	unsigned_delta >>= m_dim_granularities[Dimension::Delta];
-	MYLOG("Delta feature %x", unsigned_delta);
+	// MYLOG("Delta feature %x", unsigned_delta);
 
 	/* Concatenate all features */
 	uint32_t initial_index = (((folded_pc << 4) + offset) << 4) + unsigned_delta;
-	MYLOG("state: %s, initial index: %x", state->to_string().c_str(), initial_index);
+	// MYLOG("state: %s, initial index: %x", state->to_string().c_str(), initial_index);
 
 	/* XOR the constant factor for action */
 	// initial_index = initial_index ^ m_action_factors[action];
@@ -244,7 +217,7 @@ uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, u
 
 	/* Finally hash */
 	uint32_t hashed_index = getHash(initial_index);
-	MYLOG("state: %s, action: %u, hashed index: %x", state->to_string().c_str(), action, hashed_index);	
+	// MYLOG("plane: %u, state: %s, action: %u, hashed_index: %x", plane, state->to_string().c_str(), action, hashed_index);
 
 	return (hashed_index % m_num_entries_per_plane);
 }
@@ -252,6 +225,12 @@ uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, u
 void LearningEngineCMAC2::learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2)
 {
 	stats.learn.called++;
+
+	/* debugging */
+	float Qsa1_total = 0.0, Qsa2_total = 0.0, Qsa1_total_new = 0.0;
+	Qsa1_total = consultQ(state1, action1);
+	Qsa2_total = consultQ(state2, action2);
+	
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		/* update each plane */
@@ -268,7 +247,22 @@ void LearningEngineCMAC2::learn(State *state1, uint32_t action1, int32_t reward,
 			/* update back */
 			updatePlane(plane, state1, action1, Qsa1);
 
-			MYLOG("Q(%s,%u) = %.2f, R = %d, Q(%s,%u) = %.2f, Q(%s,%u) = %.2f", state1->to_string().c_str(), action1, Qsa1_old, reward, state2->to_string().c_str(), action2, Qsa2, state1->to_string().c_str(), action1, Qsa1);
+			MYLOG("<plane_%u> Q(%s,%u) = %.2f, R = %d, Q(%s,%u) = %.2f, Q(%s,%u) = %.2f", plane, state1->to_string().c_str(), action1, Qsa1_old, reward, state2->to_string().c_str(), action2, Qsa2, state1->to_string().c_str(), action1, Qsa1);
+		}
+		
+		Qsa1_total_new = consultQ(state1, action1);
+		MYLOG("<overall> Q(%s,%u) = %.2f, R = %d, Q(%s,%u) = %.2f, Q(%s,%u) = %.2f", state1->to_string().c_str(), action1, Qsa1_total, reward, state2->to_string().c_str(), action2, Qsa2_total, state1->to_string().c_str(), action1, Qsa1_total_new);
+
+		/* debugging */
+		// if(!state1->to_string().compare("401442|62|1"))
+		// {
+		// 	printf("Q(%s,%u) = %.2f, R = %d, Q(%s,%u) = %.2f, Q(%s,%u) = %.2f\n", state1->to_string().c_str(), action1, Qsa1_total, reward, state2->to_string().c_str(), action2, Qsa2_total, state1->to_string().c_str(), action1, Qsa1_total_new);
+		// }
+
+		if(knob::le_cmac2_enable_trace && !state1->to_string().compare(knob::le_cmac2_trace_state) && trace_interval++ == knob::le_cmac2_trace_interval)
+		{
+			dump_state_trace(state1);
+			trace_interval = 0;
 		}
 	}
 	else
@@ -278,19 +272,37 @@ void LearningEngineCMAC2::learn(State *state1, uint32_t action1, int32_t reward,
 	}
 }
 
+void LearningEngineCMAC2::dump_state_trace(State *state)
+{
+	trace_timestamp++;
+	fprintf(trace, "%lu,", trace_timestamp);
+	for(uint32_t action = 0; action < m_actions; ++action)
+	{
+		fprintf(trace, "%.2f,", consultQ(state, action));
+	}
+	fprintf(trace, "\n");
+	fflush(trace);
+}
+
 void LearningEngineCMAC2::dump_stats()
 {
+	Scooby *scooby = (Scooby*)m_parent;
 	fprintf(stdout, "learning_engine_cmac2.action.called %lu\n", stats.action.called);
 	fprintf(stdout, "learning_engine_cmac2.action.explore %lu\n", stats.action.explore);
 	fprintf(stdout, "learning_engine_cmac2.action.exploit %lu\n", stats.action.exploit);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		Scooby *scooby = (Scooby*)m_parent;
 		fprintf(stdout, "learning_engine_cmac2.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
 		fprintf(stdout, "learning_engine_cmac2.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
 	fprintf(stdout, "learning_engine_cmac2.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");
+
+	/* score plotting */
+	if(knob::le_cmac2_enable_trace && knob::le_cmac2_enable_score_plot)
+	{
+		plot_scores();
+	}
 }
 
 uint32_t LearningEngineCMAC2::getHash(uint32_t key)
@@ -314,4 +326,38 @@ uint32_t LearningEngineCMAC2::getHash(uint32_t key)
 		case 15: 	return HashZoo::hybrid1(key);
 		default: 	assert(false);
 	}
+}
+
+void LearningEngineCMAC2::plot_scores()
+{
+	Scooby *scooby = (Scooby*)m_parent;
+	
+	char *script_file = (char*)malloc(16*sizeof(char));
+	assert(script_file);
+	gen_random(script_file, 16);
+	FILE *script = fopen(script_file, "w");
+	assert(script);
+
+	fprintf(script, "set term png size 960,720 font 'Helvetica,12'\n");
+	fprintf(script, "set datafile sep ','\n");
+	fprintf(script, "set output '%s'\n", knob::le_cmac2_plot_file_name.c_str());
+	fprintf(script, "set title \"Reward over time\"\n");
+	fprintf(script, "set xlabel \"Time\"\n");
+	fprintf(script, "set ylabel \"Score\"\n");
+	fprintf(script, "set grid y\n");
+	fprintf(script, "set key right bottom Left box 3\n");
+	fprintf(script, "plot ");
+	for(uint32_t index = 0; index < knob::le_cmac2_plot_actions.size(); ++index)
+	{
+		if(index) fprintf(script, ", ");
+		fprintf(script, "'%s' using 1:%u with lines title \"action(%d)\"", knob::le_cmac2_trace_file_name.c_str(), (knob::le_cmac2_plot_actions[index]+2), scooby->getAction(knob::le_cmac2_plot_actions[index]));
+	}
+	fprintf(script, "\n");
+	fclose(script);
+
+	std::string cmd = "gnuplot " + std::string(script_file);
+	system(cmd.c_str());
+
+	std::string cmd2 = "rm " + std::string(script_file);
+	system(cmd2.c_str());
 }

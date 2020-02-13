@@ -86,7 +86,14 @@ namespace knob
 	extern uint32_t scooby_cmac2_num_entries_per_plane;
 	extern vector<int32_t> scooby_cmac2_plane_offsets;
 	extern vector<int32_t> scooby_cmac2_dim_granularities;
-	extern uint32_t scooby_cmac2_hash_type;	
+	extern uint32_t scooby_cmac2_hash_type;
+	extern bool 		le_cmac2_enable_trace;
+	extern string 		le_cmac2_trace_state;
+	extern uint32_t 	le_cmac2_trace_interval;
+	extern bool 		le_cmac2_enable_score_plot;
+	extern vector<int32_t> le_cmac2_plot_actions;
+	extern std::string 	le_cmac2_trace_file_name;
+	extern std::string 	le_cmac2_plot_file_name;
 }
 
 void Scooby::init_knobs()
@@ -255,8 +262,16 @@ void Scooby::print_config()
 		<< "scooby_cmac2_plane_offsets " << array_to_string(knob::scooby_cmac2_plane_offsets, true) << endl
 		<< "scooby_cmac2_dim_granularities " << array_to_string(knob::scooby_cmac2_dim_granularities) << endl
 		<< "scooby_cmac2_hash_type " << knob::scooby_cmac2_hash_type << endl
+		<< endl
+		<< "le_cmac2_enable_trace " << knob::le_cmac2_enable_trace << endl
+		<< "le_cmac2_trace_interval " << knob::le_cmac2_trace_interval << endl
+		<< "le_cmac2_trace_file_name " << knob::le_cmac2_trace_file_name << endl
+		<< "le_cmac2_trace_state " << hex << knob::le_cmac2_trace_state << dec << endl
+		<< "le_cmac2_enable_score_plot " << knob::le_cmac2_enable_score_plot << endl
+		<< "le_cmac2_plot_file_name " << knob::le_cmac2_plot_file_name << endl
+		<< "le_cmac2_plot_actions " << array_to_string(knob::le_cmac2_plot_actions) << endl
 		<< endl;
-
+		
 	if(knob::scooby_enable_shaggy)
 	{
 		shaggy->print_config();
@@ -760,12 +775,14 @@ void Scooby::update_stats(State *state, uint32_t action_index)
 	if(it != state_action_dist2.end())
 	{
 		it->second[action_index]++;
+		it->second[knob::scooby_max_actions]++; /* counts total occurences of this state */
 	}
 	else
 	{
 		vector<uint64_t> act_dist;
-		act_dist.resize(knob::scooby_max_actions, 0);
+		act_dist.resize(knob::scooby_max_actions+1, 0);
 		act_dist[action_index]++;
+		act_dist[knob::scooby_max_actions]++; /* counts total occurences of this state */
 		state_action_dist2.insert(std::pair<string, vector<uint64_t> >(state_str, act_dist));
 	}
 }
@@ -811,9 +828,13 @@ void Scooby::dump_stats()
 
 	if(knob::scooby_enable_state_action_stats)
 	{
-		if(knob::scooby_enable_cmac_engine)
+		if(knob::scooby_enable_cmac_engine || knob::scooby_enable_cmac2_engine)
 		{
-			for(auto it = state_action_dist2.begin(); it != state_action_dist2.end(); ++it)
+			std::vector<std::pair<string, vector<uint64_t> > > pairs;
+			for (auto itr = state_action_dist2.begin(); itr != state_action_dist2.end(); ++itr)
+			    pairs.push_back(*itr);
+			sort(pairs.begin(), pairs.end(), [](std::pair<string, vector<uint64_t>>& a, std::pair<string, vector<uint64_t>>& b){return a.second[knob::scooby_max_actions] > b.second[knob::scooby_max_actions];});
+			for(auto it = pairs.begin(); it != pairs.end(); ++it)
 			{
 				cout << "scooby_state_" << hex << it->first << dec << " ";
 				for(uint32_t index = 0; index < it->second.size(); ++index)
