@@ -93,6 +93,7 @@ private:
 			vector<uint64_t> out_of_bounds_dist;
 			uint64_t predicted;
 			uint64_t shaggy_called;
+			uint64_t multi_deg;
 		} predict;
 
 		struct
@@ -179,6 +180,7 @@ private:
 	void update_stats(uint32_t state, uint32_t action_index);
 	void update_stats(State *state, uint32_t action_index);
 	void track_in_st(uint64_t page, uint32_t pred_offset);
+	void gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, vector<uint64_t> &pref_addr);
 
 public:
 	Scooby(string type);

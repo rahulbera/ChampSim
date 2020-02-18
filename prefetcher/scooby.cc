@@ -59,6 +59,7 @@ namespace knob
 	extern bool     scooby_prefetch_with_shaggy;
 	extern bool     scooby_enable_cmac_engine;
 	extern bool     scooby_enable_cmac2_engine;
+	extern uint32_t scooby_pref_degree;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -237,6 +238,7 @@ void Scooby::print_config()
 		<< "scooby_prefetch_with_shaggy " << knob::scooby_prefetch_with_shaggy << endl
 		<< "scooby_enable_cmac_engine " << knob::scooby_enable_cmac_engine << endl
 		<< "scooby_enable_cmac2_engine " << knob::scooby_enable_cmac2_engine << endl
+		<< "scooby_pref_degree " << knob::scooby_pref_degree << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -454,6 +456,10 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 				pref_addr.push_back(addr);
 				track_in_st(page, predicted_offset); /* will be used for debugging */
 				stats.predict.issue_dist[action_index]++;
+				if(knob::scooby_pref_degree > 1)
+				{
+					gen_multi_degree_pref(page, offset, Actions[action_index], pref_addr);
+				}
 			}
 			else
 			{
@@ -552,6 +558,26 @@ bool Scooby::track(uint64_t address, State *state, uint32_t action_index, Scooby
 	MYLOG("end@%lx", address);
 
 	return new_addr;
+}
+
+void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, vector<uint64_t> &pref_addr)
+{
+	uint64_t addr = 0xdeadbeef;
+	int32_t predicted_offset = 0;
+	if(action != 0)
+	{
+		for(uint32_t degree = 2; degree < knob::scooby_pref_degree; ++degree)
+		{
+			predicted_offset = (int32_t)offset + degree * action;
+			if(predicted_offset >=0 && predicted_offset < 64)
+			{
+				addr = (page << LOG2_PAGE_SIZE) + (predicted_offset << LOG2_BLOCK_SIZE);
+				pref_addr.push_back(addr);
+				MYLOG("degree %u pred_off %d pred_addr %lx", degree, predicted_offset, addr);
+				stats.predict.multi_deg++;
+			}
+		}
+	}
 }
 
 /* This reward fucntion is called after seeing a demand access to the address */
@@ -824,6 +850,7 @@ void Scooby::dump_stats()
 	}
 
 	cout << "scooby_predict_predicted " << stats.predict.predicted << endl
+		<< "scooby_predict_multi_deg " << stats.predict.multi_deg << endl
 		<< endl;
 
 	if(knob::scooby_enable_state_action_stats)

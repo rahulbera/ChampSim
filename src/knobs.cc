@@ -114,6 +114,7 @@ namespace knob
 	bool     scooby_prefetch_with_shaggy;
 	bool     scooby_enable_cmac_engine;
 	bool     scooby_enable_cmac2_engine;
+	uint32_t scooby_pref_degree = 1; /* default is set to 1 */
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -607,6 +608,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_enable_cmac2_engine"))
 	{
 		knob::scooby_enable_cmac2_engine = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_pref_degree"))
+	{
+		knob::scooby_pref_degree = atoi(value);
 	}
 
 	/* Learning Engine */
