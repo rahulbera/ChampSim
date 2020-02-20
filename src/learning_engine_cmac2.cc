@@ -28,6 +28,8 @@ namespace knob
 	extern vector<int32_t> le_cmac2_plot_actions;
 	extern std::string 	le_cmac2_trace_file_name;
 	extern std::string 	le_cmac2_plot_file_name;
+	extern bool         le_cmac2_state_action_debug;
+	extern vector<float> le_cmac2_qvalue_threshold_levels;
 }
 
 LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
@@ -43,6 +45,7 @@ LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float
 	assert(m_num_planes <= MAX_CMAC_PLANES);
 	assert(m_plane_offsets.size() == m_num_planes);
 	assert(m_dim_granularities.size() == Dimension::NumDimensions);
+	assert(knob::le_cmac2_qvalue_threshold_levels.size() < NUM_MAX_THRESHOLDS-1);
 
 	/* init Q-tables
 	 * Unlike CMAC engine 1.0, each Q-table is a two-dimentional array in CMAC 2.0*/
@@ -105,10 +108,11 @@ LearningEngineCMAC2::~LearningEngineCMAC2()
 	}
 }
 
-uint32_t LearningEngineCMAC2::chooseAction(State *state)
+uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_ratio)
 {
 	stats.action.called++;
 	uint32_t action = 0;
+	max_to_avg_q_ratio = 1.0;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		if((*m_explore)(m_generator))
@@ -120,7 +124,7 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state)
 		}
 		else
 		{
-			action = getMaxAction(state);
+			action = getMaxAction(state, max_to_avg_q_ratio);
 			stats.action.exploit++;
 			stats.action.dist[action][1]++;
 			MYLOG("action taken %u exploit, state %s", action, state->to_string().c_str());
@@ -135,19 +139,38 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state)
 	return action;
 }
 
-uint32_t LearningEngineCMAC2::getMaxAction(State *state)
+uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_ratio)
 {
-	float max_q_value = 0.0, q_value = 0.0;
+	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
 	uint32_t selected_action = 0;
-
+	
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
+		total_q_value += q_value;
 		if(q_value > max_q_value)
 		{
 			max_q_value = q_value;
 			selected_action = action;
 		}
+	}
+
+	float avg_q_value = total_q_value/m_actions;
+	max_to_avg_q_ratio = abs(max_q_value)/abs(avg_q_value);
+	bool counted = false;
+	uint32_t th = 0;
+	for(th = 0; th < knob::le_cmac2_qvalue_threshold_levels.size(); ++th)
+	{
+		if(max_to_avg_q_ratio <= knob::le_cmac2_qvalue_threshold_levels[th])
+		{
+			stats.action.threshold_dist[selected_action][th]++;
+			counted = true;
+			break;
+		}
+	}
+	if(!counted)
+	{
+		stats.action.threshold_dist[selected_action][th]++;
 	}
 
 	return selected_action;
@@ -296,6 +319,17 @@ void LearningEngineCMAC2::dump_stats()
 		fprintf(stdout, "learning_engine_cmac2.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
 	fprintf(stdout, "learning_engine_cmac2.learn.called %lu\n", stats.learn.called);
+	fprintf(stdout, "\n");
+	
+	for(uint32_t action = 0; action < m_actions; ++action)
+	{
+		fprintf(stdout, "learning_engine_cmac2.action.index_%d_threshold_buckets ", scooby->getAction(action));		
+		for(uint32_t th = 0; th < knob::le_cmac2_qvalue_threshold_levels.size()+1; ++th)
+		{
+			fprintf(stdout, "%lu,", stats.action.threshold_dist[action][th]);			
+		}
+		fprintf(stdout, "\n");
+	}
 	fprintf(stdout, "\n");
 
 	/* score plotting */

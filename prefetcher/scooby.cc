@@ -60,6 +60,9 @@ namespace knob
 	extern bool     scooby_enable_cmac_engine;
 	extern bool     scooby_enable_cmac2_engine;
 	extern uint32_t scooby_pref_degree;
+	extern bool     scooby_enable_dyn_degree;
+	extern vector<float> scooby_max_to_avg_q_thresholds;
+	extern vector<int32_t> scooby_dyn_degrees;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -95,6 +98,8 @@ namespace knob
 	extern vector<int32_t> le_cmac2_plot_actions;
 	extern std::string 	le_cmac2_trace_file_name;
 	extern std::string 	le_cmac2_plot_file_name;
+	extern bool 		le_cmac2_state_action_debug;
+	extern vector<float> le_cmac2_qvalue_threshold_levels;
 }
 
 void Scooby::init_knobs()
@@ -110,6 +115,8 @@ void Scooby::init_knobs()
 		knob::scooby_max_offsets = 1024;
 		knob::scooby_max_deltas = 1024;
 	}
+	assert(knob::scooby_pref_degree >= 1 && (knob::scooby_pref_degree == 1 || !knob::scooby_enable_dyn_degree));
+	assert(knob::scooby_max_to_avg_q_thresholds.size() == knob::scooby_dyn_degrees.size()-1);
 }
 
 void Scooby::init_stats()
@@ -239,6 +246,9 @@ void Scooby::print_config()
 		<< "scooby_enable_cmac_engine " << knob::scooby_enable_cmac_engine << endl
 		<< "scooby_enable_cmac2_engine " << knob::scooby_enable_cmac2_engine << endl
 		<< "scooby_pref_degree " << knob::scooby_pref_degree << endl
+		<< "scooby_enable_dyn_degree " << knob::scooby_enable_dyn_degree << endl
+		<< "scooby_max_to_avg_q_thresholds " << array_to_string(knob::scooby_max_to_avg_q_thresholds) << endl
+		<< "scooby_dyn_degrees " << array_to_string(knob::scooby_dyn_degrees) << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -272,6 +282,8 @@ void Scooby::print_config()
 		<< "le_cmac2_enable_score_plot " << knob::le_cmac2_enable_score_plot << endl
 		<< "le_cmac2_plot_file_name " << knob::le_cmac2_plot_file_name << endl
 		<< "le_cmac2_plot_actions " << array_to_string(knob::le_cmac2_plot_actions) << endl
+		<< "le_cmac2_state_action_debug " << knob::le_cmac2_state_action_debug << endl
+		<< "le_cmac2_qvalue_threshold_levels " << array_to_string(knob::le_cmac2_qvalue_threshold_levels) << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -397,34 +409,32 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 
 	/* query learning engine to get the next prediction */
 	uint32_t action_index = 0;
+	uint32_t pref_degree = knob::scooby_pref_degree;
+
 	if(knob::scooby_enable_cmac_engine)
 	{
 		action_index = brain_cmac->chooseAction(state);
 		if(knob::scooby_enable_state_action_stats)
 		{
-			update_stats(state, action_index);
+			update_stats(state, action_index, pref_degree);
 		}
-
-		/* Some debugging for libquantum-1343B */
-		// if(Actions[action_index] == -8)
-		// {
-		// 	auto it_map = target_action_state.find(state->to_string());
-		// 	if(it_map != target_action_state.end())
-		// 	{
-		// 		it_map->second++;
-		// 	}
-		// 	else
-		// 	{
-		// 		target_action_state.insert(std::pair<string, uint64_t>(state->to_string(), 1));
-		// 	}
-		// }
 	}
 	else if(knob::scooby_enable_cmac2_engine)
 	{
-		action_index = brain_cmac2->chooseAction(state);
+		float max_to_avg_q_ratio = 1.0;
+		action_index = brain_cmac2->chooseAction(state, max_to_avg_q_ratio);
+		if(knob::scooby_enable_dyn_degree)
+		{
+			if(max_to_avg_q_ratio < 1)
+			{
+				cout << "ratio " << max_to_avg_q_ratio << endl;
+				assert(false);
+			}
+			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
+		}
 		if(knob::scooby_enable_state_action_stats)
 		{
-			update_stats(state, action_index);
+			update_stats(state, action_index, pref_degree);
 		}		
 	}
 	else
@@ -432,10 +442,11 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		action_index = brain->chooseAction(state_index);
 		if(knob::scooby_enable_state_action_stats)
 		{
-			update_stats(state_index, action_index);
+			update_stats(state_index, action_index, pref_degree);
 		}
 	}
 	assert(action_index < knob::scooby_max_actions);
+	stats.predict.deg_dist[pref_degree]++;
 
 	MYLOG("act_idx %u act %d", action_index, Actions[action_index]);
 
@@ -456,9 +467,9 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 				pref_addr.push_back(addr);
 				track_in_st(page, predicted_offset); /* will be used for debugging */
 				stats.predict.issue_dist[action_index]++;
-				if(knob::scooby_pref_degree > 1)
+				if(pref_degree > 1)
 				{
-					gen_multi_degree_pref(page, offset, Actions[action_index], pref_addr);
+					gen_multi_degree_pref(page, offset, Actions[action_index], pref_degree, pref_addr);
 				}
 			}
 			else
@@ -560,13 +571,13 @@ bool Scooby::track(uint64_t address, State *state, uint32_t action_index, Scooby
 	return new_addr;
 }
 
-void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, vector<uint64_t> &pref_addr)
+void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, uint32_t pref_degree, vector<uint64_t> &pref_addr)
 {
 	uint64_t addr = 0xdeadbeef;
 	int32_t predicted_offset = 0;
 	if(action != 0)
 	{
-		for(uint32_t degree = 2; degree < knob::scooby_pref_degree; ++degree)
+		for(uint32_t degree = 2; degree < pref_degree; ++degree)
 		{
 			predicted_offset = (int32_t)offset + degree * action;
 			if(predicted_offset >=0 && predicted_offset < 64)
@@ -578,6 +589,26 @@ void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t actio
 			}
 		}
 	}
+}
+
+uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio)
+{
+	uint32_t counted = false;
+	uint32_t degree = 1;
+	for(uint32_t index = 0; index < knob::scooby_max_to_avg_q_thresholds.size(); ++index)
+	{
+		if(max_to_avg_q_ratio < knob::scooby_max_to_avg_q_thresholds[index])
+		{
+			degree = knob::scooby_dyn_degrees[index];
+			counted = true;
+			break;
+		}
+	}
+	if(!counted)
+	{
+		degree = knob::scooby_dyn_degrees.back();
+	}
+	return degree;
 }
 
 /* This reward fucntion is called after seeing a demand access to the address */
@@ -778,7 +809,7 @@ vector<Scooby_PTEntry*> Scooby::search_pt(uint64_t address, bool search_all)
 	return entries;
 }
 
-void Scooby::update_stats(uint32_t state, uint32_t action_index)
+void Scooby::update_stats(uint32_t state, uint32_t action_index, uint32_t pref_degree)
 {
 	auto it = state_action_dist.find(state);
 	if(it != state_action_dist.end())
@@ -794,7 +825,7 @@ void Scooby::update_stats(uint32_t state, uint32_t action_index)
 	}
 }
 
-void Scooby::update_stats(State *state, uint32_t action_index)
+void Scooby::update_stats(State *state, uint32_t action_index, uint32_t degree)
 {
 	string state_str = state->to_string();
 	auto it = state_action_dist2.find(state_str);
@@ -810,6 +841,19 @@ void Scooby::update_stats(State *state, uint32_t action_index)
 		act_dist[action_index]++;
 		act_dist[knob::scooby_max_actions]++; /* counts total occurences of this state */
 		state_action_dist2.insert(std::pair<string, vector<uint64_t> >(state_str, act_dist));
+	}
+
+	auto it2 = action_deg_dist.find(getAction(action_index));
+	if(it2 != action_deg_dist.end())
+	{
+		it2->second[degree]++;
+	}
+	else
+	{
+		vector<uint64_t> deg_dist;
+		deg_dist.resize(MAX_SCOOBY_DEGREE, 0);
+		deg_dist[degree]++;
+		action_deg_dist.insert(std::pair<int32_t, vector<uint64_t> >(getAction(action_index), deg_dist));
 	}
 }
 
@@ -883,6 +927,17 @@ void Scooby::dump_stats()
 				cout << endl;
 			}
 		}
+	}
+	cout << endl;
+
+	for(auto it = action_deg_dist.begin(); it != action_deg_dist.end(); ++it)
+	{
+		cout << "scooby_action_" << it->first << "_deg_dist ";
+		for(uint32_t index = 0; index < MAX_SCOOBY_DEGREE; ++index)
+		{
+			cout << it->second[index] << ",";
+		}
+		cout << endl;
 	}
 	cout << endl;
 

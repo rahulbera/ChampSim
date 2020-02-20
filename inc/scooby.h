@@ -14,6 +14,7 @@ using namespace std;
 
 #define MAX_ACTIONS 64
 #define MAX_REWARDS 16
+#define MAX_SCOOBY_DEGREE 16
 
 /* forward declaration */
 class LearningEngine;
@@ -163,6 +164,7 @@ private:
 
 	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;
 	unordered_map<std::string, vector<uint64_t> > state_action_dist2;
+	unordered_map<int32_t, vector<uint64_t> > action_deg_dist;
 
 private:
 	void init_knobs();
@@ -177,10 +179,11 @@ private:
 	void assign_reward(Scooby_PTEntry *ptentry, RewardType type);
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
-	void update_stats(uint32_t state, uint32_t action_index);
-	void update_stats(State *state, uint32_t action_index);
+	void update_stats(uint32_t state, uint32_t action_index, uint32_t pref_degree = 1);
+	void update_stats(State *state, uint32_t action_index, uint32_t degree = 1);
 	void track_in_st(uint64_t page, uint32_t pred_offset);
-	void gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, vector<uint64_t> &pref_addr);
+	void gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, uint32_t pref_degree, vector<uint64_t> &pref_addr);
+	uint32_t get_dyn_pref_degree(float max_to_avg_q_ratio); /* only implemented for CMAC engine 2.0 */
 
 public:
 	Scooby(string type);

@@ -115,6 +115,9 @@ namespace knob
 	bool     scooby_enable_cmac_engine;
 	bool     scooby_enable_cmac2_engine;
 	uint32_t scooby_pref_degree = 1; /* default is set to 1 */
+	bool     scooby_enable_dyn_degree;
+	vector<float> scooby_max_to_avg_q_thresholds;
+	vector<int32_t> scooby_dyn_degrees;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -150,6 +153,8 @@ namespace knob
 	vector<int32_t> le_cmac2_plot_actions;
 	std::string 	le_cmac2_trace_file_name;
 	std::string 	le_cmac2_plot_file_name;
+	bool        le_cmac2_state_action_debug;
+	vector<float> le_cmac2_qvalue_threshold_levels;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -613,6 +618,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_pref_degree = atoi(value);
 	}
+	else if (MATCH("", "scooby_enable_dyn_degree"))
+	{
+		knob::scooby_enable_dyn_degree = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_max_to_avg_q_thresholds"))
+	{
+		knob::scooby_max_to_avg_q_thresholds = get_array_float(value);
+	}
+	else if (MATCH("", "scooby_dyn_degrees"))
+	{
+		knob::scooby_dyn_degrees = get_array_int(value);
+	}
 
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
@@ -736,6 +753,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_cmac2_plot_file_name"))
 	{
 		knob::le_cmac2_plot_file_name = string(value);
+	}
+	else if (MATCH("", "le_cmac2_state_action_debug"))
+	{
+		knob::le_cmac2_state_action_debug = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_cmac2_qvalue_threshold_levels"))
+	{
+		knob::le_cmac2_qvalue_threshold_levels = get_array_float(value);
 	}
 
 	/* Shaggy knobs */

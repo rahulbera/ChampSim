@@ -3,6 +3,8 @@
 
 #include "learning_engine_cmac.h"
 
+#define NUM_MAX_THRESHOLDS 16
+
 class LearningEngineCMAC2 : public LearningEngineBase
 {
 private:
@@ -36,6 +38,7 @@ private:
 			uint64_t explore;
 			uint64_t exploit;
 			uint64_t dist[MAX_ACTIONS][2]; /* 0:explored, 1:exploited */
+			uint64_t threshold_dist[MAX_ACTIONS][NUM_MAX_THRESHOLDS];
 		} action;
 
 		struct
@@ -45,7 +48,7 @@ private:
 	} stats;
 
 private:
-	uint32_t getMaxAction(State *state);
+	uint32_t getMaxAction(State *state, float &max_to_avg_q_ratio);
 	float consultQ(State *state, uint32_t action);
 	float consultPlane(uint32_t plane, State *state, uint32_t action);
 	void updatePlane(uint32_t plane, State *state, uint32_t action, float value);
@@ -58,7 +61,7 @@ public:
 	LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
 	~LearningEngineCMAC2();
 
-	uint32_t chooseAction(State *state);
+	uint32_t chooseAction(State *state, float &max_to_avg_q_ratio);
 	void learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2);
 	void dump_stats();
 };
