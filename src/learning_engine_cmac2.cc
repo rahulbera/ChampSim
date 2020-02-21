@@ -30,6 +30,7 @@ namespace knob
 	extern std::string 	le_cmac2_plot_file_name;
 	extern bool         le_cmac2_state_action_debug;
 	extern vector<float> le_cmac2_qvalue_threshold_levels;
+	extern uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
 }
 
 LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
@@ -112,7 +113,7 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 {
 	stats.action.called++;
 	uint32_t action = 0;
-	max_to_avg_q_ratio = 1.0;
+	max_to_avg_q_ratio = (knob::le_cmac2_max_to_avg_q_ratio_type == 1) ? 1.0 : 0.0;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		if((*m_explore)(m_generator))
@@ -156,7 +157,26 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_rat
 	}
 
 	float avg_q_value = total_q_value/m_actions;
-	max_to_avg_q_ratio = abs(max_q_value)/abs(avg_q_value);
+	assert(max_q_value >= avg_q_value);
+	switch(knob::le_cmac2_max_to_avg_q_ratio_type)
+	{
+		case 1:
+			max_to_avg_q_ratio = abs(max_q_value)/abs(avg_q_value);
+			break;
+		case 2:
+			if((max_q_value > 0 && avg_q_value > 0) || (max_q_value < 0 && avg_q_value < 0))
+			{
+				max_to_avg_q_ratio = abs(max_q_value)/abs(avg_q_value) - 1;
+			}
+			else
+			{
+				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
+			}
+			break;
+		default:
+			assert(false);
+	}
+	
 	bool counted = false;
 	uint32_t th = 0;
 	for(th = 0; th < knob::le_cmac2_qvalue_threshold_levels.size(); ++th)

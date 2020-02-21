@@ -100,6 +100,7 @@ namespace knob
 	extern std::string 	le_cmac2_plot_file_name;
 	extern bool 		le_cmac2_state_action_debug;
 	extern vector<float> le_cmac2_qvalue_threshold_levels;
+	extern uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
 }
 
 void Scooby::init_knobs()
@@ -284,6 +285,7 @@ void Scooby::print_config()
 		<< "le_cmac2_plot_actions " << array_to_string(knob::le_cmac2_plot_actions) << endl
 		<< "le_cmac2_state_action_debug " << knob::le_cmac2_state_action_debug << endl
 		<< "le_cmac2_qvalue_threshold_levels " << array_to_string(knob::le_cmac2_qvalue_threshold_levels) << endl
+		<< "le_cmac2_max_to_avg_q_ratio_type " << knob::le_cmac2_max_to_avg_q_ratio_type << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -425,11 +427,11 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		action_index = brain_cmac2->chooseAction(state, max_to_avg_q_ratio);
 		if(knob::scooby_enable_dyn_degree)
 		{
-			if(max_to_avg_q_ratio < 1)
-			{
-				cout << "ratio " << max_to_avg_q_ratio << endl;
-				assert(false);
-			}
+			// if(max_to_avg_q_ratio < 1)
+			// {
+			// 	cout << "ratio " << max_to_avg_q_ratio << endl;
+			// 	assert(false);
+			// }
 			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
 		}
 		if(knob::scooby_enable_state_action_stats)
@@ -446,7 +448,6 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		}
 	}
 	assert(action_index < knob::scooby_max_actions);
-	stats.predict.deg_dist[pref_degree]++;
 
 	MYLOG("act_idx %u act %d", action_index, Actions[action_index]);
 

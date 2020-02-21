@@ -155,6 +155,7 @@ namespace knob
 	std::string 	le_cmac2_plot_file_name;
 	bool        le_cmac2_state_action_debug;
 	vector<float> le_cmac2_qvalue_threshold_levels;
+	uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -761,6 +762,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_cmac2_qvalue_threshold_levels"))
 	{
 		knob::le_cmac2_qvalue_threshold_levels = get_array_float(value);
+	}
+	else if (MATCH("", "le_cmac2_max_to_avg_q_ratio_type"))
+	{
+		knob::le_cmac2_max_to_avg_q_ratio_type = atoi(value);
 	}
 
 	/* Shaggy knobs */
