@@ -1,21 +1,22 @@
+
 <p align="center">
   <h1 align="center"> ChampSim </h1>
-  <p> ChampSim is a trace-based simulator for a microarchitecture study. You can sign up to the public mailing list by sending an empty mail to champsim+subscribe@googlegroups.com. Traces for the 3rd Data Prefetching Championship (DPC-3) can be found from here (https://dpc3.compas.cs.stonybrook.edu/?SW_IS). A set of traces used for the 2nd Cache Replacement Championship (CRC-2) can be found from this link. (http://bit.ly/2t2nkUj) <p>
+  <p> ChampSim is a trace-based simulator for a microarchitecture study. It is widely used in achitectural community to evaluate ideas on cache management policies, branch predictors and prefetching. This is a fork of the original [ChampSim](https://github.com/ChampSim/ChampSim) and is modified to focus on data prefetching. Traces for the 3rd Data Prefetching Championship (DPC-3) can be found from here (https://dpc3.compas.cs.stonybrook.edu/?SW_IS). A set of traces used for the 2nd Cache Replacement Championship (CRC-2) can be found from this link. (http://bit.ly/2t2nkUj) <p>
 </p>
 
 # Clone ChampSim repository
 ```
-git clone https://github.com/ChampSim/ChampSim.git
+git clone https://github.com/rahulbera/ChampSim.git
 ```
 
 # Compile
 
-ChampSim takes five parameters: Branch predictor, L1D prefetcher, L2C prefetcher, LLC replacement policy, and the number of cores. 
-For example, `./build_champsim.sh bimodal no no lru 1` builds a single-core processor with bimodal branch predictor, no L1/L2 data prefetchers, and the baseline LRU replacement policy for the LLC.
+Unlike the original ChampSim, this fork takes three parameters: L1D prefetcher, L2C prefetcher, LLC prefetcher. The branch predictor, LLC management policy, and number of cores are statically fixed to perceptron, SHiP and 1 respectively.  
+For example, `./build_champsim.sh stride stream no` builds a single-core processor with perceptron branch predictor, a stride prefetcher at L1-D cache, a stream prefetcher at L2, no prefetcher at LLC and the SHiP replacement policy for the LLC.
 ```
-$ ./build_champsim.sh bimodal no no no lru 1
+$ ./build_champsim.sh stride stream no
 
-$ ./build_champsim.sh ${BRANCH} ${L1D_PREFETCHER} ${L2C_PREFETCHER} ${LLC_PREFETCHER} ${LLC_REPLACEMENT} ${NUM_CORE}
+$ ./build_champsim.sh ${L1D_PREFETCHER} ${L2C_PREFETCHER} ${LLC_PREFETCHER}
 ```
 
 # Download DPC-3 trace
@@ -54,28 +55,24 @@ $ ./run_4core.sh bimodal-no-no-no-lru-4core 1 10 0 400.perlbench-41B.champsimtra
 Note that we need to specify multiple trace files for `run_4core.sh`. `N_MIX` is used to represent a unique ID for mixed multi-programmed workloads. 
 
 
-# Add your own branch predictor, data prefetchers, and replacement policy
+# Add your own data prefetchers
 **Copy an empty template**
 ```
-$ cp branch/branch_predictor.cc prefetcher/mybranch.bpred
 $ cp prefetcher/l1d_prefetcher.cc prefetcher/mypref.l1d_pref
 $ cp prefetcher/l2c_prefetcher.cc prefetcher/mypref.l2c_pref
 $ cp prefetcher/llc_prefetcher.cc prefetcher/mypref.llc_pref
-$ cp replacement/llc_replacement.cc replacement/myrepl.llc_repl
 ```
 
 **Work on your algorithms with your favorite text editor**
 ```
-$ vim branch/mybranch.bpred
 $ vim prefetcher/mypref.l1d_pref
 $ vim prefetcher/mypref.l2c_pref
 $ vim prefetcher/mypref.llc_pref
-$ vim replacement/myrepl.llc_repl
 ```
 
 **Compile and test**
 ```
-$ ./build_champsim.sh mybranch mypref mypref mypref myrepl 1
+$ ./build_champsim.sh mypref mypref mypref
 $ ./run_champsim.sh mybranch-mypref-mypref-mypref-myrepl-1core 1 10 bzip2_183B
 ```
 
