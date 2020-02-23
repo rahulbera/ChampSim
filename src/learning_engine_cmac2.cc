@@ -157,7 +157,6 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_rat
 	}
 
 	float avg_q_value = total_q_value/m_actions;
-	assert(max_q_value >= avg_q_value);
 	switch(knob::le_cmac2_max_to_avg_q_ratio_type)
 	{
 		case 1:
