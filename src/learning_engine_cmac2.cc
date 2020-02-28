@@ -142,17 +142,23 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 
 uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_ratio)
 {
-	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
+	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0, second_max_q_value = 0.0;
 	uint32_t selected_action = 0;
 	
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
 		total_q_value += q_value;
+
 		if(q_value > max_q_value)
 		{
+			second_max_q_value = max_q_value;
 			max_q_value = q_value;
 			selected_action = action;
+		}
+		else if(q_value > second_max_q_value && q_value != max_q_value)
+		{
+			second_max_q_value = q_value;
 		}
 	}
 
@@ -171,6 +177,26 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_rat
 			{
 				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
 			}
+			break;
+		case 3:
+			if((max_q_value > 0 && avg_q_value > 0) || (max_q_value < 0 && avg_q_value < 0))
+			{
+				max_to_avg_q_ratio = abs(max_q_value)/abs(avg_q_value) - 1;
+			}
+			else
+			{
+				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
+			}
+			/* Similar to ratio type 2, but a bit more conservative.
+			 * Only considers the ratio if the max_q_value is more than the init_value */
+			if(max_q_value < m_init_value*m_num_planes)
+			{
+				max_to_avg_q_ratio = 0.0;
+			}
+			break;
+		case 4:
+			/* This is not really MAX to AVG ratio. This is MAX to 2nd MAX ratio */
+			max_to_avg_q_ratio = (max_q_value/second_max_q_value);
 			break;
 		default:
 			assert(false);
