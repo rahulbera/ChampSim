@@ -9,6 +9,7 @@
 #include "bop.h"
 #include "velma.h"
 #include "sandbox.h"
+#include "dspatch.h"
 
 using namespace std;
 
@@ -44,6 +45,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: BOP" << endl;
 			BOPrefetcher *pref_bop = new BOPrefetcher(knob::l2c_prefetcher_types[index]);
 			prefetchers.push_back(pref_bop);
+		}
+		else if(!knob::l2c_prefetcher_types[index].compare("dspatch"))
+		{
+			cout << "adding L2C_PREFETCHER: DSPatch" << endl;
+			DSPatch *pref_dspatch = new DSPatch(knob::l2c_prefetcher_types[index]);
+			prefetchers.push_back(pref_dspatch);
 		}
 		else if(!knob::l2c_prefetcher_types[index].compare("scooby"))
 		{

@@ -15,8 +15,12 @@ public:
 	static uint32_t count_bits_same(Bitmap bmp1, Bitmap bmp2);
 	static uint32_t count_bits_diff(Bitmap bmp1, Bitmap bmp2);
 	static uint64_t value(Bitmap bmp);
-	static Bitmap rotate_left(Bitmap bmp, uint32_t amount);
-	static Bitmap rotate_right(Bitmap bmp, uint32_t amount);
+	static Bitmap rotate_left(Bitmap bmp, uint32_t amount, uint32_t size = BITMAP_MAX_SIZE);
+	static Bitmap rotate_right(Bitmap bmp, uint32_t amount, uint32_t size = BITMAP_MAX_SIZE);
+	static Bitmap compress(Bitmap bmp, uint32_t granularity, uint32_t size = BITMAP_MAX_SIZE);
+	static Bitmap decompress(Bitmap bmp, uint32_t granularity, uint32_t size = BITMAP_MAX_SIZE);
+	static Bitmap bitwise_or(Bitmap bmp1, Bitmap bmp2);
+	static Bitmap bitwise_and(Bitmap bmp1, Bitmap bmp2);
 };
 
 #endif /* BITMAP_H */

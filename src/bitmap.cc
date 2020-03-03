@@ -1,4 +1,5 @@
 #include "bitmap.h"
+#include <assert.h>
 
 std::string BitmapHelper::to_string(Bitmap bmp)
 {
@@ -41,31 +42,93 @@ uint64_t BitmapHelper::value(Bitmap bmp)
 	return bmp.to_ullong();
 }
 
-Bitmap BitmapHelper::rotate_left(Bitmap bmp, uint32_t amount)
+Bitmap BitmapHelper::rotate_left(Bitmap bmp, uint32_t amount, uint32_t size)
 {
 	Bitmap result;
-	for(uint32_t index = 0; index < BITMAP_MAX_SIZE - amount; ++index)
+	for(uint32_t index = 0; index < size - amount; ++index)
 	{
 		result[index+amount] = bmp[index];
 	}
 	for(uint32_t index = 0; index < amount; ++index)
 	{
-		result[index] = bmp[index+BITMAP_MAX_SIZE-amount];
+		result[index] = bmp[index+size-amount];
 	}
 	return result;
 }
 
-Bitmap BitmapHelper::rotate_right(Bitmap bmp, uint32_t amount)
+Bitmap BitmapHelper::rotate_right(Bitmap bmp, uint32_t amount, uint32_t size)
 {
 	Bitmap result;
-	for(uint32_t index = 0; index < BITMAP_MAX_SIZE - amount; ++index)
+	for(uint32_t index = 0; index < size - amount; ++index)
 	{
 		result[index] = bmp[index+amount];
 	}
 	for(uint32_t index = 0; index < amount; ++index)
 	{
-		result[BITMAP_MAX_SIZE-amount+index] = bmp[index];
+		result[size-amount+index] = bmp[index];
 	}
 	return result;
 
+}
+
+Bitmap BitmapHelper::compress(Bitmap bmp, uint32_t granularity, uint32_t size)
+{
+	assert(size % granularity == 0);
+	uint32_t index = 0;
+	Bitmap result;
+	uint32_t ptr = 0;
+
+	while(index < size)
+	{
+		bool res = false;
+		uint32_t gran = 0;
+		for(gran = 0; gran < granularity; ++gran)
+		{
+			assert(index + gran < size);
+			res = res | bmp[index+gran];
+		}
+		result[ptr] = res;
+		ptr++;
+		index = index + gran;
+	}
+	return result;
+}
+
+Bitmap BitmapHelper::decompress(Bitmap bmp, uint32_t granularity, uint32_t size)
+{
+	Bitmap result;
+	result.reset();
+	assert(size*granularity <= BITMAP_MAX_SIZE);
+	for(uint32_t index = 0; index < size; ++index)
+	{
+		if(bmp[index])
+		{
+			uint32_t ptr = index * granularity;
+			for(uint32_t count = 0; count < granularity; ++count)
+			{
+				result[ptr+count] = true;
+			}
+		}
+	}
+	return result;
+}
+
+Bitmap BitmapHelper::bitwise_or(Bitmap bmp1, Bitmap bmp2)
+{
+	Bitmap result;
+	for(uint32_t index = 0; index < BITMAP_MAX_SIZE; ++index)
+	{
+		result[index] = bmp1[index] | bmp2[index];
+	}
+	return result;
+}
+
+Bitmap BitmapHelper::bitwise_and(Bitmap bmp1, Bitmap bmp2)
+{
+	Bitmap result;
+	for(uint32_t index = 0; index < BITMAP_MAX_SIZE; ++index)
+	{
+		result[index] = bmp1[index] & bmp2[index];
+	}
+	return result;
 }
