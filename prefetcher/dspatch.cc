@@ -4,6 +4,7 @@
 #include "champsim.h"
 #include "util.h"
 #include "dspatch.h"
+#include "memory_class.h"
 
 #if 0
 #	define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
@@ -15,9 +16,17 @@
 #	define MYLOG(...) {}
 #endif
 
+const char* DSPatch_pref_candidate_string[] = {"NONE", "CovP", "AccP"};
+const char* Map_DSPatch_pref_candidate(DSPatch_pref_candidate candidate)
+{
+	assert((uint32_t)candidate < DSPatch_pref_candidate::Num_DSPatch_pref_candidates);
+	return DSPatch_pref_candidate_string[(uint32_t)candidate];
+}
+
 namespace knob
 {	
 	extern uint32_t dspatch_log2_region_size;
+	extern uint32_t dspatch_num_cachelines_in_region;
 	extern uint32_t dspatch_pb_size;
 	extern uint32_t dspatch_num_spt_entries;
 	extern uint32_t dspatch_compression_granularity;
@@ -37,7 +46,8 @@ namespace knob
 
 void DSPatch::init_knobs()
 {
-
+	assert(knob::dspatch_log2_region_size <= 12);
+	assert(knob::dspatch_num_cachelines_in_region * knob::dspatch_compression_granularity <= 64);
 }
 
 void DSPatch::init_stats()
@@ -70,6 +80,7 @@ DSPatch::~DSPatch()
 void DSPatch::print_config()
 {
 	cout << "dspatch_log2_region_size " << knob::dspatch_log2_region_size << endl
+		<< "dspatch_num_cachelines_in_region " << knob::dspatch_num_cachelines_in_region << endl
 		<< "dspatch_pb_size " << knob::dspatch_pb_size << endl
 		<< "dspatch_num_spt_entries " << knob::dspatch_num_spt_entries << endl
 		<< "dspatch_compression_granularity " << knob::dspatch_compression_granularity << endl
@@ -113,6 +124,10 @@ void DSPatch::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit
 			pbentry = page_buffer.front();
 			page_buffer.pop_front();
 			add_to_spt(pbentry);
+			// if(knob::dspatch_enable_debug)
+			// {
+			// 	debug_pbentry(pbentry);
+			// }
 			delete pbentry;
 			stats.pb.evict++;
 		}
@@ -155,11 +170,13 @@ void DSPatch::generate_prefetch(uint64_t pc, uint64_t page, uint32_t offset, uin
 	sptentry = spt[spt_index];
 	candidate = select_bitmap(sptentry, bmp_pred);
 	stats.gen_pref.selection_dist[candidate]++;
+	MYLOG("pc %lx sig %lx spt_index %u candidate %s", pc, signature, spt_index, Map_DSPatch_pref_candidate(candidate));
 
 	/* decompress and rotate back the bitmap */
-	bmp_pred = BitmapHelper::decompress(bmp_pred, knob::dspatch_compression_granularity, knob::dspatch_log2_region_size);
-	
-	bmp_pred = BitmapHelper::rotate_left(bmp_pred, offset, knob::dspatch_log2_region_size); // <====== FIXME: PERF BUG
+	MYLOG("orig bitmap %s", BitmapHelper::to_string(bmp_pred, knob::dspatch_num_cachelines_in_region).c_str());
+	bmp_pred = BitmapHelper::decompress(bmp_pred, knob::dspatch_compression_granularity, knob::dspatch_num_cachelines_in_region);
+	bmp_pred = BitmapHelper::rotate_left(bmp_pred, offset, knob::dspatch_num_cachelines_in_region);
+	MYLOG("rotated bitmap %s", BitmapHelper::to_string(bmp_pred, knob::dspatch_num_cachelines_in_region).c_str());
 
 	/* Throttling predictions incase of predicting with bmp_acc and b/w is high */
 	if(bw_bucket >= knob::dspatch_pred_throttle_bw_thr && candidate == DSPatch_pref_candidate::ACCP)
@@ -168,16 +185,17 @@ void DSPatch::generate_prefetch(uint64_t pc, uint64_t page, uint32_t offset, uin
 		stats.gen_pref.reset++;
 	}
 	
-	// /* generate prefetch requests */
-	for(uint32_t index = 0; index < knob::dspatch_log2_region_size; ++index)
+	/* generate prefetch requests */
+	MYLOG("pred bitmap %s", BitmapHelper::to_string(bmp_pred, knob::dspatch_num_cachelines_in_region).c_str());	
+	for(uint32_t index = 0; index < knob::dspatch_num_cachelines_in_region; ++index)
 	{
 		if(bmp_pred[index] && index != offset)
 		{
-			uint64_t addr = (page << knob::dspatch_log2_region_size) + (offset << LOG2_BLOCK_SIZE);
+			uint64_t addr = (page << knob::dspatch_log2_region_size) + (index << LOG2_BLOCK_SIZE);
 			pref_addr.push_back(addr);
 		}
 	}
-	stats.gen_pref.total++;
+	stats.gen_pref.total += pref_addr.size();
 }
 
 void DSPatch::update_bw(uint8_t bw)
@@ -305,10 +323,11 @@ void DSPatch::add_to_spt(DSPatch_PBEntry *pbentry)
 	uint32_t spt_index = get_spt_index(signature);
 	assert(spt_index < knob::dspatch_num_spt_entries);
 	DSPatch_SPTEntry *sptentry = spt[spt_index];
+	MYLOG("page %lx trigger_pc %lx trigger_offset %u sig %lx spt_index %u", pbentry->page, trigger_pc, trigger_offset, signature, spt_index);
 
-	bmp_real = BitmapHelper::rotate_right(bmp_real, trigger_offset, knob::dspatch_log2_region_size);
-	bmp_cov  = BitmapHelper::decompress(sptentry->bmp_cov, knob::dspatch_compression_granularity, knob::dspatch_log2_region_size);
-	bmp_acc  = BitmapHelper::decompress(sptentry->bmp_acc, knob::dspatch_compression_granularity, knob::dspatch_log2_region_size);
+	bmp_real = BitmapHelper::rotate_right(bmp_real, trigger_offset, knob::dspatch_num_cachelines_in_region);
+	bmp_cov  = BitmapHelper::decompress(sptentry->bmp_cov, knob::dspatch_compression_granularity, knob::dspatch_num_cachelines_in_region);
+	bmp_acc  = BitmapHelper::decompress(sptentry->bmp_acc, knob::dspatch_compression_granularity, knob::dspatch_num_cachelines_in_region);
 
 	uint32_t pop_count_bmp_real = BitmapHelper::count_bits_set(bmp_real);
 	uint32_t pop_count_bmp_cov  = BitmapHelper::count_bits_set(bmp_cov);
@@ -320,6 +339,11 @@ void DSPatch::add_to_spt(DSPatch_PBEntry *pbentry)
 	uint32_t acc_bmp_cov = 100 * (float)same_count_bmp_cov / pop_count_bmp_cov;
 	uint32_t cov_bmp_acc = 100 * (float)same_count_bmp_acc / pop_count_bmp_real;
 	uint32_t acc_bmp_acc = 100 * (float)same_count_bmp_acc / pop_count_bmp_acc;
+
+	MYLOG("bmp_real %s", BitmapHelper::to_string(bmp_real, knob::dspatch_num_cachelines_in_region).c_str());
+	MYLOG("bmp_cov  %s", BitmapHelper::to_string(bmp_cov,  knob::dspatch_num_cachelines_in_region).c_str());
+	MYLOG("bmp_acc  %s", BitmapHelper::to_string(bmp_acc,  knob::dspatch_num_cachelines_in_region).c_str());
+	MYLOG("cov_bmp_cov %u acc_bmp_acc %u cov_bmp_acc %u acc_bmp_acc %u", cov_bmp_cov, acc_bmp_cov, cov_bmp_acc, acc_bmp_acc);
 
 	/* Update CovP counters */
 	if(BitmapHelper::count_bits_diff(bmp_real, bmp_cov) != 0)
@@ -334,20 +358,24 @@ void DSPatch::add_to_spt(DSPatch_PBEntry *pbentry)
 	}
 
 	/* Update CovP */
+	MYLOG("sptentry->bmp_cov before %s", BitmapHelper::to_string(sptentry->bmp_cov, knob::dspatch_num_cachelines_in_region).c_str());
 	if(sptentry->measure_covP.value() == knob::dspatch_measure_covP_max)
 	{
+		MYLOG("measure_covP saturated %u", sptentry->measure_covP.value());
 		if(bw_bucket == 3 || cov_bmp_cov < 50) /* WARNING: hardcoded values */
 		{
-			sptentry->bmp_cov = bmp_real;
+			MYLOG("reseting CovP");
+			sptentry->bmp_cov = BitmapHelper::compress(bmp_real, knob::dspatch_compression_granularity);
+			sptentry->or_count.reset();
 			stats.spt.bmp_cov_reset++;
 		}
 	}
 	else
 	{
-		sptentry->bmp_cov = BitmapHelper::bitwise_or(bmp_cov, bmp_real);
+		sptentry->bmp_cov = BitmapHelper::compress(BitmapHelper::bitwise_or(bmp_cov, bmp_real), knob::dspatch_compression_granularity);
 		stats.spt.bmp_cov_update++;
 	}
-	sptentry->bmp_cov = BitmapHelper::compress(sptentry->bmp_cov, knob::dspatch_compression_granularity);
+	MYLOG("sptentry->bmp_cov after  %s", BitmapHelper::to_string(sptentry->bmp_cov, knob::dspatch_num_cachelines_in_region).c_str());
 
 	/* Update AccP counter(s) */
 	if(acc_bmp_acc < 50) /* WARNING: hardcoded value */
@@ -362,8 +390,10 @@ void DSPatch::add_to_spt(DSPatch_PBEntry *pbentry)
 	}
 
 	/* Update AccP */
-	sptentry->bmp_acc = BitmapHelper::bitwise_and(sptentry->bmp_cov, bmp_real);
+	MYLOG("sptentry->bmp_acc before %s", BitmapHelper::to_string(sptentry->bmp_acc, knob::dspatch_num_cachelines_in_region).c_str());
+	sptentry->bmp_acc = BitmapHelper::bitwise_and(bmp_real, BitmapHelper::decompress(sptentry->bmp_cov, knob::dspatch_compression_granularity, knob::dspatch_num_cachelines_in_region));
 	sptentry->bmp_acc = BitmapHelper::compress(sptentry->bmp_acc, knob::dspatch_compression_granularity);
+	MYLOG("sptentry->bmp_acc after  %s", BitmapHelper::to_string(sptentry->bmp_acc, knob::dspatch_num_cachelines_in_region).c_str());
 	stats.spt.bmp_acc_update++;
 }
 
@@ -424,9 +454,9 @@ void DSPatch::dump_stats()
 		<< "dspatch.pb.evict " << stats.pb.evict << endl
 		<< "dspatch.pb.insert " << stats.pb.insert << endl
 		<< endl
-		<< "dspatch.gen_pref.called " << stats.gen_pref.called 
-		<< "dspatch.gen_pref.reset " << stats.gen_pref.reset 
-		<< "dspatch.gen_pref.total " << stats.gen_pref.total 
+		<< "dspatch.gen_pref.called " << stats.gen_pref.called << endl
+		<< "dspatch.gen_pref.reset " << stats.gen_pref.reset << endl
+		<< "dspatch.gen_pref.total " << stats.gen_pref.total << endl
 		<< endl
 		<< "dspatch.dyn_selection.called " << stats.dyn_selection.called << endl
 		<< "dspatch.dyn_selection.none " << stats.dyn_selection.none << endl
@@ -454,5 +484,5 @@ void DSPatch::dump_stats()
 	{
 		cout << stats.bw.bw_histogram[index] << ",";
 	}
-	cout << endl;
+	cout << endl << endl;
 }

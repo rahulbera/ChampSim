@@ -14,8 +14,10 @@ enum DSPatch_pref_candidate
 	NONE = 0,
 	COVP,
 	ACCP,
-	Num_DSpatch_pref_candidates
+	Num_DSPatch_pref_candidates
 };
+
+const char* Map_DSPatch_pref_candidate(DSPatch_pref_candidate candidate);
 
 class DSPatch_counter
 {
@@ -94,7 +96,7 @@ private:
 		struct
 		{
 			uint64_t called;
-			uint64_t selection_dist[DSPatch_pref_candidate::Num_DSpatch_pref_candidates];
+			uint64_t selection_dist[DSPatch_pref_candidate::Num_DSPatch_pref_candidates];
 			uint64_t reset;
 			uint64_t total;
 		} gen_pref;

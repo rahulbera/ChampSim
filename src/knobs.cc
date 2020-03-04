@@ -80,6 +80,7 @@ namespace knob
 
 	/* DSPatch */
 	uint32_t dspatch_log2_region_size;
+	uint32_t dspatch_num_cachelines_in_region;
 	uint32_t dspatch_pb_size;
 	uint32_t dspatch_num_spt_entries;
 	uint32_t dspatch_compression_granularity;
@@ -502,6 +503,7 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "dspatch_log2_region_size"))
 	{
 		knob::dspatch_log2_region_size = atoi(value);
+		knob::dspatch_num_cachelines_in_region = 1 << (knob::dspatch_log2_region_size - 6); /* considers traditional 64B cachelines */
 	}
 	else if (MATCH("", "dspatch_pb_size"))
 	{
