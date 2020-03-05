@@ -1702,6 +1702,39 @@ void CACHE::add_mshr(PACKET *packet)
             break;
         }
     }
+
+    /* Get b/w buckets from LLC MSHR occupancy */
+    if (cache_type == IS_LLC)
+    {
+        bw_compute_epoch++;
+        if(bw_compute_epoch == LLC_BW_COMPUTE_EPOCH)
+        {
+            bw_compute_epoch = 0;
+            uint32_t occupancy_perc = 100*(float)MSHR.occupancy/MSHR_SIZE;
+            uint8_t bw_level = 0;
+            if (occupancy_perc < 25)
+            {
+                bw_level = 0;
+            }
+            else if (occupancy_perc >= 25 && occupancy_perc < 50)
+            {
+                bw_level = 1;
+            }
+            else if (occupancy_perc >= 50 && occupancy_perc < 75)
+            {
+                bw_level = 2;
+            }
+            else
+            {
+                bw_level = 3;
+            }
+
+            /* inform all the prefetchers */
+            l1d_prefetcher_broadcast_bw(bw_level);
+            l2c_prefetcher_broadcast_bw(bw_level);
+            llc_prefetcher_broadcast_bw(bw_level);
+        }
+    }
 }
 
 uint32_t CACHE::get_occupancy(uint8_t queue_type, uint64_t address)

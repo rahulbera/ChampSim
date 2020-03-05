@@ -29,3 +29,8 @@ void CACHE::llc_prefetcher_print_config()
 {
 	
 }
+
+void CACHE::llc_prefetcher_broadcast_bw(uint8_t bw_level)
+{
+
+}

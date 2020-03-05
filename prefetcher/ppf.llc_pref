@@ -742,3 +742,8 @@ uint32_t GLOBAL_REGISTER_L::check_entry(uint32_t page_offset, int cpu)
 
     return max_conf_way;
 }
+
+void CACHE::llc_prefetcher_broadcast_bw(uint8_t bw_level)
+{
+
+}

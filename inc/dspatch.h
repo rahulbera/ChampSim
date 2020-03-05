@@ -125,6 +125,7 @@ private:
 
 		struct
 		{
+			uint64_t called;
 			uint64_t bw_histogram[DSPATCH_MAX_BW_LEVEL];
 		} bw;
 

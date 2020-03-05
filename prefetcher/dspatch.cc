@@ -202,6 +202,7 @@ void DSPatch::update_bw(uint8_t bw)
 {
 	assert(bw < DSPATCH_MAX_BW_LEVEL);
 	bw_bucket = bw;
+	stats.bw.called++;
 	stats.bw.bw_histogram[bw]++;
 }
 
@@ -479,7 +480,8 @@ void DSPatch::dump_stats()
 		<< "dspatch.pref_buffer.issued " << stats.pref_buffer.issued << endl
 		<< endl;
 
-	cout << "dspatch.bw.bw_histogram ";
+	cout << "dspatch.bw.called " << stats.bw.called << endl
+		<< "dspatch.bw.bw_histogram ";
 	for(uint32_t index = 0; index < DSPATCH_MAX_BW_LEVEL; ++index)
 	{
 		cout << stats.bw.bw_histogram[index] << ",";

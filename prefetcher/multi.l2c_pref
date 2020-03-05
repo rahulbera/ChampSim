@@ -10,6 +10,7 @@
 #include "velma.h"
 #include "sandbox.h"
 #include "dspatch.h"
+#include "spp_dev2.h"
 
 using namespace std;
 
@@ -76,6 +77,12 @@ void CACHE::l2c_prefetcher_initialize()
 			SandboxPrefetcher *pref_sandbox = new SandboxPrefetcher(knob::l2c_prefetcher_types[index]);
 			prefetchers.push_back(pref_sandbox);
 		}
+		else if(!knob::l2c_prefetcher_types[index].compare("spp_dev2"))
+		{
+			cout << "adding L2C_PREFETCHER: SPP_dev2" << endl;
+			SPP_dev2 *pref_spp_dev2 = new SPP_dev2(knob::l2c_prefetcher_types[index], this);
+			prefetchers.push_back(pref_spp_dev2);
+		}
 		else
 		{
 			cout << "unsupported prefetcher type " << knob::l2c_prefetcher_types[index] << endl;
@@ -91,15 +98,15 @@ uint32_t CACHE::l2c_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache
 	vector<uint64_t> pref_addr;
 	for(uint32_t index = 0; index < prefetchers.size(); ++index)
 	{
-			prefetchers[index]->invoke_prefetcher(ip, addr, cache_hit, type, pref_addr);
-			if(!pref_addr.empty())
+		prefetchers[index]->invoke_prefetcher(ip, addr, cache_hit, type, pref_addr);
+		if(knob::l2c_prefetcher_types[index].compare("spp_dev2") || !pref_addr.empty())
+		{
+			for(uint32_t addr_index = 0; addr_index < pref_addr.size(); ++addr_index)
 			{
-				for(uint32_t addr_index = 0; addr_index < pref_addr.size(); ++addr_index)
-				{
-					prefetch_line(ip, addr, pref_addr[addr_index], FILL_L2, 0);
-				}
+				prefetch_line(ip, addr, pref_addr[addr_index], FILL_L2, 0);
 			}
-			pref_addr.clear();
+		}
+		pref_addr.clear();
 	}
 
 	return metadata_in;
@@ -130,6 +137,11 @@ uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t 
 			{
 				Velma *pref_velma = (Velma*)prefetchers[index];
 				pref_velma->register_fill(addr);
+			}
+			if(!prefetchers[index]->get_type().compare("spp_dev2"))
+			{
+				SPP_dev2 *pref_spp_dev2 = (SPP_dev2*)prefetchers[index];
+				pref_spp_dev2->cache_fill(addr, set, way, prefetch, evicted_addr);
 			}
 		}
 	}
@@ -170,4 +182,16 @@ void CACHE::l2c_prefetcher_print_config()
 	{
 		prefetchers[index]->print_config();
 	}		
+}
+
+void CACHE::l2c_prefetcher_broadcast_bw(uint8_t bw_level)
+{
+for(uint32_t index = 0; index < prefetchers.size(); ++index)
+	{
+		if(!prefetchers[index]->get_type().compare("dspatch"))
+		{
+			DSPatch *pref_dspatch = (DSPatch*)prefetchers[index];
+			pref_dspatch->update_bw(bw_level);
+		}
+	}
 }

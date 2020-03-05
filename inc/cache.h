@@ -77,6 +77,7 @@ extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;
 #define LLC_PQ_SIZE NUM_CPUS*32
 #define LLC_MSHR_SIZE NUM_CPUS*64
 #define LLC_LATENCY 20  // 5 (L1I or L1D) + 10 + 20 = 34 cycles
+#define LLC_BW_COMPUTE_EPOCH 100
 
 void print_cache_config();
 
@@ -100,6 +101,9 @@ class CACHE : public MEMORY {
              pf_useful,
              pf_useless,
              pf_late;
+
+    /* for computing memory subsystem bw */
+    uint32_t bw_compute_epoch;
 
     // queues
     PACKET_QUEUE WQ{NAME + "_WQ", WQ_SIZE}, // write queue
@@ -162,6 +166,8 @@ class CACHE : public MEMORY {
         pf_useful = 0;
         pf_useless = 0;
         pf_late = 0;
+
+        bw_compute_epoch = 0;
     };
 
     // destructor
@@ -227,6 +233,10 @@ class CACHE : public MEMORY {
          llc_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint32_t metadata_in),
          l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in),
          llc_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in);
+
+    void l1d_prefetcher_broadcast_bw(uint8_t bw_level),
+        l2c_prefetcher_broadcast_bw(uint8_t bw_level),
+        llc_prefetcher_broadcast_bw(uint8_t bw_level);
 
     void prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_t &pref_used, uint64_t &pref_late);
     
