@@ -2,6 +2,7 @@
 #include "champsim.h"
 #include "memory_class.h"
 using namespace std;
+// using namespace spp;
 
 namespace knob
 {

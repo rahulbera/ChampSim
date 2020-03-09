@@ -1,6 +1,8 @@
 #ifndef SPP_DEV2_HELPER_H
 #define SPP_DEV2_HELPER_H
 
+//namespace spp{
+
 // SPP functional knobs
 #define LOOKAHEAD_ON
 #define FILTER_ON
@@ -144,6 +146,8 @@ class PREFETCH_FILTER {
 
     bool     check(uint64_t pf_addr, FILTER_REQUEST filter_request, GLOBAL_REGISTER &GHR);
 };
+
+//}
 
 #endif /* SPP_DEV2_HELPER_H */
 
