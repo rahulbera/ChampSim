@@ -1729,10 +1729,43 @@ void CACHE::add_mshr(PACKET *packet)
                 bw_level = 3;
             }
 
-            /* inform all the prefetchers */
+            /* broadcast to all caches */
+            broadcast_bw(bw_level);
+        }
+    }
+}
+
+void CACHE::broadcast_bw(uint8_t bw_level)
+{
+    /* boradcast to all the attached prefetchers */
+    switch(cache_type)
+    {
+        case IS_L1I:
+            break;
+        case IS_L1D:
             l1d_prefetcher_broadcast_bw(bw_level);
+            break;
+        case IS_L2C:
             l2c_prefetcher_broadcast_bw(bw_level);
+            break;
+        case IS_LLC:
             llc_prefetcher_broadcast_bw(bw_level);
+            break;
+    }
+
+    /* recursively broadcast to higher caches */
+    CACHE *cache = NULL;
+    for(uint32_t core = 0; core < NUM_CPUS; ++core)
+    {
+        if(upper_level_dcache[core])
+        {
+            cache = (CACHE*)upper_level_dcache[core];
+            cache->broadcast_bw(bw_level);
+        }
+        if(upper_level_icache[core] && upper_level_icache[core] != upper_level_dcache[core])
+        {
+            cache = (CACHE*)upper_level_icache[core];
+            cache->broadcast_bw(bw_level);
         }
     }
 }

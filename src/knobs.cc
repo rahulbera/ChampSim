@@ -155,7 +155,7 @@ namespace knob
 	uint32_t scooby_cmac_num_planes;
 	uint32_t scooby_cmac_num_entries_per_plane;
 	vector<int32_t> scooby_cmac_plane_offsets;
-	vector<int32_t> scooby_cmac_dim_granularities;
+	vector<int32_t> scooby_cmac_feature_granularities;
 	vector<int32_t> scooby_cmac_action_factors;
 	uint32_t scooby_cmac_hash_type;
 
@@ -163,7 +163,7 @@ namespace knob
 	uint32_t scooby_cmac2_num_planes;
 	uint32_t scooby_cmac2_num_entries_per_plane;
 	vector<int32_t> scooby_cmac2_plane_offsets;
-	vector<int32_t> scooby_cmac2_dim_granularities;
+	vector<int32_t> scooby_cmac2_feature_granularities;
 	uint32_t scooby_cmac2_hash_type;
 	bool 		le_cmac2_enable_trace;
 	string 		le_cmac2_trace_state;
@@ -175,6 +175,9 @@ namespace knob
 	bool        le_cmac2_state_action_debug;
 	vector<float> le_cmac2_qvalue_threshold_levels;
 	uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
+	uint32_t le_cmac2_state_type;
+	vector<int32_t> le_cmac2_active_features;
+	uint32_t le_cmac2_feature_shift_amount;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -779,9 +782,9 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 		cout << "scooby_cmac_plane_offsets " << knob::scooby_cmac_plane_offsets.size() << endl;
 		cout << value << endl;
 	}
-	else if (MATCH("", "scooby_cmac_dim_granularities"))
+	else if (MATCH("", "scooby_cmac_feature_granularities"))
 	{
-		knob::scooby_cmac_dim_granularities = get_array_int(value);
+		knob::scooby_cmac_feature_granularities = get_array_int(value);
 	}
 	else if (MATCH("", "scooby_cmac_action_factors"))
 	{
@@ -805,9 +808,9 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_cmac2_plane_offsets = get_array_int(value);
 	}
-	else if (MATCH("", "scooby_cmac2_dim_granularities"))
+	else if (MATCH("", "scooby_cmac2_feature_granularities"))
 	{
-		knob::scooby_cmac2_dim_granularities = get_array_int(value);
+		knob::scooby_cmac2_feature_granularities = get_array_int(value);
 	}
 	else if (MATCH("", "scooby_cmac2_hash_type"))
 	{
@@ -852,6 +855,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_cmac2_max_to_avg_q_ratio_type"))
 	{
 		knob::le_cmac2_max_to_avg_q_ratio_type = atoi(value);
+	}
+	else if (MATCH("", "le_cmac2_state_type"))
+	{
+		knob::le_cmac2_state_type = atoi(value);
+	}
+	else if (MATCH("", "le_cmac2_active_features"))
+	{
+		knob::le_cmac2_active_features = get_array_int(value);
+	}
+	else if (MATCH("", "le_cmac2_feature_shift_amount"))
+	{
+		knob::le_cmac2_feature_shift_amount = atoi(value);
 	}
 
 	/* Shaggy knobs */

@@ -9,12 +9,15 @@
 
 typedef enum
 {
-	PC = 0,
+	PC = 1,
 	Offset,
 	Delta,
+	PC_path,
+	Offset_path,
+	Delta_path,
 
-	NumDimensions
-} Dimension;
+	NumFeatures = Delta_path
+} Feature;
 
 class CMACConfig
 {
@@ -22,7 +25,7 @@ public:
 	uint32_t num_planes;
 	uint32_t num_entries_per_plane;
 	vector<int32_t> plane_offsets;
-	vector<int32_t> dim_granularities;
+	vector<int32_t> feature_granularities;
 	vector<int32_t> action_factors;
 	uint32_t hash_type;
 
@@ -31,7 +34,7 @@ public:
 		num_planes = 0;
 		num_entries_per_plane = 0;
 		plane_offsets.clear();
-		dim_granularities.clear();
+		feature_granularities.clear();
 		action_factors.clear();
 		hash_type = 0;
 	}
@@ -44,7 +47,7 @@ private:
 	uint32_t m_num_planes;
 	uint32_t m_num_entries_per_plane;
 	vector<int32_t> m_plane_offsets;
-	vector<int32_t> m_dim_granularities;
+	vector<int32_t> m_feature_granularities;
 	vector<int32_t> m_action_factors;
 	uint32_t m_hash_type;
 
@@ -55,8 +58,6 @@ private:
     std::uniform_int_distribution<int> *m_actiongen;
 
 	float **m_qtables;
-
-	vector<uint32_t> plane_offset, dimension_granularity, action_factor;
 
 	/* stats */
 	struct

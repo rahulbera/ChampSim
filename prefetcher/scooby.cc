@@ -81,7 +81,7 @@ namespace knob
 	extern uint32_t scooby_cmac_num_planes;
 	extern uint32_t scooby_cmac_num_entries_per_plane;
 	extern vector<int32_t> scooby_cmac_plane_offsets;
-	extern vector<int32_t> scooby_cmac_dim_granularities;
+	extern vector<int32_t> scooby_cmac_feature_granularities;
 	extern vector<int32_t> scooby_cmac_action_factors;
 	extern uint32_t scooby_cmac_hash_type;
 
@@ -89,7 +89,7 @@ namespace knob
 	extern uint32_t scooby_cmac2_num_planes;
 	extern uint32_t scooby_cmac2_num_entries_per_plane;
 	extern vector<int32_t> scooby_cmac2_plane_offsets;
-	extern vector<int32_t> scooby_cmac2_dim_granularities;
+	extern vector<int32_t> scooby_cmac2_feature_granularities;
 	extern uint32_t scooby_cmac2_hash_type;
 	extern bool 		le_cmac2_enable_trace;
 	extern string 		le_cmac2_trace_state;
@@ -101,6 +101,9 @@ namespace knob
 	extern bool 		le_cmac2_state_action_debug;
 	extern vector<float> le_cmac2_qvalue_threshold_levels;
 	extern uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
+	extern uint32_t 	le_cmac2_state_type;
+	extern vector<int32_t> le_cmac2_active_features;
+	extern uint32_t 	le_cmac2_feature_shift_amount;
 }
 
 void Scooby::init_knobs()
@@ -150,7 +153,7 @@ Scooby::Scooby(string type) : Prefetcher(type)
 		config.num_planes = knob::scooby_cmac_num_planes;
 		config.num_entries_per_plane = knob::scooby_cmac_num_entries_per_plane;
 		config.plane_offsets = knob::scooby_cmac_plane_offsets;
-		config.dim_granularities = knob::scooby_cmac_dim_granularities;
+		config.feature_granularities = knob::scooby_cmac_feature_granularities;
 		config.action_factors = knob::scooby_cmac_action_factors;
 		config.hash_type = knob::scooby_cmac_hash_type;
 
@@ -170,7 +173,7 @@ Scooby::Scooby(string type) : Prefetcher(type)
 		config.num_planes = knob::scooby_cmac2_num_planes;
 		config.num_entries_per_plane = knob::scooby_cmac2_num_entries_per_plane;
 		config.plane_offsets = knob::scooby_cmac2_plane_offsets;
-		config.dim_granularities = knob::scooby_cmac2_dim_granularities;
+		config.feature_granularities = knob::scooby_cmac2_feature_granularities;
 		config.hash_type = knob::scooby_cmac2_hash_type;
 
 		brain_cmac2 = new LearningEngineCMAC2(config,
@@ -200,6 +203,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	{
 		shaggy = new Shaggy();	
 	}
+
+	bw_level = 0;
 }
 
 Scooby::~Scooby()
@@ -266,14 +271,14 @@ void Scooby::print_config()
 		<< "scooby_cmac_num_planes " << knob::scooby_cmac_num_planes << endl
 		<< "scooby_cmac_num_entries_per_plane " << knob::scooby_cmac_num_entries_per_plane << endl
 		<< "scooby_cmac_plane_offsets " << array_to_string(knob::scooby_cmac_plane_offsets, true) << endl
-		<< "scooby_cmac_dim_granularities " << array_to_string(knob::scooby_cmac_dim_granularities) << endl
+		<< "scooby_cmac_feature_granularities " << array_to_string(knob::scooby_cmac_feature_granularities) << endl
 		<< "scooby_cmac_action_factors " << array_to_string(knob::scooby_cmac_action_factors, true) << endl
 		<< "scooby_cmac_hash_type " << knob::scooby_cmac_hash_type << endl
 		<< endl
 		<< "scooby_cmac2_num_planes " << knob::scooby_cmac2_num_planes << endl
 		<< "scooby_cmac2_num_entries_per_plane " << knob::scooby_cmac2_num_entries_per_plane << endl
 		<< "scooby_cmac2_plane_offsets " << array_to_string(knob::scooby_cmac2_plane_offsets, true) << endl
-		<< "scooby_cmac2_dim_granularities " << array_to_string(knob::scooby_cmac2_dim_granularities) << endl
+		<< "scooby_cmac2_feature_granularities " << array_to_string(knob::scooby_cmac2_feature_granularities) << endl
 		<< "scooby_cmac2_hash_type " << knob::scooby_cmac2_hash_type << endl
 		<< endl
 		<< "le_cmac2_enable_trace " << knob::le_cmac2_enable_trace << endl
@@ -286,6 +291,9 @@ void Scooby::print_config()
 		<< "le_cmac2_state_action_debug " << knob::le_cmac2_state_action_debug << endl
 		<< "le_cmac2_qvalue_threshold_levels " << array_to_string(knob::le_cmac2_qvalue_threshold_levels) << endl
 		<< "le_cmac2_max_to_avg_q_ratio_type " << knob::le_cmac2_max_to_avg_q_ratio_type << endl
+		<< "le_cmac2_state_type " << knob::le_cmac2_state_type << endl
+		<< "le_cmac2_active_features " << array_to_string(knob::le_cmac2_active_features) << endl
+		<< "le_cmac2_feature_shift_amount " << knob::le_cmac2_feature_shift_amount << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -326,6 +334,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->local_delta_sig = stentry->get_delta_sig();
 	state->local_delta_sig2 = stentry->get_delta_sig2();
 	state->local_pc_sig = stentry->get_pc_sig();
+	state->local_offset_sig = stentry->get_offset_sig();
 
 	/* Shaggy only predicts for streaming accesses */
 	bool cond_streaming = (knob::scooby_enable_shaggy && stentry->streaming);
@@ -873,6 +882,14 @@ void Scooby::track_in_st(uint64_t page, uint32_t pred_offset)
 	}
 }
 
+void Scooby::update_bw(uint8_t bw)
+{
+	assert(bw < SCOOBY_MAX_BW_LEVEL);
+	bw_level = bw;
+	stats.bandwidth.epochs++;
+	stats.bandwidth.histogram[bw_level]++;
+}
+
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
@@ -1018,4 +1035,11 @@ void Scooby::dump_stats()
 	{
 		shaggy->dump_stats();
 	}
+
+	cout << "scooby_bw_epochs " << stats.bandwidth.epochs << endl;
+	for(uint32_t index = 0; index < SCOOBY_MAX_BW_LEVEL; ++index)
+	{
+		cout << "scooby_bw_level_" << index << " " << stats.bandwidth.histogram[index] << endl;
+	}
+	cout << endl;
 }

@@ -6,8 +6,8 @@
 #include "learning_engine_cmac2.h"
 #include "util.h"
 #include "scooby.h"
+#include "statezoo.h"
 
-#define DELTA_BITS 7
 
 #if 0
 #	define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
@@ -31,6 +31,8 @@ namespace knob
 	extern bool         le_cmac2_state_action_debug;
 	extern vector<float> le_cmac2_qvalue_threshold_levels;
 	extern uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
+	extern uint32_t 	le_cmac2_state_type;
+	extern vector<int32_t> le_cmac2_active_features;
 }
 
 LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
@@ -39,14 +41,31 @@ LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float
 	m_num_planes = config.num_planes;
 	m_num_entries_per_plane = config.num_entries_per_plane;
 	m_plane_offsets = config.plane_offsets;
-	m_dim_granularities = config.dim_granularities;
+	m_feature_granularities = config.feature_granularities;
 	m_hash_type = config.hash_type;
 
 	/* check integrity */
 	assert(m_num_planes <= MAX_CMAC_PLANES);
 	assert(m_plane_offsets.size() == m_num_planes);
-	assert(m_dim_granularities.size() == Dimension::NumDimensions);
+	if(m_feature_granularities.size() != Feature::NumFeatures)
+	{
+		cout << "m_feature_granularities.size() " << m_feature_granularities.size() << " NumFeatures " << Feature::NumFeatures << endl;
+		assert(false);
+	}
 	assert(knob::le_cmac2_qvalue_threshold_levels.size() < NUM_MAX_THRESHOLDS-1);
+	if(knob::le_cmac2_state_type == 0 && !knob::le_cmac2_active_features.empty())
+	{
+		cout << "le_cmac2_state_type is set to 0, yet le_cmac2_active_features is populated!" << endl;
+		assert(false);
+	}
+	for(uint32_t index = 0; index < knob::le_cmac2_active_features.size(); ++index)
+	{
+		if((Feature)knob::le_cmac2_active_features[index] >= NumFeatures)
+		{
+			cout << "le_cmac2_active_features index " << index << " is not valid!" << endl;
+			assert(false);
+		}
+	}
 
 	/* init Q-tables
 	 * Unlike CMAC engine 1.0, each Q-table is a two-dimentional array in CMAC 2.0*/
@@ -252,41 +271,10 @@ void LearningEngineCMAC2::updatePlane(uint32_t plane, State *state, uint32_t act
 
 uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, uint32_t action)
 {
-	/* extract state dimensions */
-	uint64_t pc = state->pc;
-	uint32_t offset = state->offset;
-	int32_t delta = state->delta;
-
-	/* extract features */
-	/* 1. PC */
-	uint32_t folded_pc = folded_xor(pc, 2); /* 32b folded XOR */
-	folded_pc += m_plane_offsets[plane]; /* add CMAC plane offset */
-	folded_pc >>= m_dim_granularities[Dimension::PC];
-	// MYLOG("PC feature %x", folded_pc);
-
-	/* 2. Offset */
-	offset += m_plane_offsets[plane];
-	offset >>= m_dim_granularities[Dimension::Offset];
-	// MYLOG("Offset feature %x", offset);
-
-	/* 3. Delta */
-	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta; /* converts into 7 bit signed representation */ 
-	unsigned_delta += m_plane_offsets[plane];
-	unsigned_delta >>= m_dim_granularities[Dimension::Delta];
-	// MYLOG("Delta feature %x", unsigned_delta);
-
-	/* Concatenate all features */
-	uint32_t initial_index = (((folded_pc << 4) + offset) << 4) + unsigned_delta;
-	// MYLOG("state: %s, initial index: %x", state->to_string().c_str(), initial_index);
-
-	/* XOR the constant factor for action */
-	// initial_index = initial_index ^ m_action_factors[action];
-	// MYLOG("state: %s, action: %u, XOR'ed index: %x", state->to_string().c_str(), action, initial_index);	
+	uint32_t initial_index = generateInitialIndex(plane, state);
 
 	/* Finally hash */
 	uint32_t hashed_index = getHash(initial_index);
-	// MYLOG("plane: %u, state: %s, action: %u, hashed_index: %x", plane, state->to_string().c_str(), action, hashed_index);
-
 	return (hashed_index % m_num_entries_per_plane);
 }
 
@@ -439,4 +427,43 @@ void LearningEngineCMAC2::plot_scores()
 
 	std::string cmd2 = "rm " + std::string(script_file);
 	system(cmd2.c_str());
+}
+
+uint32_t LearningEngineCMAC2::generateInitialIndex(uint32_t plane, State *state)
+{
+	switch(knob::le_cmac2_state_type)
+	{
+		case 0: 	return gen_state_original(plane, state);
+		case 1: 	return gen_state_generic(plane, state);
+		default:
+			cout << "invalid le_cmac2_state_type " << knob::le_cmac2_state_type << endl;
+			assert(false);
+	}
+}
+
+/* Just to maintain backward compatibility */
+uint32_t LearningEngineCMAC2::gen_state_original(uint32_t plane, State *state)
+{
+	/* extract state dimensions */
+	uint64_t pc = state->pc;
+	uint32_t offset = state->offset;
+	int32_t delta = state->delta;
+
+	/* extract features */
+	/* 1. PC */
+	uint32_t folded_pc = folded_xor(pc, 2); /* 32b folded XOR */
+	folded_pc += m_plane_offsets[plane]; /* add CMAC plane offset */
+	folded_pc >>= m_feature_granularities[Feature::PC];
+
+	/* 2. Offset */
+	offset += m_plane_offsets[plane];
+	offset >>= m_feature_granularities[Feature::Offset];
+
+	/* 3. Delta */
+	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta; /* converts into 7 bit signed representation */ 
+	unsigned_delta += m_plane_offsets[plane];
+	unsigned_delta >>= m_feature_granularities[Feature::Delta];
+
+	uint32_t initial_index = (((folded_pc << 4) + offset) << 4) + unsigned_delta;
+	return initial_index;
 }
