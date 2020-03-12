@@ -200,8 +200,13 @@ void CACHE::l2c_prefetcher_print_config()
 
 void CACHE::l2c_prefetcher_broadcast_bw(uint8_t bw_level)
 {
-for(uint32_t index = 0; index < prefetchers.size(); ++index)
+	for(uint32_t index = 0; index < prefetchers.size(); ++index)
 	{
+		if(!prefetchers[index]->get_type().compare("scooby"))
+		{
+			Scooby *pref_scooby = (Scooby*)prefetchers[index];
+			pref_scooby->update_bw(bw_level);
+		}
 		if(!prefetchers[index]->get_type().compare("dspatch"))
 		{
 			DSPatch *pref_dspatch = (DSPatch*)prefetchers[index];

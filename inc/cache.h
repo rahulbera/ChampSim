@@ -238,7 +238,8 @@ class CACHE : public MEMORY {
          l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in),
          llc_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in);
 
-    void l1d_prefetcher_broadcast_bw(uint8_t bw_level),
+    void broadcast_bw(uint8_t bw_level), 
+        l1d_prefetcher_broadcast_bw(uint8_t bw_level),
         l2c_prefetcher_broadcast_bw(uint8_t bw_level),
         llc_prefetcher_broadcast_bw(uint8_t bw_level);
 

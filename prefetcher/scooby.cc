@@ -200,6 +200,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	{
 		shaggy = new Shaggy();	
 	}
+
+	bw_level = 0;
 }
 
 Scooby::~Scooby()
@@ -873,6 +875,14 @@ void Scooby::track_in_st(uint64_t page, uint32_t pred_offset)
 	}
 }
 
+void Scooby::update_bw(uint8_t bw)
+{
+	assert(bw < SCOOBY_MAX_BW_LEVEL);
+	bw_level = bw;
+	stats.bandwidth.epochs++;
+	stats.bandwidth.histogram[bw_level]++;
+}
+
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
@@ -1018,4 +1028,11 @@ void Scooby::dump_stats()
 	{
 		shaggy->dump_stats();
 	}
+
+	cout << "scooby_bw_epochs " << stats.bandwidth.epochs << endl;
+	for(uint32_t index = 0; index < SCOOBY_MAX_BW_LEVEL; ++index)
+	{
+		cout << "scooby_bw_level_" << index << " " << stats.bandwidth.histogram[index] << endl;
+	}
+	cout << endl;
 }

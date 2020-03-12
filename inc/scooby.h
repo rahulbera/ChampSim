@@ -15,6 +15,7 @@ using namespace std;
 #define MAX_ACTIONS 64
 #define MAX_REWARDS 16
 #define MAX_SCOOBY_DEGREE 16
+#define SCOOBY_MAX_BW_LEVEL 4
 
 /* forward declaration */
 class LearningEngine;
@@ -65,6 +66,7 @@ private:
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
 	Shaggy *shaggy;
+	uint8_t bw_level;
 
 	/* for workload insights only
 	 * has nothing to do with prefetching */
@@ -160,6 +162,12 @@ private:
 			uint64_t shaggy;
 		} pref_issue;
 
+		struct 
+		{
+			uint64_t epochs;
+			uint64_t histogram[SCOOBY_MAX_BW_LEVEL];
+		} bandwidth;
+
 	} stats;
 
 	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;
@@ -194,6 +202,7 @@ public:
 	void dump_stats();
 	void print_config();
 	int32_t getAction(uint32_t action_index);
+	void update_bw(uint8_t bw_level);
 };
 
 #endif /* SCOOBY_H */
