@@ -1102,3 +1102,8 @@ void 	PERCEPTRON::perc_update(uint64_t base_addr, uint64_t ip, uint64_t ip_1, ui
 		);
 	}
 }
+
+void CACHE::l2c_prefetcher_broadcast_bw(uint8_t bw_level)
+{
+
+}

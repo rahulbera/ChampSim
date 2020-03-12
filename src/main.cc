@@ -104,21 +104,21 @@ void print_sim_stats(uint32_t cpu, CACHE *cache)
         TOTAL_MISS += cache->sim_miss[cpu][i];
     }
 
-    cout<< "Core_" << cpu << "_" << cache->NAME << "_total_access " << TOTAL_ACCESS << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_total_hit " << TOTAL_HIT << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_total_miss " << TOTAL_MISS << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_loads " << cache->sim_access[cpu][0] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_load_hit " << cache->sim_hit[cpu][0] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_load_miss " << cache->sim_miss[cpu][0] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_RFOs " << cache->sim_access[cpu][1] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_RFO_hit " << cache->sim_hit[cpu][1] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_RFO_miss " << cache->sim_miss[cpu][1] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_prefetches " << cache->sim_access[cpu][2] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_prefetch_hit " << cache->sim_hit[cpu][2] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_prefetch_miss " << cache->sim_miss[cpu][2] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_writebacks " << cache->sim_access[cpu][3] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_writeback_hit " << cache->sim_hit[cpu][3] << endl
-        << "Core_" << cpu << "_" << cache->NAME << "_writeback_miss " << cache->sim_miss[cpu][3] << endl
+    cout<< "Total_stats_Core_" << cpu << "_" << cache->NAME << "_total_access " << TOTAL_ACCESS << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_total_hit " << TOTAL_HIT << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_total_miss " << TOTAL_MISS << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_loads " << cache->sim_access[cpu][0] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_load_hit " << cache->sim_hit[cpu][0] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_load_miss " << cache->sim_miss[cpu][0] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_RFOs " << cache->sim_access[cpu][1] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_RFO_hit " << cache->sim_hit[cpu][1] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_RFO_miss " << cache->sim_miss[cpu][1] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_prefetches " << cache->sim_access[cpu][2] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_prefetch_hit " << cache->sim_hit[cpu][2] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_prefetch_miss " << cache->sim_miss[cpu][2] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_writebacks " << cache->sim_access[cpu][3] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_writeback_hit " << cache->sim_hit[cpu][3] << endl
+        << "Total_stats_Core_" << cpu << "_" << cache->NAME << "_writeback_miss " << cache->sim_miss[cpu][3] << endl
         << endl;
 }
 

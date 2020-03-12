@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 4 ]; then
     echo "Illegal number of parameters"
     #echo "Usage: ./build_champsim.sh [branch_pred] [l1d_pref] [l2c_pref] [llc_pref] [llc_repl] [num_core]"
-    echo "Usage: ./build_champsim.sh [l1d_pref] [l2c_pref] [llc_pref]"
+    echo "Usage: ./build_champsim.sh [l1d_pref] [l2c_pref] [llc_pref] [num_core]"
     exit 1
 fi
 
@@ -13,7 +13,7 @@ L1D_PREFETCHER=$1   # prefetcher/*.l1d_pref
 L2C_PREFETCHER=$2   # prefetcher/*.l2c_pref
 LLC_PREFETCHER=$3   # prefetcher/*.llc_pref
 #LLC_REPLACEMENT=$5  # replacement/*.llc_repl
-#NUM_CORE=$6         # tested up to 8-core system
+NUM_CORE=$4         # tested up to 8-core system
 
 ############## Some useful macros ###############
 BOLD=$(tput bold)
@@ -23,7 +23,7 @@ NORMAL=$(tput sgr0)
 ############## Default configuration ############
 BRANCH=perceptron
 LLC_REPLACEMENT=ship
-NUM_CORE=1
+#NUM_CORE=1
 #################################################
 
 # Sanity check
@@ -73,8 +73,8 @@ fi
 if [ "$NUM_CORE" -gt "1" ]; then
     echo "Building multi-core ChampSim..."
     sed -i.bak 's/\<NUM_CPUS 1\>/NUM_CPUS '${NUM_CORE}'/g' inc/champsim.h
-#	sed -i.bak 's/\<DRAM_CHANNELS 1\>/DRAM_CHANNELS 2/g' inc/champsim.h
-#	sed -i.bak 's/\<DRAM_CHANNELS_LOG2 0\>/DRAM_CHANNELS_LOG2 1/g' inc/champsim.h
+    sed -i.bak 's/\<DRAM_CHANNELS 1\>/DRAM_CHANNELS 2/g' inc/champsim.h
+    sed -i.bak 's/\<DRAM_CHANNELS_LOG2 0\>/DRAM_CHANNELS_LOG2 1/g' inc/champsim.h
 else
     if [ "$NUM_CORE" -lt "1" ]; then
         echo "Number of core: $NUM_CORE must be greater or equal than 1"

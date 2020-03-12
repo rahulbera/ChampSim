@@ -78,6 +78,25 @@ namespace knob
 	uint32_t sandbox_bloom_filter_size = 2048;
 	uint32_t sandbox_seed = 200;
 
+	/* DSPatch */
+	uint32_t dspatch_log2_region_size;
+	uint32_t dspatch_num_cachelines_in_region;
+	uint32_t dspatch_pb_size;
+	uint32_t dspatch_num_spt_entries;
+	uint32_t dspatch_compression_granularity;
+	uint32_t dspatch_pred_throttle_bw_thr;
+	uint32_t dspatch_bitmap_selection_policy;
+	uint32_t dspatch_sig_type;
+	uint32_t dspatch_sig_hash_type;
+	uint32_t dspatch_or_count_max;
+	uint32_t dspatch_measure_covP_max;
+	uint32_t dspatch_measure_accP_max;
+	uint32_t dspatch_acc_thr;
+	uint32_t dspatch_cov_thr;
+	bool     dspatch_enable_pref_buffer;
+	uint32_t dspatch_pref_buffer_size;
+	uint32_t dspatch_pref_degree;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -478,6 +497,73 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "sandbox_seed"))
 	{
 		knob::sandbox_seed = atoi(value);
+	}
+
+	/* DSPatch */
+	else if (MATCH("", "dspatch_log2_region_size"))
+	{
+		knob::dspatch_log2_region_size = atoi(value);
+		knob::dspatch_num_cachelines_in_region = 1 << (knob::dspatch_log2_region_size - 6); /* considers traditional 64B cachelines */
+	}
+	else if (MATCH("", "dspatch_pb_size"))
+	{
+		knob::dspatch_pb_size = atoi(value);
+	}
+	else if (MATCH("", "dspatch_num_spt_entries"))
+	{
+		knob::dspatch_num_spt_entries = atoi(value);
+	}
+	else if (MATCH("", "dspatch_compression_granularity"))
+	{
+		knob::dspatch_compression_granularity = atoi(value);
+	}
+	else if (MATCH("", "dspatch_pred_throttle_bw_thr"))
+	{
+		knob::dspatch_pred_throttle_bw_thr = atoi(value);
+	}
+	else if (MATCH("", "dspatch_bitmap_selection_policy"))
+	{
+		knob::dspatch_bitmap_selection_policy = atoi(value);
+	}
+	else if (MATCH("", "dspatch_sig_type"))
+	{
+		knob::dspatch_sig_type = atoi(value);
+	}
+	else if (MATCH("", "dspatch_sig_hash_type"))
+	{
+		knob::dspatch_sig_hash_type = atoi(value);
+	}
+	else if (MATCH("", "dspatch_or_count_max"))
+	{
+		knob::dspatch_or_count_max = atoi(value);
+	}
+	else if (MATCH("", "dspatch_measure_covP_max"))
+	{
+		knob::dspatch_measure_covP_max = atoi(value);
+	}
+	else if (MATCH("", "dspatch_measure_accP_max"))
+	{
+		knob::dspatch_measure_accP_max = atoi(value);
+	}
+	else if (MATCH("", "dspatch_acc_thr"))
+	{
+		knob::dspatch_acc_thr = atoi(value);
+	}
+	else if (MATCH("", "dspatch_cov_thr"))
+	{
+		knob::dspatch_cov_thr = atoi(value);
+	}
+	else if (MATCH("", "dspatch_enable_pref_buffer"))
+	{
+		knob::dspatch_enable_pref_buffer = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "dspatch_pref_buffer_size"))
+	{
+		knob::dspatch_pref_buffer_size = atoi(value);
+	}
+	else if (MATCH("", "dspatch_pref_degree"))
+	{
+		knob::dspatch_pref_degree = atoi(value);
 	}
 
 	/* Scooby */

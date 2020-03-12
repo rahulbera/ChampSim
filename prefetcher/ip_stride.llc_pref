@@ -153,3 +153,8 @@ void CACHE::llc_prefetcher_final_stats()
 {
     cout << "CPU " << cpu << " LLC PC-based stride prefetcher final stats" << endl;
 }
+
+void CACHE::llc_prefetcher_broadcast_bw(uint8_t bw_level)
+{
+
+}
