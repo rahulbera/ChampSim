@@ -11,12 +11,11 @@ private:
 	uint32_t m_num_planes;
 	uint32_t m_num_entries_per_plane;
 	vector<int32_t> m_plane_offsets;
-	vector<int32_t> m_dim_granularities;
+	vector<int32_t> m_feature_granularities;
 	vector<int32_t> m_action_factors;
 	uint32_t m_hash_type;
 
 	float m_init_value;
-	vector<uint32_t> plane_offset, dimension_granularity, action_factor;
 
     std::default_random_engine m_generator;
     std::bernoulli_distribution *m_explore;
@@ -56,6 +55,18 @@ private:
 	uint32_t getHash(uint32_t key);
 	void dump_state_trace(State *state);
 	void plot_scores();
+
+	uint32_t generateInitialIndex(uint32_t plane, State *state);
+	uint32_t gen_state_original(uint32_t plane, State *state);
+	uint32_t gen_state_generic(uint32_t plane, State *state);
+	uint32_t get_processed_feature(Feature feature, State *state, uint32_t plane);
+
+	uint32_t process_PC(uint64_t pc, uint32_t plane);
+	uint32_t process_offset(uint32_t offset, uint32_t plane);
+	uint32_t process_delta(int32_t delta, uint32_t plane);
+	uint32_t process_PC_path(uint32_t pc_path, uint32_t plane);
+	uint32_t process_offset_path(uint32_t offset, uint32_t plane);
+	uint32_t process_delta_path(uint32_t delta, uint32_t plane);
 
 public:
 	LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);

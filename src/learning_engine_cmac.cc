@@ -30,7 +30,7 @@ LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float a
 	m_num_planes = config.num_planes;
 	m_num_entries_per_plane = config.num_entries_per_plane;
 	m_plane_offsets = config.plane_offsets;
-	m_dim_granularities = config.dim_granularities;
+	m_feature_granularities = config.feature_granularities;
 	m_action_factors = config.action_factors;
 	m_hash_type = config.hash_type;
 
@@ -38,7 +38,7 @@ LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float a
 	assert(m_num_planes <= MAX_CMAC_PLANES);
 	cout << "m_plane_offsets " << m_plane_offsets.size() << " m_num_planes " << m_num_planes << endl;
 	assert(m_plane_offsets.size() == m_num_planes);
-	assert(m_dim_granularities.size() == Dimension::NumDimensions);
+	assert(m_feature_granularities.size() == Feature::NumFeatures);
 	assert(m_action_factors.size() == m_actions);
 
 	/* init Q-tables
@@ -215,18 +215,18 @@ uint32_t LearningEngineCMAC::generatePlaneIndex(uint32_t plane, State *state, ui
 	/* 1. PC */
 	uint32_t folded_pc = folded_xor(pc, 2); /* 32b folded XOR */
 	folded_pc += m_plane_offsets[plane]; /* add CMAC plane offset */
-	folded_pc >>= m_dim_granularities[Dimension::PC];
+	folded_pc >>= m_feature_granularities[Feature::PC];
 	MYLOG("PC feature %x", folded_pc);
 
 	/* 2. Offset */
 	offset += m_plane_offsets[plane];
-	offset >>= m_dim_granularities[Dimension::Offset];
+	offset >>= m_feature_granularities[Feature::Offset];
 	MYLOG("Offset feature %x", offset);
 
 	/* 3. Delta */
 	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta; /* converts into 7 bit signed representation */ 
 	unsigned_delta += m_plane_offsets[plane];
-	unsigned_delta >>= m_dim_granularities[Dimension::Delta];
+	unsigned_delta >>= m_feature_granularities[Feature::Delta];
 	MYLOG("Delta feature %x", unsigned_delta);
 
 	/* Concatenate all features */

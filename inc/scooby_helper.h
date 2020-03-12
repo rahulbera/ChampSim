@@ -20,6 +20,7 @@ public:
 	uint32_t local_delta_sig;
 	uint32_t local_delta_sig2;
 	uint32_t local_pc_sig;
+	uint32_t local_offset_sig;
 	
 	/* 
 	 * Add more states here
@@ -34,6 +35,7 @@ public:
 		local_delta_sig = 0;
 		local_delta_sig2 = 0;
 		local_pc_sig = 0;
+		local_offset_sig = 0;
 	}
 	State(){reset();}
 	~State(){}
@@ -81,6 +83,7 @@ public:
 	uint32_t get_delta_sig();
 	uint32_t get_delta_sig2();
 	uint32_t get_pc_sig();
+	uint32_t get_offset_sig();
 	void update(uint64_t page, uint64_t pc, uint32_t offset, uint64_t address);
 	void track_prefetch(uint32_t offset);
 };

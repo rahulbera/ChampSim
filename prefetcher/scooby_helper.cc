@@ -8,8 +8,10 @@
 
 #define DELTA_SIG_MAX_BITS 12
 #define DELTA_SIG_SHIFT 3
-#define PC_SIG_MAX_BITS 16
+#define PC_SIG_MAX_BITS 32
 #define PC_SIG_SHIFT 4
+#define OFFSET_SIG_MAX_BITS 24
+#define OFFSET_SIG_SHIFT 4
 
 #define SIG_SHIFT 3
 #define SIG_BIT 12
@@ -253,18 +255,34 @@ uint32_t Scooby_STEntry::get_pc_sig()
 	uint32_t signature = 0;
 	uint32_t pc = 0;
 
-	/* compute signature only using last 4 deltas */
+	/* compute signature only using last 4 PCs */
 	uint32_t n = pcs.size();
 	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
 	
 	for(uint32_t index = ptr; index < pcs.size(); ++index)
 	{
 		signature = (signature << PC_SIG_SHIFT);
-		signature = signature & ((1ull << PC_SIG_MAX_BITS) - 1);
-		pc = (uint32_t)(pcs[index] & ((1ull << 7) - 1));
-		signature = (signature ^ pc);
-		signature = signature & ((1ull << PC_SIG_MAX_BITS) - 1);
+		signature = (signature ^ pcs[index]);
 	}
+	signature = signature & ((1ull << PC_SIG_MAX_BITS) - 1);
+	return signature;
+}
+
+uint32_t Scooby_STEntry::get_offset_sig()
+{
+	uint32_t signature = 0;
+	uint32_t offset = 0;
+
+	/* compute signature only using last 4 offsets */
+	uint32_t n = offsets.size();
+	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
+	
+	for(uint32_t index = ptr; index < offsets.size(); ++index)
+	{
+		signature = (signature << OFFSET_SIG_SHIFT);
+		signature = (signature ^ offsets[index]);
+	}
+	signature = signature & ((1ull << OFFSET_SIG_MAX_BITS) - 1);
 	return signature;
 }
 
