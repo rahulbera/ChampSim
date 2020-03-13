@@ -292,7 +292,7 @@ void Scooby::print_config()
 		<< "le_cmac2_qvalue_threshold_levels " << array_to_string(knob::le_cmac2_qvalue_threshold_levels) << endl
 		<< "le_cmac2_max_to_avg_q_ratio_type " << knob::le_cmac2_max_to_avg_q_ratio_type << endl
 		<< "le_cmac2_state_type " << knob::le_cmac2_state_type << endl
-		<< "le_cmac2_active_features " << array_to_string(knob::le_cmac2_active_features) << endl
+		<< "le_cmac2_active_features " << print_active_features(knob::le_cmac2_active_features) << endl
 		<< "le_cmac2_feature_shift_amount " << knob::le_cmac2_feature_shift_amount << endl
 		<< endl;
 		
@@ -328,6 +328,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	 */
 	State *state = new State();
 	state->pc = pc;
+	state->address = address;
 	state->page = page;
 	state->offset = offset;
 	state->delta = !stentry->deltas.empty() ? stentry->deltas.back() : 0;

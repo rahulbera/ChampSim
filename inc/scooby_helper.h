@@ -10,10 +10,27 @@
 
 using namespace std;
 
+typedef enum
+{
+	PC = 0,
+	Offset,
+	Delta,
+	PC_path,
+	Offset_path,
+	Delta_path,
+	Address,
+	Page,
+
+	NumFeatures
+} Feature;
+
+const char* getFeatureString(Feature feature);
+
 class State
 {
 public:
 	uint64_t pc;
+	uint64_t address;
 	uint64_t page;
 	uint32_t offset;
 	int32_t	 delta;
@@ -29,6 +46,7 @@ public:
 	void reset()
 	{
 		pc = 0xdeadbeef;
+		address = 0xdeadbeef;
 		page = 0xdeadbeef;
 		offset = 0;
 		delta = 0;
@@ -108,6 +126,7 @@ public:
 
 /* auxiliary functions to get insights from workloads */
 void print_access_debug(Scooby_STEntry *stentry);
+string print_active_features(vector<int32_t> active_features);
 
 #endif /* SCOOBY_HELPER_H */
 

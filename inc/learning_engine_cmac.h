@@ -7,18 +7,6 @@
 
 #define MAX_CMAC_PLANES 128
 
-typedef enum
-{
-	PC = 1,
-	Offset,
-	Delta,
-	PC_path,
-	Offset_path,
-	Delta_path,
-
-	NumFeatures = Delta_path
-} Feature;
-
 class CMACConfig
 {
 public:

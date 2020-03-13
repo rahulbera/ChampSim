@@ -64,12 +64,31 @@ uint32_t LearningEngineCMAC2::process_delta_path(uint32_t delta_path, uint32_t p
 	return delta_path;
 }
 
+uint32_t LearningEngineCMAC2::process_address(uint64_t address, uint32_t plane)
+{
+	// cout << "Processing Address" << endl;
+	uint32_t folded_address = folded_xor(address, 2); /* 32b folded XOR */
+	folded_address += m_plane_offsets[plane];
+	folded_address >>= m_feature_granularities[Feature::Address];
+	return folded_address;
+}
+
+uint32_t LearningEngineCMAC2::process_page(uint64_t page, uint32_t plane)
+{
+	// cout << "Processing Page" << endl;
+	uint32_t folded_page = folded_xor(page, 2); /* 32b folded XOR */
+	folded_page += m_plane_offsets[plane];
+	folded_page >>= m_feature_granularities[Feature::Address];
+	return folded_page;
+}
+
 uint32_t LearningEngineCMAC2::get_processed_feature(Feature feature, State *state, uint32_t plane)
 {
 	uint64_t pc = state->pc;
 	uint64_t page = state->page;
+	uint64_t address = state->address;
 	uint32_t offset = state->offset;
-	int32_t delta = state->delta;
+	int32_t  delta = state->delta;
 	uint32_t delta_path = state->local_delta_sig2;
 	uint32_t pc_path = state->local_pc_sig;
 	uint32_t offset_path = state->local_offset_sig;
@@ -81,7 +100,9 @@ uint32_t LearningEngineCMAC2::get_processed_feature(Feature feature, State *stat
 		case Delta:			return process_delta(delta, plane);	
 		case PC_path:		return process_PC_path(pc_path, plane);	
 		case Offset_path:	return process_offset_path(offset_path, plane);	
-		case Delta_path:	return process_delta_path(delta_path, plane);	
+		case Delta_path:	return process_delta_path(delta_path, plane);
+		case Address:		return process_address(address, plane);
+		case Page:			return process_page(page, plane);
 		default:
 			cout << "invalid feature type " << feature << endl;
 			assert(false);

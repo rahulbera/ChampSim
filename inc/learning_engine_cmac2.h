@@ -67,6 +67,8 @@ private:
 	uint32_t process_PC_path(uint32_t pc_path, uint32_t plane);
 	uint32_t process_offset_path(uint32_t offset, uint32_t plane);
 	uint32_t process_delta_path(uint32_t delta, uint32_t plane);
+	uint32_t process_address(uint64_t address, uint32_t plane);
+	uint32_t process_page(uint64_t page, uint32_t plane);
 
 public:
 	LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);

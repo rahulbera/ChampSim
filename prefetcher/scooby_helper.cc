@@ -28,6 +28,13 @@ namespace knob
 	extern uint32_t scooby_state_hash_type;
 }
 
+const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
+const char* getFeatureString(Feature feature)
+{
+	assert(feature < Feature::NumFeatures);
+	return MapFeatureString[(uint32_t)feature];
+}
+
 uint32_t State::value()
 {
 	uint64_t value = 0;
@@ -378,4 +385,15 @@ void print_access_debug(Scooby_STEntry *stentry)
 		fprintf(stdout, "%d,", delta);
 	}
 	fprintf(stdout, "\n");
+}
+
+string print_active_features(vector<int32_t> features)
+{
+	std::stringstream ss;
+	for(uint32_t index = 0; index < features.size(); ++index)
+	{
+		if(index) ss << "+";
+		ss << getFeatureString((Feature)features[index]);
+	}
+	return ss.str();
 }
