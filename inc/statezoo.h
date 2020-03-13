@@ -100,6 +100,7 @@ uint32_t LearningEngineCMAC2::gen_state_generic(uint32_t plane, State *state)
 		initial_index += get_processed_feature((Feature)knob::le_cmac2_active_features[index], state, plane);
 		initial_index <<= knob::le_cmac2_feature_shift_amount;
 	}
+	return initial_index;
 }
 
 

@@ -60,7 +60,7 @@ LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float
 	}
 	for(uint32_t index = 0; index < knob::le_cmac2_active_features.size(); ++index)
 	{
-		if((Feature)knob::le_cmac2_active_features[index] >= NumFeatures)
+		if((Feature)knob::le_cmac2_active_features[index] > NumFeatures)
 		{
 			cout << "le_cmac2_active_features index " << index << " is not valid!" << endl;
 			assert(false);
