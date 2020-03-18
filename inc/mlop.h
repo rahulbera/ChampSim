@@ -311,7 +311,7 @@ class AccessMapTable : public LRUSetAssociativeCache<AccessMapData> {
     AccessMapTable(int size, int blocks_in_zone, int queue_size, int debug_level = 0, int num_ways = 16)
         : Super(size, num_ways, debug_level), blocks_in_zone(blocks_in_zone), queue_size(queue_size) {
         if (this->debug_level >= 1)
-            cerr << "AccessMapTable::AccessMapTable(size=" << size << ", blocks_in_zone=" << blocks_in_zone
+            cout << "AccessMapTable::AccessMapTable(size=" << size << ", blocks_in_zone=" << blocks_in_zone
                  << ", queue_size=" << queue_size << ", debug_level=" << debug_level << ", num_ways=" << num_ways << ")"
                  << endl;
     }
@@ -321,7 +321,7 @@ class AccessMapTable : public LRUSetAssociativeCache<AccessMapData> {
      */
     void set_state(uint64_t block_number, MLOP_State new_state, int new_fill_level = 0) {
         if (this->debug_level >= 2)
-            cerr << "AccessMapTable::set_state(block_number=0x" << hex << block_number
+            cout << "AccessMapTable::set_state(block_number=0x" << hex << block_number
                  << ", new_state=" << getStateChar(new_state) << ", new_fill_level=" << new_fill_level << ")" << dec
                  << endl;
 
@@ -379,13 +379,13 @@ class AccessMapTable : public LRUSetAssociativeCache<AccessMapData> {
         }
 
         if (this->debug_level >= 2) {
-            cerr << "[AccessMapTable::set_state] zone_number=0x" << hex << zone_number << dec
+            cout << "[AccessMapTable::set_state] zone_number=0x" << hex << zone_number << dec
                  << ", zone_offset=" << setw(2) << zone_offset << ": state transition from " << getStateChar(old_state)
                  << " to " << getStateChar(new_state) << endl;
             if (old_state != new_state || old_fill_level != new_fill_level) {
-                cerr << "[AccessMapTable::set_state] old_access_map=" << map_to_string(old_access_map, old_prefetch_map)
+                cout << "[AccessMapTable::set_state] old_access_map=" << map_to_string(old_access_map, old_prefetch_map)
                      << endl;
-                cerr << "[AccessMapTable::set_state] new_access_map=" << map_to_string(access_map, prefetch_map)
+                cout << "[AccessMapTable::set_state] new_access_map=" << map_to_string(access_map, prefetch_map)
                      << endl;
             }
         }
@@ -393,7 +393,7 @@ class AccessMapTable : public LRUSetAssociativeCache<AccessMapData> {
 
     Entry *find(uint64_t zone_number) {
         if (this->debug_level >= 2)
-            cerr << "AccessMapTable::find(zone_number=0x" << hex << zone_number << ")" << dec << endl;
+            cout << "AccessMapTable::find(zone_number=0x" << hex << zone_number << ")" << dec << endl;
         uint64_t key = this->build_key(zone_number);
         return Super::find(key);
     }
@@ -439,10 +439,10 @@ private:
 	uint32_t L2C_THRESH;
 	uint32_t LLC_THRESH;
 	uint32_t ORIGIN;
-	uint32_t MAX_OFFSET;
 	uint32_t NUM_OFFSETS;
     CACHE *parent; 
 
+	int32_t MAX_OFFSET, MIN_OFFSET;
     uint32_t blocks_in_cache, blocks_in_zone, amt_size;
     AccessMapTable *access_map_table;
 

@@ -56,6 +56,7 @@ void MLOP::init_knobs()
 	amt_size = 32 * blocks_in_cache / blocks_in_zone;
 	ORIGIN = blocks_in_zone - 1;
 	MAX_OFFSET = blocks_in_zone - 1;
+	MIN_OFFSET = (-1) * MAX_OFFSET;
 	NUM_OFFSETS = 2*blocks_in_zone - 1;
 }
 
@@ -71,9 +72,9 @@ MLOP::MLOP(string type, CACHE *cache) : Prefetcher(type), parent(cache)
 
 	/* init data structures */
 	access_map_table = new AccessMapTable(amt_size, blocks_in_zone, PF_DEGREE - 1, debug_level);
-	pf_offset.resize(PF_DEGREE, vector<int>());
-	offset_scores.resize(PF_DEGREE, vector<int>(2 * blocks_in_zone - 1, 0));
-	pf_level.resize(PF_DEGREE, 0);
+	pf_offset = vector<vector<int>>(PF_DEGREE, vector<int>());
+	pf_level = vector<int>(PF_DEGREE, 0);
+	offset_scores = vector<vector<int>>(PF_DEGREE, vector<int>(NUM_OFFSETS, 0));
 }
 
 MLOP::~MLOP()
@@ -83,10 +84,26 @@ MLOP::~MLOP()
 
 void MLOP::print_config()
 {
-	cout << "MLOP::MLOP(blocks_in_zone=" << blocks_in_zone << ", amt_size=" << amt_size
-		<< ", PF_DEGREE=" << PF_DEGREE << ", NUM_UPDATES=" << NUM_UPDATES << ", L1D_THRESH=" << L1D_THRESH
-		<< ", L2C_THRESH=" << L2C_THRESH << ", LLC_THRESH=" << LLC_THRESH << ", debug_level=" << debug_level
-		<< ")" << endl;
+	cout << "mlop_pref_degree " << knob::mlop_pref_degree << endl
+		<< "mlop_num_updates " << knob::mlop_num_updates << endl
+		<< "mlop_l1d_thresh " << knob::mlop_l1d_thresh << endl
+		<< "mlop_l2c_thresh " << knob::mlop_l2c_thresh << endl
+		<< "mlop_llc_thresh " << knob::mlop_llc_thresh << endl
+		<< "mlop_debug_level " << knob::mlop_debug_level << endl
+		<< "mlop_blocks_in_cache " << blocks_in_cache << endl
+		<< "mlop_blocks_in_zone " << blocks_in_zone << endl
+		<< "mlop_amt_size " << amt_size << endl
+		<< "mlop_PF_DEGREE " << PF_DEGREE << endl
+		<< "mlop_NUM_UPDATES " << NUM_UPDATES << endl
+		<< "mlop_L1D_THRESH " << L1D_THRESH << endl
+		<< "mlop_L2C_THRESH " << L2C_THRESH << endl
+		<< "mlop_LLC_THRESH " << LLC_THRESH << endl
+		<< "mlop_ORIGIN " << ORIGIN << endl
+		<< "mlop_MAX_OFFSET " << MAX_OFFSET << endl
+		<< "mlop_MIN_OFFSET " << MIN_OFFSET << endl
+		<< "mlop_ORIGIN " << ORIGIN << endl
+		<< "mlop_NUM_OFFSETS " << NUM_OFFSETS << endl
+		<< endl;
 }
 
 /**
@@ -132,11 +149,16 @@ void MLOP::access(uint64_t block_number) {
 			// assert(0 <= idx && idx < this->blocks_in_zone);
 			access_map[idx] = MLOP_State::INIT;
 		}
+		// cout << "inside access" << endl;
 		for (uint32_t i = 0; i < this->blocks_in_zone; i += 1) {
 			if (access_map[i] == MLOP_State::ACCESS) {
 				int offset = zone_offset - i;
-				if (-MAX_OFFSET <= offset && offset <= +MAX_OFFSET && offset != 0)
+				// cout << "offset " << offset << endl;
+				if (offset >= MIN_OFFSET && offset <= MAX_OFFSET && offset != 0)
+				{
+					// cout << "incrementing offset_score" << endl;
 					this->offset_scores[d][ORIGIN + offset] += 1;
+				}
 			}
 		}
 	}
@@ -163,10 +185,11 @@ void MLOP::access(uint64_t block_number) {
 		int fill_level = 0;
 		vector<bool> pf_offset_map(NUM_OFFSETS, false);
 		for (int d = PF_DEGREE - 1; d >= 0; d -= 1) {
+			// cout << "d " << d << " max_scores[d] " << max_scores[d] << endl;
 			/* check thresholds */
-			if (max_scores[d] >= (int)L1D_THRESH)
-				fill_level = FILL_L1;
-			else if (max_scores[d] >= (int)L2C_THRESH)
+			// if (max_scores[d] >= (int)L1D_THRESH)
+			// 	fill_level = FILL_L1;
+			if (max_scores[d] >= (int)L2C_THRESH)
 				fill_level = FILL_L2;
 			else if (max_scores[d] >= (int)LLC_THRESH)
 				fill_level = FILL_LLC;
@@ -175,13 +198,14 @@ void MLOP::access(uint64_t block_number) {
 
 			/* select offsets with highest score */
 			vector<int> best_offsets;
-			for (int i = -MAX_OFFSET; i <= +MAX_OFFSET; i += 1) {
+			for (int i = MIN_OFFSET; i <= MAX_OFFSET; i += 1) {
 				int &cur_score = this->offset_scores[d][ORIGIN + i];
 				// assert(0 <= cur_score && cur_score <= NUM_UPDATES);
 				if (cur_score == max_scores[d] && !pf_offset_map[ORIGIN + i])
 					best_offsets.push_back(i);
 			}
 
+			// cout << "came here too!" << endl;
 			this->pf_level[d] = fill_level;
 			this->pf_offset[d] = best_offsets;
 
