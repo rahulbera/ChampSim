@@ -375,6 +375,7 @@ void MLOP::print_stats() {
 	double max_score_ri_sd = sqrt(max_score_ri_sqr_mean - square(max_score_ri_mean));
 	cout << "[MLOP] Max Score Right Mean (%): " << 100.0 * max_score_ri_mean / NUM_UPDATES << endl;
 	cout << "[MLOP] Max Score Right SD (%): " << 100.0 * max_score_ri_sd / NUM_UPDATES << endl;
+	cout << endl;
 }
 
 void MLOP::dump_stats()
