@@ -97,6 +97,14 @@ namespace knob
 	uint32_t dspatch_pref_buffer_size;
 	uint32_t dspatch_pref_degree;
 
+	/* MLOP */
+	uint32_t mlop_pref_degree;
+	uint32_t mlop_num_updates;
+	float 	mlop_l1d_thresh;
+	float 	mlop_l2c_thresh;
+	float 	mlop_llc_thresh;
+	uint32_t	mlop_debug_level;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -567,6 +575,32 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "dspatch_pref_degree"))
 	{
 		knob::dspatch_pref_degree = atoi(value);
+	}
+
+	/* MLOP */
+	else if (MATCH("", "mlop_pref_degree"))
+	{
+		knob::mlop_pref_degree = atoi(value);
+	}
+	else if (MATCH("", "mlop_num_updates"))
+	{
+		knob::mlop_num_updates = atoi(value);
+	}
+	else if (MATCH("", "mlop_l1d_thresh"))
+	{
+		knob::mlop_l1d_thresh = atof(value);
+	}
+	else if (MATCH("", "mlop_l2c_thresh"))
+	{
+		knob::mlop_l2c_thresh = atof(value);
+	}
+	else if (MATCH("", "mlop_llc_thresh"))
+	{
+		knob::mlop_llc_thresh = atof(value);
+	}
+	else if (MATCH("", "mlop_debug_level"))
+	{
+		knob::mlop_debug_level = atoi(value);
 	}
 
 	/* Scooby */

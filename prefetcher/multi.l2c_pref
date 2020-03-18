@@ -12,6 +12,7 @@
 #include "dspatch.h"
 #include "spp_dev2.h"
 //#include "ppf_dev.h"
+#include "mlop.h"
 
 using namespace std;
 
@@ -90,6 +91,12 @@ void CACHE::l2c_prefetcher_initialize()
 		//	SPP_PPF_dev *pref_spp_ppf_dev = new SPP_PPF_dev(knob::l2c_prefetcher_types[index], this);
 		//	prefetchers.push_back(pref_spp_ppf_dev);
 		//}
+		else if(!knob::l2c_prefetcher_types[index].compare("mlop"))
+		{
+			cout << "adding L2C_PREFETCHER: MLOP" << endl;
+			MLOP *pref_mlop = new MLOP(knob::l2c_prefetcher_types[index], this);
+			prefetchers.push_back(pref_mlop);
+		}		
 		else
 		{
 			cout << "unsupported prefetcher type " << knob::l2c_prefetcher_types[index] << endl;
@@ -108,6 +115,7 @@ uint32_t CACHE::l2c_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache
 		prefetchers[index]->invoke_prefetcher(ip, addr, cache_hit, type, pref_addr);
 		if(knob::l2c_prefetcher_types[index].compare("spp_dev2") 
 			&& knob::l2c_prefetcher_types[index].compare("spp_ppf_dev")
+			&& knob::l2c_prefetcher_types[index].compare("mlop")
 			&& !pref_addr.empty())
 		{
 			for(uint32_t addr_index = 0; addr_index < pref_addr.size(); ++addr_index)
@@ -157,6 +165,11 @@ uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t 
 			//	SPP_PPF_dev *pref_spp_ppf_dev = (SPP_PPF_dev*)prefetchers[index];
 			//	pref_spp_ppf_dev->cache_fill(addr, set, way, prefetch, evicted_addr);
 			//}
+			if(!prefetchers[index]->get_type().compare("mlop"))
+			{
+				MLOP *pref_mlop = (MLOP*)prefetchers[index];
+				pref_mlop->register_fill(addr, set, way, prefetch, evicted_addr);
+			}
 		}
 	}
 
