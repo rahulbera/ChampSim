@@ -183,6 +183,7 @@ namespace knob
 	bool        le_cmac2_state_action_debug;
 	vector<float> le_cmac2_qvalue_threshold_levels;
 	uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
+	float 		le_cmac2_max_q_thresh;
 	uint32_t le_cmac2_state_type;
 	vector<int32_t> le_cmac2_active_features;
 	uint32_t le_cmac2_feature_shift_amount;
@@ -889,6 +890,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_cmac2_max_to_avg_q_ratio_type"))
 	{
 		knob::le_cmac2_max_to_avg_q_ratio_type = atoi(value);
+	}
+	else if (MATCH("", "le_cmac2_max_q_thresh"))
+	{
+		knob::le_cmac2_max_q_thresh = atof(value);
 	}
 	else if (MATCH("", "le_cmac2_state_type"))
 	{

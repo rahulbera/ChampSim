@@ -16,6 +16,7 @@ private:
 	uint32_t m_hash_type;
 
 	float m_init_value;
+	vector<float> m_q_value_buckets;
 
     std::default_random_engine m_generator;
     std::bernoulli_distribution *m_explore;
@@ -44,10 +45,13 @@ private:
 		{
 			uint64_t called;
 		} learn;
+
 	} stats;
 
+	vector<uint64_t> m_q_value_histogram;
+
 private:
-	uint32_t getMaxAction(State *state, float &max_to_avg_q_ratio);
+	uint32_t getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio);
 	float consultQ(State *state, uint32_t action);
 	float consultPlane(uint32_t plane, State *state, uint32_t action);
 	void updatePlane(uint32_t plane, State *state, uint32_t action, float value);
@@ -55,6 +59,7 @@ private:
 	uint32_t getHash(uint32_t key);
 	void dump_state_trace(State *state);
 	void plot_scores();
+	void gather_stats(float max_q, float max_to_avg_q_ratio);
 
 	uint32_t generateInitialIndex(uint32_t plane, State *state);
 	uint32_t gen_state_original(uint32_t plane, State *state);

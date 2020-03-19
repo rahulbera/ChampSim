@@ -101,6 +101,7 @@ namespace knob
 	extern bool 		le_cmac2_state_action_debug;
 	extern vector<float> le_cmac2_qvalue_threshold_levels;
 	extern uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
+	extern float 	 	le_cmac2_max_q_thresh;
 	extern uint32_t 	le_cmac2_state_type;
 	extern vector<int32_t> le_cmac2_active_features;
 	extern uint32_t 	le_cmac2_feature_shift_amount;
@@ -291,6 +292,7 @@ void Scooby::print_config()
 		<< "le_cmac2_state_action_debug " << knob::le_cmac2_state_action_debug << endl
 		<< "le_cmac2_qvalue_threshold_levels " << array_to_string(knob::le_cmac2_qvalue_threshold_levels) << endl
 		<< "le_cmac2_max_to_avg_q_ratio_type " << knob::le_cmac2_max_to_avg_q_ratio_type << endl
+		<< "le_cmac2_max_q_thresh " << knob::le_cmac2_max_q_thresh << endl
 		<< "le_cmac2_state_type " << knob::le_cmac2_state_type << endl
 		<< "le_cmac2_active_features " << print_active_features(knob::le_cmac2_active_features) << endl
 		<< "le_cmac2_feature_shift_amount " << knob::le_cmac2_feature_shift_amount << endl

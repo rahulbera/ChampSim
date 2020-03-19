@@ -31,6 +31,7 @@ namespace knob
 	extern bool         le_cmac2_state_action_debug;
 	extern vector<float> le_cmac2_qvalue_threshold_levels;
 	extern uint32_t 	le_cmac2_max_to_avg_q_ratio_type;
+	extern float		le_cmac2_max_q_thresh;
 	extern uint32_t 	le_cmac2_state_type;
 	extern vector<int32_t> le_cmac2_active_features;
 }
@@ -90,7 +91,21 @@ LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float
 	else
 	{
 		m_init_value = (float)1ul/(1-gamma);
+
+		/* init Q-value buckets */
+		m_q_value_buckets.push_back((-1) * 0.50 * m_init_value * m_num_planes);
+		m_q_value_buckets.push_back((-1) * 0.25 * m_init_value * m_num_planes);
+		m_q_value_buckets.push_back((-1) * 0.00 * m_init_value * m_num_planes);
+		m_q_value_buckets.push_back((+1) * 0.25 * m_init_value * m_num_planes);
+		m_q_value_buckets.push_back((+1) * 0.50 * m_init_value * m_num_planes);
+		m_q_value_buckets.push_back((+1) * 1.00 * m_init_value * m_num_planes);
+		m_q_value_buckets.push_back((+1) * 2.00 * m_init_value * m_num_planes);
+
+		/* init histogram */
+		m_q_value_histogram.resize(m_q_value_buckets.size()+1, 0);
 	}
+
+
 	for(uint32_t plane = 0; plane < m_num_planes; ++plane)
 	{
 		for(uint32_t entry = 0; entry < m_num_entries_per_plane; ++entry)
@@ -144,9 +159,11 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 		}
 		else
 		{
-			action = getMaxAction(state, max_to_avg_q_ratio);
+			float max_q = 0.0;
+			action = getMaxAction(state, max_q, max_to_avg_q_ratio);
 			stats.action.exploit++;
 			stats.action.dist[action][1]++;
+			gather_stats(max_q, max_to_avg_q_ratio); /* for only stats collection's sake */
 			MYLOG("action taken %u exploit, state %s", action, state->to_string().c_str());
 		}
 	}
@@ -159,7 +176,7 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 	return action;
 }
 
-uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_ratio)
+uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio)
 {
 	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0, second_max_q_value = 0.0;
 	uint32_t selected_action = 0;
@@ -173,6 +190,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_rat
 		{
 			second_max_q_value = max_q_value;
 			max_q_value = q_value;
+			max_q = q_value;
 			selected_action = action;
 		}
 		else if(q_value > second_max_q_value && q_value != max_q_value)
@@ -208,7 +226,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_to_avg_q_rat
 			}
 			/* Similar to ratio type 2, but a bit more conservative.
 			 * Only considers the ratio if the max_q_value is more than the init_value */
-			if(max_q_value < m_init_value*m_num_planes)
+			if(max_q_value < knob::le_cmac2_max_q_thresh*m_init_value*m_num_planes)
 			{
 				max_to_avg_q_ratio = 0.0;
 			}
@@ -365,6 +383,13 @@ void LearningEngineCMAC2::dump_stats()
 	}
 	fprintf(stdout, "\n");
 
+	/* plot histogram */
+	for(uint32_t index = 0; index < m_q_value_histogram.size(); ++index)
+	{
+		fprintf (stdout, "learning_engine_cmac2.q_value_histogram.bucket_%u %lu\n", index, m_q_value_histogram[index]);
+	}
+	fprintf(stdout, "\n");
+
 	/* score plotting */
 	if(knob::le_cmac2_enable_trace && knob::le_cmac2_enable_score_plot)
 	{
@@ -466,4 +491,19 @@ uint32_t LearningEngineCMAC2::gen_state_original(uint32_t plane, State *state)
 
 	uint32_t initial_index = (((folded_pc << 4) + offset) << 4) + unsigned_delta;
 	return initial_index;
+}
+
+void LearningEngineCMAC2::gather_stats(float max_q, float max_to_avg_q_ratio)
+{
+	float high = 0.0, low = 0.0;
+	for(uint32_t index = 0; index < m_q_value_buckets.size(); ++index)
+	{
+		low = index ? m_q_value_buckets[index-1] : -1000000000;
+		high = (index < m_q_value_buckets.size() - 1) ? m_q_value_buckets[index+1] : +1000000000;
+		if(max_q >= low && max_q < high)
+		{
+			m_q_value_histogram[index]++;
+			break;
+		}
+	}
 }
