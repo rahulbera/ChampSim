@@ -28,6 +28,7 @@ namespace knob
 	bool     next_line_enable_trace = false;
 	uint32_t next_line_trace_interval = 5;
 	string   next_line_trace_name = string("next_line_trace.csv");
+	uint32_t next_line_pref_degree = 1;
 
 	/* SMS */
 	uint32_t sms_at_size = 32;
@@ -340,6 +341,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "next_line_trace_name"))
     {
 		knob::next_line_trace_name = string(value);
+    }
+    else if (MATCH("", "next_line_pref_degree"))
+    {
+		knob::next_line_pref_degree = atoi(value);
     }
 
     /* SMS */

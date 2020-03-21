@@ -16,6 +16,7 @@ namespace knob
 	extern bool     next_line_enable_trace;
 	extern uint32_t next_line_trace_interval;
 	extern std::string next_line_trace_name;
+	extern uint32_t next_line_pref_degree;
 }
 
 void NextLinePrefetcher::init_knobs()
@@ -57,6 +58,7 @@ void NextLinePrefetcher::print_config()
 		<< "next_line_enable_trace " << knob::next_line_enable_trace << endl
 		<< "next_line_trace_interval " << knob::next_line_trace_interval << endl
 		<< "next_line_trace_name " << knob::next_line_trace_name << endl
+		<< "next_line_pref_degree " << knob::next_line_pref_degree << endl
 		<< endl;
 }
 
@@ -98,33 +100,37 @@ void NextLinePrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_
 	uint32_t delta_idx = gen_delta();
 	assert(delta_idx < knob::next_line_deltas.size());
 	int32_t delta = knob::next_line_deltas[delta_idx];
-	int32_t prefetched_offset = offset + delta;
-	stats.predict.select[delta_idx]++;
-	if(prefetched_offset >= 0 && prefetched_offset < 64)
+
+	for(uint32_t deg = 1; deg <= knob::next_line_pref_degree; ++deg)
 	{
-		uint64_t addr = (page << LOG2_PAGE_SIZE) + (prefetched_offset << LOG2_BLOCK_SIZE);
-		if(knob::next_line_enable_prefetch_tracking)
+		int32_t prefetched_offset = offset + deg * delta;
+		stats.predict.select[delta_idx]++;
+		if(prefetched_offset >= 0 && prefetched_offset < 64)
 		{
-			bool new_addr = track(addr);
-			if(new_addr)
+			uint64_t addr = (page << LOG2_PAGE_SIZE) + (prefetched_offset << LOG2_BLOCK_SIZE);
+			if(knob::next_line_enable_prefetch_tracking)
+			{
+				bool new_addr = track(addr);
+				if(new_addr)
+				{
+					pref_addr.push_back(addr);
+					stats.predict.issue[delta_idx]++;
+				}
+				else
+				{
+					stats.predict.tracker_hit[delta_idx]++;
+				}
+			}
+			else
 			{
 				pref_addr.push_back(addr);
 				stats.predict.issue[delta_idx]++;
 			}
-			else
-			{
-				stats.predict.tracker_hit[delta_idx]++;
-			}
 		}
 		else
 		{
-			pref_addr.push_back(addr);
-			stats.predict.issue[delta_idx]++;
+			stats.predict.out_of_bounds[delta_idx]++;
 		}
-	}
-	else
-	{
-		stats.predict.out_of_bounds[delta_idx]++;
 	}
 }
 
