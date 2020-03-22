@@ -63,6 +63,7 @@ namespace knob
 	extern bool     scooby_enable_dyn_degree;
 	extern vector<float> scooby_max_to_avg_q_thresholds;
 	extern vector<int32_t> scooby_dyn_degrees;
+	extern uint64_t scooby_early_exploration_window;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -166,7 +167,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 											knob::scooby_seed,
 											knob::scooby_policy,
 											knob::scooby_learning_type,
-											knob::scooby_brain_zero_init);
+											knob::scooby_brain_zero_init,
+											knob::scooby_early_exploration_window);
 	}
 	else if(knob::scooby_enable_cmac2_engine)
 	{
@@ -185,7 +187,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 											knob::scooby_seed,
 											knob::scooby_policy,
 											knob::scooby_learning_type,
-											knob::scooby_brain_zero_init);				
+											knob::scooby_brain_zero_init,
+											knob::scooby_early_exploration_window);
 	}
 	else
 	{
@@ -196,7 +199,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 									knob::scooby_seed,
 									knob::scooby_policy,
 									knob::scooby_learning_type,
-									knob::scooby_brain_zero_init);
+									knob::scooby_brain_zero_init,
+									knob::scooby_early_exploration_window);
 	}
 
 	/* init Shaggy */
@@ -256,6 +260,7 @@ void Scooby::print_config()
 		<< "scooby_enable_dyn_degree " << knob::scooby_enable_dyn_degree << endl
 		<< "scooby_max_to_avg_q_thresholds " << array_to_string(knob::scooby_max_to_avg_q_thresholds) << endl
 		<< "scooby_dyn_degrees " << array_to_string(knob::scooby_dyn_degrees) << endl
+		<< "scooby_early_exploration_window " << knob::scooby_early_exploration_window << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl

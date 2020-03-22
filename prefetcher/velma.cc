@@ -125,7 +125,8 @@ Velma::Velma(string type) : Prefetcher(type)
 									knob::velma_seed,
 									knob::velma_policy,
 									knob::velma_learning_type,
-									knob::velma_brain_zero_init);
+									knob::velma_brain_zero_init,
+									0 /* early exploration window */);
 	}
 	last_evicted_tracker = NULL;
 

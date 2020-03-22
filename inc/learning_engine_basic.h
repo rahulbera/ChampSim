@@ -41,6 +41,8 @@ private:
 	uint32_t action_trace_interval;
 	uint64_t action_trace_timestamp;
 	FILE *action_trace;
+	uint64_t m_action_counter;
+	uint64_t m_early_exploration_window;
 
 	struct
 	{
@@ -68,7 +70,7 @@ private:
 	void dump_action_trace(uint32_t action);
 
 public:
-	LearningEngineBasic(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
+	LearningEngineBasic(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window);
 	~LearningEngineBasic();
 
 	uint32_t chooseAction(uint32_t state);

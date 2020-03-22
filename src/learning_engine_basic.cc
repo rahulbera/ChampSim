@@ -33,7 +33,7 @@ namespace knob
 	extern bool     le_enable_action_plot;
 }
 
-LearningEngineBasic::LearningEngineBasic(Prefetcher *parent, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
+LearningEngineBasic::LearningEngineBasic(Prefetcher *parent, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window)
 	: LearningEngineBase(parent, alpha, gamma, epsilon, actions, states, seed, policy, type)
 {
 	qtable = (float**)calloc(m_states, sizeof(float*));
@@ -81,6 +81,9 @@ LearningEngineBasic::LearningEngineBasic(Prefetcher *parent, float alpha, float 
 		assert(action_trace);
 	}
 
+	m_early_exploration_window = early_exploration_window;
+	m_action_counter = 0;
+
 	bzero(&stats, sizeof(stats));
 }
 
@@ -104,7 +107,8 @@ uint32_t LearningEngineBasic::chooseAction(uint32_t state)
 	uint32_t action = 0;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
-		if((*explore)(generator))
+		if(m_action_counter < m_early_exploration_window ||
+			(*explore)(generator))
 		{
 			action = (*actiongen)(generator); // take random action
 			stats.action.explore++;

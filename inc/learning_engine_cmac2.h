@@ -29,6 +29,9 @@ private:
 	uint64_t trace_timestamp;
 	FILE *trace;
 
+	uint64_t m_action_counter;
+	uint64_t m_early_exploration_window;
+
 	/* stats */
 	struct
 	{
@@ -76,7 +79,7 @@ private:
 	uint32_t process_page(uint64_t page, uint32_t plane);
 
 public:
-	LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
+	LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window);
 	~LearningEngineCMAC2();
 
 	uint32_t chooseAction(State *state, float &max_to_avg_q_ratio);

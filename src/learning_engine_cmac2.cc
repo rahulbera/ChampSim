@@ -36,7 +36,7 @@ namespace knob
 	extern vector<int32_t> le_cmac2_active_features;
 }
 
-LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
+LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window)
 	: LearningEngineBase(p, alpha, gamma, epsilon, actions, states, seed, policy, type)
 {
 	m_num_planes = config.num_planes;
@@ -131,6 +131,9 @@ LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float
 		assert(trace);
 	}
 
+	m_early_exploration_window = early_exploration_window;
+	m_action_counter = 0;
+
 	/* init stats */
 	bzero(&stats, sizeof(stats));
 }
@@ -146,19 +149,24 @@ LearningEngineCMAC2::~LearningEngineCMAC2()
 uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_ratio)
 {
 	stats.action.called++;
+	m_action_counter++;
+
 	uint32_t action = 0;
 	max_to_avg_q_ratio = (knob::le_cmac2_max_to_avg_q_ratio_type == 1) ? 1.0 : 0.0;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
-		if((*m_explore)(m_generator))
+		if(m_action_counter < m_early_exploration_window ||
+			(*m_explore)(m_generator))
 		{
-			action = (*m_actiongen)(m_generator); // take random action
+			/* EXPLORE */
+			action = (*m_actiongen)(m_generator);
 			stats.action.explore++;
 			stats.action.dist[action][0]++;
 			MYLOG("action taken %u explore, state %s", action, state->to_string().c_str());
 		}
 		else
 		{
+			/* EXPLOIT */
 			float max_q = 0.0;
 			action = getMaxAction(state, max_q, max_to_avg_q_ratio);
 			stats.action.exploit++;

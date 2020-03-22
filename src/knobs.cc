@@ -146,6 +146,7 @@ namespace knob
 	bool     scooby_enable_dyn_degree;
 	vector<float> scooby_max_to_avg_q_thresholds;
 	vector<int32_t> scooby_dyn_degrees;
+	uint64_t scooby_early_exploration_window;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -759,6 +760,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_dyn_degrees"))
 	{
 		knob::scooby_dyn_degrees = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_early_exploration_window"))
+	{
+		knob::scooby_early_exploration_window = atoi(value);
 	}
 
 	/* Learning Engine */

@@ -24,7 +24,7 @@ namespace knob
 
 }
 
-LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init)
+LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window)
 	: LearningEngineBase(p, alpha, gamma, epsilon, actions, states, seed, policy, type)
 {
 	m_num_planes = config.num_planes;
@@ -71,6 +71,9 @@ LearningEngineCMAC::LearningEngineCMAC(CMACConfig config, Prefetcher *p, float a
 	m_generator.seed(m_seed);
 	m_explore = new std::bernoulli_distribution(epsilon);
 	m_actiongen = new std::uniform_int_distribution<int>(0, m_actions-1);
+
+	m_early_exploration_window = early_exploration_window;
+	m_action_counter = 0;
 
 	/* init stats */
 	bzero(&stats, sizeof(stats));
@@ -135,7 +138,8 @@ uint32_t LearningEngineCMAC::chooseAction(State *state)
 	uint32_t action = 0;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
-		if((*m_explore)(m_generator))
+		if(m_action_counter < m_early_exploration_window ||
+			(*m_explore)(m_generator))
 		{
 			action = (*m_actiongen)(m_generator); // take random action
 			stats.action.explore++;

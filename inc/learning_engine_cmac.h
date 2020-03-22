@@ -46,6 +46,8 @@ private:
     std::uniform_int_distribution<int> *m_actiongen;
 
 	float **m_qtables;
+	uint64_t m_action_counter;
+	uint64_t m_early_exploration_window;
 
 	/* stats */
 	struct
@@ -72,7 +74,7 @@ private:
 	uint32_t getHash(uint32_t key);
 
 public:
-	LearningEngineCMAC(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init);
+	LearningEngineCMAC(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window);
 	~LearningEngineCMAC();
 
 	uint32_t chooseAction(State *state);
