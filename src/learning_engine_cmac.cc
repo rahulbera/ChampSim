@@ -168,6 +168,9 @@ uint32_t LearningEngineCMAC::getMaxAction(State *state)
 	float max_q_value = 0.0, q_value = 0.0;
 	uint32_t selected_action = 0;
 
+	printf("NEED BUGFIX: what if all Q-values are -ve? Check code from CMAC2_ENGINE\n");
+	assert(false);
+
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		q_value = 0.0;

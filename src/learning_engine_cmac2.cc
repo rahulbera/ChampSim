@@ -186,10 +186,13 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 
 uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio)
 {
-	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0, second_max_q_value = 0.0;
 	uint32_t selected_action = 0;
+	float q_value = 0.0, total_q_value = 0.0;
+	float max_q_value = consultQ(state, 0); /* Major bug fix: init max Q-value */
+	float second_max_q_value = max_q_value;
+	total_q_value += max_q_value;
 	
-	for(uint32_t action = 0; action < m_actions; ++action)
+	for(uint32_t action = 1; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
 		total_q_value += q_value;
@@ -198,7 +201,6 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 		{
 			second_max_q_value = max_q_value;
 			max_q_value = q_value;
-			max_q = q_value;
 			selected_action = action;
 		}
 		else if(q_value > second_max_q_value && q_value != max_q_value)
@@ -263,6 +265,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 		stats.action.threshold_dist[selected_action][th]++;
 	}
 
+	max_q = max_q_value;
 	return selected_action;
 }
 

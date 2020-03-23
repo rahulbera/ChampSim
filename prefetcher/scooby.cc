@@ -591,6 +591,7 @@ bool Scooby::track(uint64_t address, State *state, uint32_t action_index, Scooby
 
 void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, uint32_t pref_degree, vector<uint64_t> &pref_addr)
 {
+	stats.predict.multi_deg_called++;
 	uint64_t addr = 0xdeadbeef;
 	int32_t predicted_offset = 0;
 	if(action != 0)
@@ -604,6 +605,7 @@ void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t actio
 				pref_addr.push_back(addr);
 				MYLOG("degree %u pred_off %d pred_addr %lx", degree, predicted_offset, addr);
 				stats.predict.multi_deg++;
+				stats.predict.multi_deg_histogram[degree]++;
 			}
 		}
 	}
@@ -919,9 +921,14 @@ void Scooby::dump_stats()
 		cout << "scooby_predict_out_of_bounds_action_" << Actions[index] << " " << stats.predict.out_of_bounds_dist[index] << endl;
 	}
 
-	cout << "scooby_predict_predicted " << stats.predict.predicted << endl
-		<< "scooby_predict_multi_deg " << stats.predict.multi_deg << endl
-		<< endl;
+	cout << "scooby_predict_multi_deg_called " << stats.predict.multi_deg_called << endl
+		<< "scooby_predict_predicted " << stats.predict.predicted << endl
+		<< "scooby_predict_multi_deg " << stats.predict.multi_deg << endl;
+	for(uint32_t index = 2; index < MAX_SCOOBY_DEGREE; ++index)
+	{
+		cout << "scooby_predict_multi_deg_" << index << " " << stats.predict.multi_deg_histogram[index] << endl;
+	}
+	cout << endl;
 
 	if(knob::scooby_enable_state_action_stats)
 	{
