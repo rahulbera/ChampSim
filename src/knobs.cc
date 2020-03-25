@@ -147,6 +147,13 @@ namespace knob
 	vector<float> scooby_max_to_avg_q_thresholds;
 	vector<int32_t> scooby_dyn_degrees;
 	uint64_t scooby_early_exploration_window;
+	bool     scooby_enable_het_reward;
+	int32_t  scooby_reward_fa_correct_timely;
+	int32_t  scooby_reward_fa_correct_untimely;
+	int32_t  scooby_reward_fa_incorrect;
+	int32_t  scooby_reward_fa_none;
+	int32_t  scooby_reward_fa_out_of_bounds;
+	int32_t  scooby_reward_fa_tracker_hit;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -765,7 +772,35 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_early_exploration_window = atoi(value);
 	}
-
+	else if (MATCH("", "scooby_enable_het_reward"))
+	{
+		knob::scooby_enable_het_reward = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_reward_fa_correct_timely"))
+	{
+		knob::scooby_reward_fa_correct_timely = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_fa_correct_untimely"))
+	{
+		knob::scooby_reward_fa_correct_untimely = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_fa_incorrect"))
+	{
+		knob::scooby_reward_fa_incorrect = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_fa_none"))
+	{
+		knob::scooby_reward_fa_none = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_fa_out_of_bounds"))
+	{
+		knob::scooby_reward_fa_out_of_bounds = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_fa_tracker_hit"))
+	{
+		knob::scooby_reward_fa_tracker_hit = atoi(value);
+	}
+	
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
 	{

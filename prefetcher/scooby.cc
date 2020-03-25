@@ -64,6 +64,13 @@ namespace knob
 	extern vector<float> scooby_max_to_avg_q_thresholds;
 	extern vector<int32_t> scooby_dyn_degrees;
 	extern uint64_t scooby_early_exploration_window;
+	extern bool     scooby_enable_het_reward;
+	extern int32_t  scooby_reward_fa_correct_timely;
+	extern int32_t  scooby_reward_fa_correct_untimely;
+	extern int32_t  scooby_reward_fa_incorrect;
+	extern int32_t  scooby_reward_fa_none;
+	extern int32_t  scooby_reward_fa_out_of_bounds;
+	extern int32_t  scooby_reward_fa_tracker_hit;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -261,6 +268,13 @@ void Scooby::print_config()
 		<< "scooby_max_to_avg_q_thresholds " << array_to_string(knob::scooby_max_to_avg_q_thresholds) << endl
 		<< "scooby_dyn_degrees " << array_to_string(knob::scooby_dyn_degrees) << endl
 		<< "scooby_early_exploration_window " << knob::scooby_early_exploration_window << endl
+		<< "scooby_enable_het_reward " << knob::scooby_enable_het_reward << endl
+		<< "scooby_reward_fa_correct_timely " << knob::scooby_reward_fa_correct_timely << endl
+		<< "scooby_reward_fa_correct_untimely " << knob::scooby_reward_fa_correct_untimely << endl
+		<< "scooby_reward_fa_incorrect " << knob::scooby_reward_fa_incorrect << endl
+		<< "scooby_reward_fa_none " << knob::scooby_reward_fa_none << endl
+		<< "scooby_reward_fa_out_of_bounds " << knob::scooby_reward_fa_out_of_bounds << endl
+		<< "scooby_reward_fa_tracker_hit " << knob::scooby_reward_fa_tracker_hit << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -672,14 +686,14 @@ void Scooby::reward(uint64_t address)
 		{
 			stats.reward.correct_timely++;
 			stats.reward.dist[ptentry->action_index][RewardType::correct_timely]++;
-			ptentry->reward = knob::scooby_reward_correct_timely;
+			ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_timely : knob::scooby_reward_correct_timely;
 			MYLOG("assigned reward correct_timely(%d)", ptentry->reward);
 		}
 		else
 		{
 			stats.reward.correct_untimely++;
 			stats.reward.dist[ptentry->action_index][RewardType::correct_untimely]++;
-			ptentry->reward = knob::scooby_reward_correct_untimely;
+			ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_untimely :knob::scooby_reward_correct_untimely;
 			MYLOG("assigned reward correct_untimely(%d)", ptentry->reward);
 		}
 		ptentry->has_reward = true;
@@ -700,14 +714,14 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	{
 		stats.reward.no_pref++;
 		stats.reward.dist[ptentry->action_index][RewardType::none]++;
-		ptentry->reward = knob::scooby_reward_none;
+		ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_none : knob::scooby_reward_none;
 		MYLOG("assigned reward no_pref(%d)", ptentry->reward);
 	}
 	else /* incorrect prefetch */
 	{
 		stats.reward.incorrect++;
 		stats.reward.dist[ptentry->action_index][RewardType::incorrect]++;
-		ptentry->reward = knob::scooby_reward_incorrect;
+		ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_incorrect : knob::scooby_reward_incorrect;
 		MYLOG("assigned reward incorrect(%d)", ptentry->reward);
 	}
 	ptentry->has_reward = true;
@@ -723,13 +737,13 @@ void Scooby::assign_reward(Scooby_PTEntry *ptentry, RewardType type)
 	switch(type)
 	{
 		case RewardType::out_of_bounds:
-			reward = knob::scooby_reward_out_of_bounds;
+			reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_out_of_bounds : knob::scooby_reward_out_of_bounds;
 			stats.reward.out_of_bounds++;
 			MYLOG("assigned reward out_of_bounds(%d)", reward);
 			break;
 
 		case RewardType::tracker_hit:
-			reward = knob::scooby_reward_tracker_hit;
+			reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_tracker_hit : knob::scooby_reward_tracker_hit;
 			stats.reward.tracker_hit++;
 			MYLOG("assigned reward tracker_hit(%d)", reward);
 			break;
