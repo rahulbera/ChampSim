@@ -1811,3 +1811,13 @@ void CACHE::prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_
     pref_late = pf_late;
 }
 
+void CACHE::broadcast_ipc(uint8_t ipc)
+{
+    if (cache_type == IS_L1D)
+        l1d_prefetcher_broadcast_ipc(ipc);
+    else if (cache_type == IS_L2C)
+        l2c_prefetcher_broadcast_ipc(ipc);
+    else if (cache_type == IS_LLC)
+        llc_prefetcher_broadcast_ipc(ipc);
+}
+

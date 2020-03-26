@@ -34,3 +34,8 @@ void CACHE::l1d_prefetcher_broadcast_bw(uint8_t bw_level)
 {
 
 }
+
+void CACHE::l1d_prefetcher_broadcast_ipc(uint8_t ipc)
+{
+
+}

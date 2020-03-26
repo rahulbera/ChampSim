@@ -34,6 +34,7 @@ namespace knob
 	extern float		le_cmac2_max_q_thresh;
 	extern uint32_t 	le_cmac2_state_type;
 	extern vector<int32_t> le_cmac2_active_features;
+	extern bool 		le_cmac2_enable_action_fallback;
 }
 
 LearningEngineCMAC2::LearningEngineCMAC2(CMACConfig config, Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint32_t states, uint64_t seed, std::string policy, std::string type, bool zero_init, uint64_t early_exploration_window)
@@ -187,12 +188,18 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio)
 {
 	uint32_t selected_action = 0;
-	float q_value = 0.0, total_q_value = 0.0;
-	float max_q_value = consultQ(state, 0); /* Major bug fix: init max Q-value */
-	float second_max_q_value = max_q_value;
-	total_q_value += max_q_value;
+	float q_value = 0.0, total_q_value = 0.0, max_q_value = 0.0, second_max_q_value = 0.0;
+	uint32_t init_index = 0;
+
+	if(!knob::le_cmac2_enable_action_fallback)
+	{
+		max_q_value = consultQ(state, 0);
+		second_max_q_value = max_q_value;
+		total_q_value += max_q_value;
+		init_index = 1;
+	}
 	
-	for(uint32_t action = 1; action < m_actions; ++action)
+	for(uint32_t action = init_index; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
 		total_q_value += q_value;

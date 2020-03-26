@@ -243,6 +243,11 @@ class CACHE : public MEMORY {
         l2c_prefetcher_broadcast_bw(uint8_t bw_level),
         llc_prefetcher_broadcast_bw(uint8_t bw_level);
 
+    void broadcast_ipc(uint8_t ipc),
+        l1d_prefetcher_broadcast_ipc(uint8_t ipc),
+        l2c_prefetcher_broadcast_ipc(uint8_t ipc),
+        llc_prefetcher_broadcast_ipc(uint8_t ipc);
+
     void prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_t &pref_used, uint64_t &pref_late);
     
     uint32_t get_set(uint64_t address),

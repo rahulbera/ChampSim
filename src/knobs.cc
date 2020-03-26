@@ -18,6 +18,9 @@ namespace knob
 	bool     l1d_perfect = false;
 	bool     l2c_perfect = false;
 	bool     llc_perfect = false;
+	bool     measure_ipc = false;
+	uint64_t measure_ipc_epoch = 1000;
+	uint32_t dram_io_freq = 2400;
 
 	/* next-line */
 	vector<int32_t>  next_line_deltas;
@@ -199,6 +202,7 @@ namespace knob
 	uint32_t le_cmac2_state_type;
 	vector<int32_t> le_cmac2_active_features;
 	uint32_t le_cmac2_feature_shift_amount;
+	bool     le_cmac2_enable_action_fallback;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -318,6 +322,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "llc_perfect"))
     {
 		knob::llc_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "measure_ipc"))
+    {
+		knob::measure_ipc = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "measure_ipc_epoch"))
+    {
+		knob::measure_ipc_epoch = atoi(value);
+    }
+    else if (MATCH("", "dram_io_freq"))
+    {
+		knob::dram_io_freq = atoi(value);
     }
 
     /* next-line */
@@ -966,6 +982,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_cmac2_feature_shift_amount"))
 	{
 		knob::le_cmac2_feature_shift_amount = atoi(value);
+	}
+	else if (MATCH("", "le_cmac2_enable_action_fallback"))
+	{
+		knob::le_cmac2_enable_action_fallback = atoi(value);
 	}
 
 	/* Shaggy knobs */

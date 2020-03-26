@@ -1519,6 +1519,13 @@ void O3_CPU::operate_cache()
     L2C.operate();
 }
 
+void O3_CPU::broadcast_ipc(uint8_t ipc)
+{
+    L1I.broadcast_ipc(ipc);
+    L1D.broadcast_ipc(ipc);
+    L2C.broadcast_ipc(ipc);
+}
+
 void O3_CPU::update_rob()
 {
     if (ITLB.PROCESSED.occupancy && (ITLB.PROCESSED.entry[ITLB.PROCESSED.head].event_cycle <= current_core_cycle[cpu]))

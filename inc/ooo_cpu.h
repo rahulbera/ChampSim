@@ -53,6 +53,8 @@ class O3_CPU {
     uint32_t inflight_reg_executions, inflight_mem_executions, num_searched;
     uint32_t next_ITLB_fetch;
 
+    uint64_t last_num_ins, last_ins_in_epoch, next_measure_ipc_cycle;
+
     // reorder buffer, load/store queue, register file
     CORE_BUFFER ROB{"ROB", ROB_SIZE};
     LOAD_STORE_QUEUE LQ{"LQ", LQ_SIZE}, SQ{"SQ", SQ_SIZE};
@@ -111,6 +113,10 @@ class O3_CPU {
 
         next_print_instruction = STAT_PRINTING_PERIOD;
         num_retired = 0;
+
+        last_num_ins = 0;
+        last_ins_in_epoch = 0;
+        next_measure_ipc_cycle = 1; /* some small initial number */
 
         inflight_reg_executions = 0;
         inflight_mem_executions = 0;
@@ -189,6 +195,7 @@ class O3_CPU {
     int  execute_load(uint32_t rob_index, uint32_t sq_index, uint32_t data_index);
     void check_dependency(int prior, int current);
     void operate_cache();
+    void broadcast_ipc(uint8_t ipc);
     void update_rob();
     void retire_rob();
 

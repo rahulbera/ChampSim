@@ -8,6 +8,16 @@
 
 #define FIXED_FLOAT(x) std::fixed << std::setprecision(5) << (x)
 
+#if 0
+#   define LOCKED(...) {fflush(stdout); __VA_ARGS__; fflush(stdout);}
+#   define LOGID() fprintf(stdout, "[%25s@%3u] ", \
+                            __FUNCTION__, __LINE__ \
+                            );
+#   define MYLOG(...) LOCKED(LOGID(); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n");)
+#else
+#   define MYLOG(...) {}
+#endif
+
 uint8_t warmup_complete[NUM_CPUS], 
         simulation_complete[NUM_CPUS], 
         all_warmup_complete = 0, 
@@ -21,6 +31,9 @@ namespace knob
     extern uint64_t simulation_instructions;
     extern uint8_t  knob_cloudsuite;
     extern uint8_t  knob_low_bandwidth;
+    extern bool     measure_ipc;
+    extern uint32_t measure_ipc_epoch;
+    extern uint32_t dram_io_freq;
 }
 
 time_t start_time;
@@ -496,10 +509,12 @@ void print_knobs()
         // << "low_bandwidth " << knob_low_bandwidth << endl
         // << "scramble_loads " << knob_scramble_loads << endl
         // << "cloudsuite " << knob_cloudsuite << endl
+        << "measure_ipc " << knob::measure_ipc << endl
+        << "measure_ipc_epoch " << knob::measure_ipc_epoch << endl
         << endl;
     cout << "num_cpus " << NUM_CPUS << endl
         << "cpu_freq " << CPU_FREQ << endl
-        << "dram_io_freq " << DRAM_IO_FREQ << endl
+        << "dram_io_freq " << knob::dram_io_freq << endl
         << "page_size " << PAGE_SIZE << endl
         << "block_size " << BLOCK_SIZE << endl
         << "max_read_per_cycle " << MAX_READ_PER_CYCLE << endl
@@ -553,9 +568,9 @@ int main(int argc, char** argv)
     }
 
     if (knob::knob_low_bandwidth)
-        DRAM_MTPS = DRAM_IO_FREQ/4;
+        DRAM_MTPS = knob::dram_io_freq/4;
     else
-        DRAM_MTPS = DRAM_IO_FREQ;
+        DRAM_MTPS = knob::dram_io_freq;
 
     // DRAM access latency
     tRP  = (uint32_t)((1.0 * tRP_DRAM_NANOSECONDS  * CPU_FREQ) / 1000); 
@@ -750,6 +765,27 @@ int main(int argc, char** argv)
         for (int i=0; i<NUM_CPUS; i++) {
             // proceed one cycle
             current_core_cycle[i]++;
+
+            /* monitor IPC */
+            if(knob::measure_ipc && current_core_cycle[i] >= ooo_cpu[i].next_measure_ipc_cycle)
+            {
+                uint64_t ins_in_epoch = ooo_cpu[i].num_retired - ooo_cpu[i].last_num_ins;
+                if(ins_in_epoch >= ooo_cpu[i].last_ins_in_epoch)
+                {
+                    /* IPC increased */
+                    MYLOG("Core-%u cycle %lu last_num_ins %lu last_ins_in_epoch %lu ins_in_epoch %lu UP", i, current_core_cycle[i], ooo_cpu[i].last_num_ins, ooo_cpu[i].last_ins_in_epoch, ins_in_epoch);
+                    ooo_cpu[i].broadcast_ipc(1);
+                }
+                else
+                {
+                    /* IPC decreased */
+                    MYLOG("Core-%u cycle %lu last_num_ins %lu last_ins_in_epoch %lu ins_in_epoch %lu DOWN", i, current_core_cycle[i], ooo_cpu[i].last_num_ins, ooo_cpu[i].last_ins_in_epoch, ins_in_epoch);
+                    ooo_cpu[i].broadcast_ipc(0);
+                }
+                ooo_cpu[i].last_num_ins = ooo_cpu[i].num_retired;
+                ooo_cpu[i].last_ins_in_epoch = ins_in_epoch;
+                ooo_cpu[i].next_measure_ipc_cycle = current_core_cycle[i] + knob::measure_ipc_epoch;
+            }
 
             //cout << "Trying to process instr_id: " << ooo_cpu[i].instr_unique_id << " fetch_stall: " << +ooo_cpu[i].fetch_stall;
             //cout << " stall_cycle: " << stall_cycle[i] << " current: " << current_core_cycle[i] << endl;

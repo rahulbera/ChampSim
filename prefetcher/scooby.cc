@@ -220,6 +220,7 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	}
 
 	bw_level = 0;
+	core_ipc = 0;
 }
 
 Scooby::~Scooby()
@@ -931,6 +932,14 @@ void Scooby::update_bw(uint8_t bw)
 	stats.bandwidth.histogram[bw_level]++;
 }
 
+void Scooby::update_ipc(uint8_t ipc)
+{
+	assert(ipc < SCOOBY_MAX_IPC_LEVEL);
+	core_ipc = ipc;
+	stats.ipc.epochs++;
+	stats.ipc.histogram[ipc]++;
+}
+
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
@@ -1086,6 +1095,13 @@ void Scooby::dump_stats()
 	for(uint32_t index = 0; index < SCOOBY_MAX_BW_LEVEL; ++index)
 	{
 		cout << "scooby_bw_level_" << index << " " << stats.bandwidth.histogram[index] << endl;
+	}
+	cout << endl;
+
+	cout << "scooby_ipc_epochs " << stats.ipc.epochs << endl;
+	for(uint32_t index = 0; index < SCOOBY_MAX_IPC_LEVEL; ++index)
+	{
+		cout << "scooby_ipc_level_" << index << " " << stats.ipc.histogram[index] << endl;
 	}
 	cout << endl;
 }
