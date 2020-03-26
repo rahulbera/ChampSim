@@ -154,6 +154,9 @@ namespace knob
 	int32_t  scooby_reward_fa_none;
 	int32_t  scooby_reward_fa_out_of_bounds;
 	int32_t  scooby_reward_fa_tracker_hit;
+	bool 	 scooby_enable_pt_address_compression;
+	uint32_t scooby_pt_address_hash_type;
+	uint32_t scooby_pt_address_hashed_bits;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -799,6 +802,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_reward_fa_tracker_hit"))
 	{
 		knob::scooby_reward_fa_tracker_hit = atoi(value);
+	}
+	else if (MATCH("", "scooby_enable_pt_address_compression"))
+	{
+		knob::scooby_enable_pt_address_compression = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_pt_address_hash_type"))
+	{
+		knob::scooby_pt_address_hash_type = atoi(value);
+	}
+	else if (MATCH("", "scooby_pt_address_hashed_bits"))
+	{
+		knob::scooby_pt_address_hashed_bits = atoi(value);
 	}
 	
 	/* Learning Engine */

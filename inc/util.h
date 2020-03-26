@@ -31,9 +31,9 @@ template <class T> std::string array_to_string(std::vector<T> array, bool hex = 
 class HashZoo
 {
 public:
-	static uint32_t jenkins(uint32_t value);
-	static uint32_t knuth(uint32_t value);
-	static uint32_t murmur3(uint32_t value);
+	static uint32_t jenkins(uint32_t key);
+	static uint32_t knuth(uint32_t key);
+	static uint32_t murmur3(uint32_t key);
 	static uint32_t jenkins32(uint32_t key);
 	static uint32_t hash32shift(uint32_t key);
 	static uint32_t hash32shiftmult(uint32_t key);
@@ -44,7 +44,9 @@ public:
 	static uint32_t Wang5shift(uint32_t key);
 	static uint32_t Wang4shift( uint32_t key);
 	static uint32_t Wang3shift( uint32_t key);
-	static uint32_t hybrid1(uint32_t value);
+	static uint32_t hybrid1(uint32_t key);
+
+    static uint32_t getHash(uint32_t selector, uint32_t key);
 };
 
 #endif /* UTIL_H */

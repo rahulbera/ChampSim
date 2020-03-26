@@ -26,6 +26,9 @@ namespace knob
 	extern uint32_t scooby_state_type;
 	extern uint32_t scooby_max_states;
 	extern uint32_t scooby_state_hash_type;
+	extern bool 	scooby_enable_pt_address_compression;
+	extern uint32_t scooby_pt_address_hash_type;
+	extern uint32_t scooby_pt_address_hashed_bits;
 }
 
 const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
@@ -396,4 +399,14 @@ string print_active_features(vector<int32_t> features)
 		ss << getFeatureString((Feature)features[index]);
 	}
 	return ss.str();
+}
+
+uint64_t compress_address(uint64_t address)
+{
+	assert(address != 0xdeadbeef);
+	assert(knob::scooby_enable_pt_address_compression);
+
+	uint32_t folded_address = folded_xor(address, 2); /* 32b folded XOR */
+	uint32_t hashed_address = HashZoo::getHash(knob::scooby_pt_address_hash_type, folded_address);
+	return hashed_address % (1ull << knob::scooby_pt_address_hashed_bits);
 }

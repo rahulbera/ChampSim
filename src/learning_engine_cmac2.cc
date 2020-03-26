@@ -304,6 +304,7 @@ uint32_t LearningEngineCMAC2::generatePlaneIndex(uint32_t plane, State *state, u
 
 	/* Finally hash */
 	uint32_t hashed_index = getHash(initial_index);
+	// uint32_t hashed_index = HashZoo::getHash(m_hash_type, initial_index);
 	return (hashed_index % m_num_entries_per_plane);
 }
 

@@ -71,6 +71,9 @@ namespace knob
 	extern int32_t  scooby_reward_fa_none;
 	extern int32_t  scooby_reward_fa_out_of_bounds;
 	extern int32_t  scooby_reward_fa_tracker_hit;
+	extern bool 	scooby_enable_pt_address_compression;
+	extern uint32_t scooby_pt_address_hash_type;
+	extern uint32_t scooby_pt_address_hashed_bits;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -275,6 +278,9 @@ void Scooby::print_config()
 		<< "scooby_reward_fa_none " << knob::scooby_reward_fa_none << endl
 		<< "scooby_reward_fa_out_of_bounds " << knob::scooby_reward_fa_out_of_bounds << endl
 		<< "scooby_reward_fa_tracker_hit " << knob::scooby_reward_fa_tracker_hit << endl
+		<< "scooby_enable_pt_address_compression " << knob::scooby_enable_pt_address_compression << endl
+		<< "scooby_pt_address_hash_type " << knob::scooby_pt_address_hash_type << endl
+		<< "scooby_pt_address_hashed_bits " << knob::scooby_pt_address_hashed_bits << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -594,6 +600,10 @@ bool Scooby::track(uint64_t address, State *state, uint32_t action_index, Scooby
 	}
 
 	ptentry = new Scooby_PTEntry(address, state, action_index);
+	if(knob::scooby_enable_pt_address_compression && ptentry->address != 0xdeadbeef)
+	{
+		ptentry->address = compress_address(ptentry->address);
+	}
 	prefetch_tracker.push_back(ptentry);
 	assert(prefetch_tracker.size() <= knob::scooby_pt_size);
 
@@ -831,6 +841,13 @@ void Scooby::register_prefetch_hit(uint64_t address)
 
 vector<Scooby_PTEntry*> Scooby::search_pt(uint64_t address, bool search_all)
 {
+	if(knob::scooby_enable_pt_address_compression && address != 0xdeadbeef)
+	{
+		uint32_t compressed_addr = compress_address(address);
+		MYLOG("addr %lx compressed_addr %x", address, compressed_addr);
+		cout << "addr " << hex << address << dec << " compressed_addr " << hex << compressed_addr << dec << endl;
+		address = compressed_addr;
+	}
 	vector<Scooby_PTEntry*> entries;
 	for(uint32_t index = 0; index < prefetch_tracker.size(); ++index)
 	{

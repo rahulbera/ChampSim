@@ -183,3 +183,26 @@ uint32_t HashZoo::hybrid1(uint32_t key)
 {
 	return knuth(jenkins(key));
 }
+
+uint32_t HashZoo::getHash(uint32_t selector, uint32_t key)
+{
+    switch(selector)
+    {
+        case 1:     return key;
+        case 2:     return jenkins(key);
+        case 3:     return knuth(key);
+        case 4:     return murmur3(key);
+        case 5:     return jenkins32(key);
+        case 6:     return hash32shift(key);
+        case 7:     return hash32shiftmult(key);
+        case 8:     return hash64shift(key);
+        case 9:     return hash5shift(key);
+        case 10:    return hash7shift(key);
+        case 11:    return Wang6shift(key);
+        case 12:    return Wang5shift(key);
+        case 13:    return Wang4shift(key);
+        case 14:    return Wang3shift(key);
+        case 15:    return hybrid1(key);
+        default:    assert(false);
+    }
+}
