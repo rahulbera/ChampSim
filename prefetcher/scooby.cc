@@ -116,6 +116,7 @@ namespace knob
 	extern uint32_t 	le_cmac2_state_type;
 	extern vector<int32_t> le_cmac2_active_features;
 	extern uint32_t 	le_cmac2_feature_shift_amount;
+	extern bool         le_cmac2_enable_action_fallback;
 }
 
 void Scooby::init_knobs()
@@ -322,6 +323,7 @@ void Scooby::print_config()
 		<< "le_cmac2_state_type " << knob::le_cmac2_state_type << endl
 		<< "le_cmac2_active_features " << print_active_features(knob::le_cmac2_active_features) << endl
 		<< "le_cmac2_feature_shift_amount " << knob::le_cmac2_feature_shift_amount << endl
+		<< "le_cmac2_enable_action_fallback " << knob::le_cmac2_enable_action_fallback << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)

@@ -985,7 +985,7 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	}
 	else if (MATCH("", "le_cmac2_enable_action_fallback"))
 	{
-		knob::le_cmac2_enable_action_fallback = atoi(value);
+		knob::le_cmac2_enable_action_fallback = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Shaggy knobs */
