@@ -2,6 +2,8 @@
 #define SPP_DEV2_H
 
 #include <string>
+#include <vector>
+#include <unordered_map>
 #include "prefetcher.h"
 #include "spp_dev2_helper.h"
 #include "cache.h"
@@ -16,6 +18,36 @@ private:
 	PATTERN_TABLE   PT;
 	PREFETCH_FILTER FILTER;
 	GLOBAL_REGISTER GHR;
+
+	/* stats by rbera */
+	struct
+	{
+		struct
+		{
+			uint64_t total;
+			uint64_t at_L2;
+			uint64_t at_LLC;
+		} pref;
+
+		struct
+		{
+			uint64_t count;
+			uint64_t total;
+			uint64_t max;
+			uint64_t min;
+		} depth;
+
+		struct
+		{
+			uint64_t count;
+			uint64_t total;
+			uint64_t max;
+			uint64_t min;
+		} breadth;
+	} stats;
+
+	unordered_map<int32_t, uint64_t> delta_histogram;
+	unordered_map<uint32_t, unordered_map<int32_t, uint64_t> > depth_delta_histogram;
 
 private:
 	void init_knobs();

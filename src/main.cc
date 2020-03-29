@@ -34,6 +34,8 @@ namespace knob
     extern bool     measure_ipc;
     extern uint32_t measure_ipc_epoch;
     extern uint32_t dram_io_freq;
+    extern bool     measure_dram_bw;
+    extern uint64_t measure_dram_bw_epoch;
 }
 
 time_t start_time;
@@ -511,6 +513,8 @@ void print_knobs()
         // << "cloudsuite " << knob_cloudsuite << endl
         << "measure_ipc " << knob::measure_ipc << endl
         << "measure_ipc_epoch " << knob::measure_ipc_epoch << endl
+        << "measure_dram_bw " << knob::measure_dram_bw << endl
+        << "measure_dram_bw_epoch " << knob::measure_dram_bw_epoch << endl
         << endl;
     cout << "num_cpus " << NUM_CPUS << endl
         << "cpu_freq " << CPU_FREQ << endl
@@ -581,7 +585,7 @@ int main(int argc, char** argv)
     // it takes 16 CPU cycles to tranfser 64B cache block on a 8B (64-bit) bus 
     // note that dram burst length = BLOCK_SIZE/DRAM_CHANNEL_WIDTH
     DRAM_DBUS_RETURN_TIME = (BLOCK_SIZE / DRAM_CHANNEL_WIDTH) * (1.0 * CPU_FREQ / DRAM_MTPS);
-
+    DRAM_DBUS_MAX_CAS = (knob::measure_dram_bw_epoch / DRAM_DBUS_RETURN_TIME);
     // end consequence of knobs
 
     // search through the argv for "-traces"
@@ -773,13 +777,13 @@ int main(int argc, char** argv)
                 if(ins_in_epoch >= ooo_cpu[i].last_ins_in_epoch)
                 {
                     /* IPC increased */
-                    MYLOG("Core-%u cycle %lu last_num_ins %lu last_ins_in_epoch %lu ins_in_epoch %lu UP", i, current_core_cycle[i], ooo_cpu[i].last_num_ins, ooo_cpu[i].last_ins_in_epoch, ins_in_epoch);
+                    // MYLOG("Core-%u cycle %lu last_num_ins %lu last_ins_in_epoch %lu ins_in_epoch %lu UP", i, current_core_cycle[i], ooo_cpu[i].last_num_ins, ooo_cpu[i].last_ins_in_epoch, ins_in_epoch);
                     ooo_cpu[i].broadcast_ipc(1);
                 }
                 else
                 {
                     /* IPC decreased */
-                    MYLOG("Core-%u cycle %lu last_num_ins %lu last_ins_in_epoch %lu ins_in_epoch %lu DOWN", i, current_core_cycle[i], ooo_cpu[i].last_num_ins, ooo_cpu[i].last_ins_in_epoch, ins_in_epoch);
+                    // MYLOG("Core-%u cycle %lu last_num_ins %lu last_ins_in_epoch %lu ins_in_epoch %lu DOWN", i, current_core_cycle[i], ooo_cpu[i].last_num_ins, ooo_cpu[i].last_ins_in_epoch, ins_in_epoch);
                     ooo_cpu[i].broadcast_ipc(0);
                 }
                 ooo_cpu[i].last_num_ins = ooo_cpu[i].num_retired;
@@ -889,6 +893,21 @@ int main(int argc, char** argv)
         }
 
         // TODO: should it be backward?
+        uncore.cycle++;
+        if(knob::measure_dram_bw && uncore.cycle >= uncore.DRAM.next_bw_measure_cycle)
+        {
+            uint64_t this_epoch_enqueue_count = uncore.DRAM.rq_enqueue_count - uncore.DRAM.last_enqueue_count;
+            uncore.DRAM.epoch_enqueue_count = (uncore.DRAM.epoch_enqueue_count/2) + this_epoch_enqueue_count;
+            uint32_t quartile = (float)uncore.DRAM.epoch_enqueue_count/DRAM_DBUS_MAX_CAS * 100;
+            if(quartile <= 25)      uncore.DRAM.bw = 0;
+            else if(quartile <= 50) uncore.DRAM.bw = 1;
+            else if(quartile <= 75) uncore.DRAM.bw = 2;
+            else                    uncore.DRAM.bw = 3;
+            MYLOG("cycle %lu rq_enqueue_count %lu last_enqueue_count %lu epoch_enqueue_count %lu QUARTILE %u", uncore.cycle, uncore.DRAM.rq_enqueue_count, uncore.DRAM.last_enqueue_count, uncore.DRAM.epoch_enqueue_count, uncore.DRAM.bw);
+            uncore.DRAM.last_enqueue_count = uncore.DRAM.rq_enqueue_count;
+            uncore.DRAM.next_bw_measure_cycle = uncore.cycle + knob::measure_dram_bw_epoch;
+        }
+
         uncore.LLC.operate();
         uncore.DRAM.operate();
     }

@@ -21,6 +21,8 @@ namespace knob
 	bool     measure_ipc = false;
 	uint64_t measure_ipc_epoch = 1000;
 	uint32_t dram_io_freq = 2400;
+	bool     measure_dram_bw = true;
+	uint64_t measure_dram_bw_epoch = 10000;
 
 	/* next-line */
 	vector<int32_t>  next_line_deltas;
@@ -334,6 +336,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "dram_io_freq"))
     {
 		knob::dram_io_freq = atoi(value);
+    }
+    else if (MATCH("", "measure_dram_bw"))
+    {
+		knob::measure_dram_bw = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "measure_dram_bw_epoch"))
+    {
+		knob::measure_dram_bw_epoch = atoi(value);
     }
 
     /* next-line */

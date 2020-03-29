@@ -216,6 +216,11 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 		}
 	}
 
+	if(knob::le_cmac2_enable_action_fallback && max_q_value == 0.0)
+	{
+		stats.action.fallback++;
+	}
+
 	float avg_q_value = total_q_value/m_actions;
 	switch(knob::le_cmac2_max_to_avg_q_ratio_type)
 	{
@@ -383,6 +388,7 @@ void LearningEngineCMAC2::dump_stats()
 	fprintf(stdout, "learning_engine_cmac2.action.called %lu\n", stats.action.called);
 	fprintf(stdout, "learning_engine_cmac2.action.explore %lu\n", stats.action.explore);
 	fprintf(stdout, "learning_engine_cmac2.action.exploit %lu\n", stats.action.exploit);
+	fprintf(stdout, "learning_engine_cmac2.action.fallback %lu\n", stats.action.fallback);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		fprintf(stdout, "learning_engine_cmac2.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);

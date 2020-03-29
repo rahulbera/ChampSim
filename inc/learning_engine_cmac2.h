@@ -42,6 +42,7 @@ private:
 			uint64_t exploit;
 			uint64_t dist[MAX_ACTIONS][2]; /* 0:explored, 1:exploited */
 			uint64_t threshold_dist[MAX_ACTIONS][NUM_MAX_THRESHOLDS];
+			uint64_t fallback;
 		} action;
 
 		struct

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "spp_dev2.h"
 #include "champsim.h"
 #include "memory_class.h"
@@ -16,7 +17,7 @@ void SPP_dev2::init_knobs()
 
 void SPP_dev2::init_stats()
 {
-
+    bzero(&stats, sizeof(stats));
 }
 
 SPP_dev2::SPP_dev2(std::string type, CACHE *cache) : Prefetcher(type), m_parent_cache(cache)
@@ -90,6 +91,7 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
              pf_q_head = 0, 
              pf_q_tail = 0;
     uint8_t  do_lookahead = 0;
+    uint32_t breadth = 0;
 
 #ifdef LOOKAHEAD_ON
     do {
@@ -98,6 +100,7 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
         PT.read_pattern(curr_sig, delta_q, confidence_q, lookahead_way, lookahead_conf, pf_q_tail, depth, GHR);
 
         do_lookahead = 0;
+        breadth = 0;
         for (uint32_t i = pf_q_head; i < pf_q_tail; i++) {
             if (confidence_q[i] >= PF_THRESHOLD) {
                 uint64_t pf_addr = (base_addr & ~(BLOCK_SIZE - 1)) + (delta_q[i] << LOG2_BLOCK_SIZE);
@@ -105,6 +108,12 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
                 if ((addr & ~(PAGE_SIZE - 1)) == (pf_addr & ~(PAGE_SIZE - 1))) { // Prefetch request is in the same physical page
                     if (FILTER.check(pf_addr, confidence_q[i] >= FILL_THRESHOLD ? SPP_L2C_PREFETCH : SPP_LLC_PREFETCH, GHR)) {
                         m_parent_cache->prefetch_line(ip, addr, pf_addr, ((confidence_q[i] >= FILL_THRESHOLD) ? FILL_L2 : FILL_LLC), 0); // Use addr (not base_addr) to obey the same physical page boundary
+                        
+                        stats.pref.total++;
+                        if(confidence_q[i] >= FILL_THRESHOLD) 
+                            stats.pref.at_L2++;
+                        else
+                            stats.pref.at_LLC++;
 
                         if (confidence_q[i] >= FILL_THRESHOLD) {
                             GHR.pf_issued++;
@@ -122,6 +131,10 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
                             cout << " depth: " << i << " fill_level: " << ((confidence_q[i] >= FILL_THRESHOLD) ? FILL_L2 : FILL_LLC) << endl;
                         );
                     }
+
+                    breadth++;
+                    delta_histogram[delta_q[i]]++;
+                    depth_delta_histogram[depth][delta_q[i]]++;
                 } else { // Prefetch request is crossing the physical page boundary
 #ifdef GHR_ON
                     // Store this prefetch request in GHR to bootstrap SPP learning when we see a ST miss (i.e., accessing a new page)
@@ -149,9 +162,19 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
             cout << "Looping curr_sig: " << hex << curr_sig << " base_addr: " << base_addr << dec;
             cout << " pf_q_head: " << pf_q_head << " pf_q_tail: " << pf_q_tail << " depth: " << depth << endl;
         );
+
+        stats.breadth.count++;
+        stats.breadth.total += breadth;
+        if(breadth >= stats.breadth.max) stats.breadth.max = breadth;
+        if(breadth <= stats.breadth.min) stats.breadth.min = breadth;
 #ifdef LOOKAHEAD_ON
     } while (do_lookahead);
 #endif
+
+    stats.depth.count++;
+    stats.depth.total += depth;
+    if(depth >= stats.depth.max) stats.depth.max = depth;
+    if(depth <= stats.depth.min) stats.depth.min = depth;
 }
 
 void SPP_dev2::cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr)
@@ -164,5 +187,47 @@ void SPP_dev2::cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t pre
 
 void SPP_dev2::dump_stats()
 {
+    uint32_t avg_breadth = (float)stats.breadth.total/stats.breadth.count;
+    uint32_t avg_depth = (float)stats.depth.total/stats.depth.count;
 
+     cout << "spp.pref.total " << stats.pref.total << endl
+        << "spp.pref.at_L2 " << stats.pref.at_L2 << endl
+        << "spp.pref.at_LLC " << stats.pref.at_LLC << endl
+        << endl
+        << "spp.depth.max " << stats.depth.max << endl
+        << "spp.depth.min " << stats.depth.min << endl
+        << "spp.depth.avg " << avg_depth << endl
+        << endl
+        << "spp.breadth.max " << stats.breadth.max << endl
+        << "spp.breadth.min " << stats.breadth.min << endl
+        << "spp.breadth.avg " << avg_breadth << endl
+        << endl;
+
+    vector<pair<int32_t, uint64_t> > pairs;
+    for(auto it = delta_histogram.begin(); it != delta_histogram.end(); ++it)
+        pairs.push_back(*it);
+    sort(pairs.begin(), pairs.end(), [](pair<int32_t, uint64_t>& a, pair<int32_t, uint64_t>& b){return a.second > b.second;});
+    for(uint32_t index = 0; index < pairs.size(); ++index)
+    {
+        cout << "delta_" << pairs[index].first << " " << pairs[index].second << endl;
+    }
+    cout << endl;
+
+    vector<pair<uint32_t, unordered_map<int32_t, uint64_t> > > pairs2;
+    for(auto it = depth_delta_histogram.begin(); it != depth_delta_histogram.end(); ++it)
+        pairs2.push_back(*it);
+    sort(pairs2.begin(), pairs2.end(), [](pair<uint32_t, unordered_map<int32_t, uint64_t> >& a, pair<uint32_t, unordered_map<int32_t, uint64_t> >& b){return a.first < b.first;});
+    for(uint32_t index = 0; index < pairs2.size(); ++index)
+    {
+        vector<pair<int32_t, uint64_t> > pairs3;
+        for(auto it = pairs2[index].second.begin(); it != pairs2[index].second.end(); ++it)
+            pairs3.push_back(*it);
+        sort(pairs3.begin(), pairs3.end(), [](pair<int32_t, uint64_t>& a, pair<int32_t, uint64_t>& b){return a.second > b.second;});
+
+        for(uint32_t index2 = 0; index2 < pairs3.size(); ++index2)
+        {
+            cout << "depth_" << pairs2[index].first << "_delta_" << pairs3[index2].first << " " << pairs3[index2].second << endl;
+        }
+    }
+    cout << endl;
 }

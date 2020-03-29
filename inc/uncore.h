@@ -18,6 +18,9 @@ class UNCORE {
     // DRAM
     MEMORY_CONTROLLER DRAM{"DRAM"}; 
 
+    // cycle
+    uint64_t cycle;
+
     UNCORE(); 
 };
 

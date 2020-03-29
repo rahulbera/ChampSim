@@ -1,7 +1,7 @@
 #include "dram_controller.h"
 
 // initialized in main.cc
-uint32_t DRAM_MTPS, DRAM_DBUS_RETURN_TIME,
+uint32_t DRAM_MTPS, DRAM_DBUS_RETURN_TIME, DRAM_DBUS_MAX_CAS,
          tRP, tRCD, tCAS;
 
 void print_dram_config()
@@ -482,6 +482,9 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
             
             RQ[channel].entry[index] = *packet;
             RQ[channel].occupancy++;
+
+            /* keep a track of added entries */
+            rq_enqueue_count++;
 
 #ifdef DEBUG_PRINT
             uint32_t channel = dram_get_channel(packet->address),

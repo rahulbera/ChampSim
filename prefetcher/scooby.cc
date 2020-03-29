@@ -467,17 +467,12 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		action_index = brain_cmac2->chooseAction(state, max_to_avg_q_ratio);
 		if(knob::scooby_enable_dyn_degree)
 		{
-			// if(max_to_avg_q_ratio < 1)
-			// {
-			// 	cout << "ratio " << max_to_avg_q_ratio << endl;
-			// 	assert(false);
-			// }
 			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
 		}
 		if(knob::scooby_enable_state_action_stats)
 		{
 			update_stats(state, action_index, pref_degree);
-		}		
+		}
 	}
 	else
 	{

@@ -14,7 +14,7 @@
 
 // the data bus must wait this amount of time when switching between reads and writes, and vice versa
 #define DRAM_DBUS_TURN_AROUND_TIME ((15*CPU_FREQ)/2000) // 7.5 ns 
-extern uint32_t DRAM_MTPS, DRAM_DBUS_RETURN_TIME;
+extern uint32_t DRAM_MTPS, DRAM_DBUS_RETURN_TIME, DRAM_DBUS_MAX_CAS;
 
 // these values control when to send out a burst of writes
 #define DRAM_WRITE_HIGH_WM    ((DRAM_WQ_SIZE*7)>>3) // 7/8th
@@ -39,6 +39,10 @@ class MEMORY_CONTROLLER : public MEMORY {
 
     // queues
     PACKET_QUEUE WQ[DRAM_CHANNELS], RQ[DRAM_CHANNELS];
+    
+    // to measure bandwidth
+    uint64_t rq_enqueue_count, last_enqueue_count, epoch_enqueue_count, next_bw_measure_cycle;
+    uint8_t bw;
 
     // constructor
     MEMORY_CONTROLLER(string v1) : NAME (v1) {
@@ -71,6 +75,12 @@ class MEMORY_CONTROLLER : public MEMORY {
         }
 
         fill_level = FILL_DRAM;
+
+        rq_enqueue_count = 0;
+        last_enqueue_count = 0;
+        epoch_enqueue_count = 0;
+        next_bw_measure_cycle = 1;
+        bw = 0;
     };
 
     // destructor
