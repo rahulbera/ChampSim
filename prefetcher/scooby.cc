@@ -59,6 +59,7 @@ namespace knob
 	extern bool     scooby_prefetch_with_shaggy;
 	extern bool     scooby_enable_cmac_engine;
 	extern bool     scooby_enable_cmac2_engine;
+	extern bool     scooby_enable_featurewise_engine;
 	extern uint32_t scooby_pref_degree;
 	extern bool     scooby_enable_dyn_degree;
 	extern vector<float> scooby_max_to_avg_q_thresholds;
@@ -117,6 +118,11 @@ namespace knob
 	extern vector<int32_t> le_cmac2_active_features;
 	extern uint32_t 	le_cmac2_feature_shift_amount;
 	extern bool         le_cmac2_enable_action_fallback;
+
+	/* Featurewise Engine knobs */
+	extern vector<int32_t> le_featurewise_active_features;
+	extern vector<int32_t> le_featurewise_num_states;
+	extern vector<int32_t> le_featurewise_hash_types;
 }
 
 void Scooby::init_knobs()
@@ -158,6 +164,7 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	/* init learning engine */
 	brain_cmac = NULL;
 	brain_cmac2 = NULL;
+	brain_featurewise = NULL;
 	brain = NULL;
 
 	if(knob::scooby_enable_cmac_engine)
@@ -201,6 +208,16 @@ Scooby::Scooby(string type) : Prefetcher(type)
 											knob::scooby_brain_zero_init,
 											knob::scooby_early_exploration_window);
 	}
+	else if(knob::scooby_enable_featurewise_engine)
+	{
+		brain_featurewise = new LearningEngineFeaturewise(this,
+														knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon,
+														knob::scooby_max_actions,
+														knob::scooby_seed,
+														knob::scooby_policy,
+														knob::scooby_learning_type,
+														knob::scooby_brain_zero_init);
+	}
 	else
 	{
 		brain = new LearningEngineBasic( this,
@@ -228,6 +245,7 @@ Scooby::~Scooby()
 {
 	if(brain_cmac) 	delete brain_cmac;
 	if(brain_cmac2) delete brain_cmac2;
+	if(brain_featurewise) delete brain_featurewise;
 	if(brain) 		delete brain;
 }
 
@@ -268,6 +286,7 @@ void Scooby::print_config()
 		<< "scooby_prefetch_with_shaggy " << knob::scooby_prefetch_with_shaggy << endl
 		<< "scooby_enable_cmac_engine " << knob::scooby_enable_cmac_engine << endl
 		<< "scooby_enable_cmac2_engine " << knob::scooby_enable_cmac2_engine << endl
+		<< "scooby_enable_featurewise_engine " << knob::scooby_enable_featurewise_engine << endl
 		<< "scooby_pref_degree " << knob::scooby_pref_degree << endl
 		<< "scooby_enable_dyn_degree " << knob::scooby_enable_dyn_degree << endl
 		<< "scooby_max_to_avg_q_thresholds " << array_to_string(knob::scooby_max_to_avg_q_thresholds) << endl
@@ -324,6 +343,10 @@ void Scooby::print_config()
 		<< "le_cmac2_active_features " << print_active_features(knob::le_cmac2_active_features) << endl
 		<< "le_cmac2_feature_shift_amount " << knob::le_cmac2_feature_shift_amount << endl
 		<< "le_cmac2_enable_action_fallback " << knob::le_cmac2_enable_action_fallback << endl
+		<< endl
+		<< "le_featurewise_active_features " << array_to_string(knob::le_featurewise_active_features) << endl
+		<< "le_featurewise_num_states " << array_to_string(knob::le_featurewise_num_states) << endl
+		<< "le_featurewise_hash_types " << array_to_string(knob::le_featurewise_hash_types) << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -469,6 +492,14 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		{
 			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
 		}
+		if(knob::scooby_enable_state_action_stats)
+		{
+			update_stats(state, action_index, pref_degree);
+		}
+	}
+	else if (knob::scooby_enable_featurewise_engine)
+	{
+		action_index = brain_featurewise->chooseAction(state);
 		if(knob::scooby_enable_state_action_stats)
 		{
 			update_stats(state, action_index, pref_degree);
@@ -791,6 +822,10 @@ void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
 	{
 		brain_cmac2->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index);
 	}
+	else if(knob::scooby_enable_featurewise_engine)
+	{
+		brain_featurewise->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index);
+	}
 	else
 	{
 		brain->learn(last_evicted->state->value(), last_evicted->action_index, last_evicted->reward, curr_evicted->state->value(), curr_evicted->action_index);
@@ -969,7 +1004,7 @@ void Scooby::dump_stats()
 
 	if(knob::scooby_enable_state_action_stats)
 	{
-		if(knob::scooby_enable_cmac_engine || knob::scooby_enable_cmac2_engine)
+		if(knob::scooby_enable_cmac_engine || knob::scooby_enable_cmac2_engine || knob::scooby_enable_featurewise_engine)
 		{
 			std::vector<std::pair<string, vector<uint64_t> > > pairs;
 			for (auto itr = state_action_dist2.begin(); itr != state_action_dist2.end(); ++itr)
@@ -1076,6 +1111,10 @@ void Scooby::dump_stats()
 	if(brain_cmac2)
 	{
 		brain_cmac2->dump_stats();
+	}
+	if(brain_featurewise)
+	{
+		brain_featurewise->dump_stats();
 	}
 	if(brain)
 	{

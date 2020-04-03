@@ -8,6 +8,7 @@
 #include "learning_engine_basic.h"
 #include "learning_engine_cmac.h"
 #include "learning_engine_cmac2.h"
+#include "learning_engine_featurewise.h"
 #include "shaggy.h"
 
 using namespace std;
@@ -64,6 +65,7 @@ private:
 	LearningEngineBasic *brain;
 	LearningEngineCMAC *brain_cmac;
 	LearningEngineCMAC2 *brain_cmac2;
+	LearningEngineFeaturewise *brain_featurewise;
 	deque<Scooby_PTEntry*> prefetch_tracker;
 	Scooby_PTEntry *last_evicted_tracker;
 	Shaggy *shaggy;

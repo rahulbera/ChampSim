@@ -147,6 +147,7 @@ namespace knob
 	bool     scooby_prefetch_with_shaggy;
 	bool     scooby_enable_cmac_engine;
 	bool     scooby_enable_cmac2_engine;
+	bool     scooby_enable_featurewise_engine;
 	uint32_t scooby_pref_degree = 1; /* default is set to 1 */
 	bool     scooby_enable_dyn_degree;
 	vector<float> scooby_max_to_avg_q_thresholds;
@@ -205,6 +206,11 @@ namespace knob
 	vector<int32_t> le_cmac2_active_features;
 	uint32_t le_cmac2_feature_shift_amount;
 	bool     le_cmac2_enable_action_fallback;
+
+	/* Featurewise Learning Engine */
+	vector<int32_t> le_featurewise_active_features;
+	vector<int32_t> le_featurewise_num_states; 
+	vector<int32_t> le_featurewise_hash_types; 
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -781,6 +787,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_enable_cmac2_engine = !strcmp(value, "true") ? true : false;
 	}
+	else if (MATCH("", "scooby_enable_featurewise_engine"))
+	{
+		knob::scooby_enable_featurewise_engine = !strcmp(value, "true") ? true : false;
+	}
 	else if (MATCH("", "scooby_pref_degree"))
 	{
 		knob::scooby_pref_degree = atoi(value);
@@ -996,6 +1006,20 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_cmac2_enable_action_fallback"))
 	{
 		knob::le_cmac2_enable_action_fallback = !strcmp(value, "true") ? true : false;
+	}
+
+	/* Featurewise Learning Engine */
+	else if (MATCH("", "le_featurewise_active_features"))
+	{
+		knob::le_featurewise_active_features = get_array_int(value);
+	}
+	else if (MATCH("", "le_featurewise_num_states"))
+	{
+		knob::le_featurewise_num_states = get_array_int(value);
+	}
+	else if (MATCH("", "le_featurewise_hash_types"))
+	{
+		knob::le_featurewise_hash_types = get_array_int(value);
 	}
 
 	/* Shaggy knobs */
