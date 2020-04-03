@@ -127,6 +127,7 @@ public:
 /* auxiliary functions */
 void print_access_debug(Scooby_STEntry *stentry);
 string print_active_features(vector<int32_t> active_features);
+string print_active_features2(vector<int32_t> active_features);
 uint64_t compress_address(uint64_t address);
 
 #endif /* SCOOBY_HELPER_H */

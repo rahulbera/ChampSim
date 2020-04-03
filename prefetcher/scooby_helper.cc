@@ -5,6 +5,7 @@
 #include <sstream>
 #include "scooby_helper.h"
 #include "util.h"
+#include "feature_knowledge.h"
 
 #define DELTA_SIG_MAX_BITS 12
 #define DELTA_SIG_SHIFT 3
@@ -409,4 +410,15 @@ uint64_t compress_address(uint64_t address)
 	uint32_t folded_address = folded_xor(address, 2); /* 32b folded XOR */
 	uint32_t hashed_address = HashZoo::getHash(knob::scooby_pt_address_hash_type, folded_address);
 	return hashed_address % (1ull << knob::scooby_pt_address_hashed_bits);
+}
+
+string print_active_features2(vector<int32_t> features)
+{
+	std::stringstream ss;
+	for(uint32_t index = 0; index < features.size(); ++index)
+	{
+		if(index) ss << ", ";
+		ss << FeatureKnowledge::getFeatureString((FeatureType)features[index]);
+	}
+	return ss.str();
 }

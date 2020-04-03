@@ -209,8 +209,10 @@ namespace knob
 
 	/* Featurewise Learning Engine */
 	vector<int32_t> le_featurewise_active_features;
-	vector<int32_t> le_featurewise_num_states; 
+	vector<int32_t> le_featurewise_num_tilings; 
+	vector<int32_t> le_featurewise_num_tiles; 
 	vector<int32_t> le_featurewise_hash_types; 
+	vector<int32_t> le_featurewise_enable_tiling_offset; 
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -1013,13 +1015,21 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::le_featurewise_active_features = get_array_int(value);
 	}
-	else if (MATCH("", "le_featurewise_num_states"))
+	else if (MATCH("", "le_featurewise_num_tilings"))
 	{
-		knob::le_featurewise_num_states = get_array_int(value);
+		knob::le_featurewise_num_tilings = get_array_int(value);
+	}
+	else if (MATCH("", "le_featurewise_num_tiles"))
+	{
+		knob::le_featurewise_num_tiles = get_array_int(value);
 	}
 	else if (MATCH("", "le_featurewise_hash_types"))
 	{
 		knob::le_featurewise_hash_types = get_array_int(value);
+	}
+	else if (MATCH("", "le_featurewise_enable_tiling_offset"))
+	{
+		knob::le_featurewise_enable_tiling_offset = get_array_int(value);
 	}
 
 	/* Shaggy knobs */

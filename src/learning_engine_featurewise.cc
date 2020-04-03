@@ -18,13 +18,17 @@
 namespace knob
 {
 	extern vector<int32_t> le_featurewise_active_features;
-	extern vector<int32_t> le_featurewise_num_states;
+	extern vector<int32_t> le_featurewise_num_tilings;
+	extern vector<int32_t> le_featurewise_num_tiles;
 	extern vector<int32_t> le_featurewise_hash_types;
+	extern vector<int32_t> le_featurewise_enable_tiling_offset;
 }
 
 void LearningEngineFeaturewise::init_knobs()
 {
-	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_num_states.size());
+	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_num_tilings.size());
+	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_num_tiles.size());
+	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_enable_tiling_offset.size());
 }
 
 void LearningEngineFeaturewise::init_stats()
@@ -47,9 +51,12 @@ LearningEngineFeaturewise::LearningEngineFeaturewise(Prefetcher *parent, float a
 																							alpha, 
 																							gamma, 
 																							actions, 
-																							knob::le_featurewise_num_states[index],
+																							knob::le_featurewise_num_tilings[index],
+																							knob::le_featurewise_num_tiles[index],
 																							zero_init,
-																							knob::le_featurewise_hash_types[index]);
+																							knob::le_featurewise_hash_types[index],
+																							knob::le_featurewise_enable_tiling_offset[index]
+																							);
 		assert(m_feature_knowledges[knob::le_featurewise_active_features[index]]);
 	}
 

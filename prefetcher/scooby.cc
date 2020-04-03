@@ -121,8 +121,10 @@ namespace knob
 
 	/* Featurewise Engine knobs */
 	extern vector<int32_t> le_featurewise_active_features;
-	extern vector<int32_t> le_featurewise_num_states;
+	extern vector<int32_t> le_featurewise_num_tilings;
+	extern vector<int32_t> le_featurewise_num_tiles;
 	extern vector<int32_t> le_featurewise_hash_types;
+	extern vector<int32_t> le_featurewise_enable_tiling_offset;
 }
 
 void Scooby::init_knobs()
@@ -344,9 +346,11 @@ void Scooby::print_config()
 		<< "le_cmac2_feature_shift_amount " << knob::le_cmac2_feature_shift_amount << endl
 		<< "le_cmac2_enable_action_fallback " << knob::le_cmac2_enable_action_fallback << endl
 		<< endl
-		<< "le_featurewise_active_features " << array_to_string(knob::le_featurewise_active_features) << endl
-		<< "le_featurewise_num_states " << array_to_string(knob::le_featurewise_num_states) << endl
+		<< "le_featurewise_active_features " << print_active_features2(knob::le_featurewise_active_features) << endl
+		<< "le_featurewise_num_tilings " << array_to_string(knob::le_featurewise_num_tilings) << endl
+		<< "le_featurewise_num_tiles " << array_to_string(knob::le_featurewise_num_tiles) << endl
 		<< "le_featurewise_hash_types " << array_to_string(knob::le_featurewise_hash_types) << endl
+		<< "le_featurewise_enable_tiling_offset " << array_to_string(knob::le_featurewise_enable_tiling_offset) << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
