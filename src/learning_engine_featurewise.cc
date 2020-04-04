@@ -2,6 +2,7 @@
 #include <vector>
 #include <assert.h>
 #include <strings.h>
+#include <numeric>
 #include "learning_engine_featurewise.h"
 #include "scooby.h"
 
@@ -17,11 +18,13 @@
 
 namespace knob
 {
-	extern vector<int32_t> le_featurewise_active_features;
-	extern vector<int32_t> le_featurewise_num_tilings;
-	extern vector<int32_t> le_featurewise_num_tiles;
-	extern vector<int32_t> le_featurewise_hash_types;
-	extern vector<int32_t> le_featurewise_enable_tiling_offset;
+	extern vector<int32_t> 	le_featurewise_active_features;
+	extern vector<int32_t> 	le_featurewise_num_tilings;
+	extern vector<int32_t> 	le_featurewise_num_tiles;
+	extern vector<int32_t> 	le_featurewise_hash_types;
+	extern vector<int32_t> 	le_featurewise_enable_tiling_offset;
+	extern float			le_featurewise_max_q_thresh;
+	extern bool				le_featurewise_enable_action_fallback;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -60,6 +63,18 @@ LearningEngineFeaturewise::LearningEngineFeaturewise(Prefetcher *parent, float a
 		assert(m_feature_knowledges[knob::le_featurewise_active_features[index]]);
 	}
 
+	m_max_q_value = (float)1/(1-gamma) * std::accumulate(knob::le_featurewise_num_tilings.begin(), knob::le_featurewise_num_tilings.end(), 0);
+	/* init Q-value buckets */
+	m_q_value_buckets.push_back((-1) * 0.50 * m_max_q_value);
+	m_q_value_buckets.push_back((-1) * 0.25 * m_max_q_value);
+	m_q_value_buckets.push_back((-1) * 0.00 * m_max_q_value);
+	m_q_value_buckets.push_back((+1) * 0.25 * m_max_q_value);
+	m_q_value_buckets.push_back((+1) * 0.50 * m_max_q_value);
+	m_q_value_buckets.push_back((+1) * 1.00 * m_max_q_value);
+	m_q_value_buckets.push_back((+1) * 2.00 * m_max_q_value);
+	/* init histogram */
+	m_q_value_histogram.resize(m_q_value_buckets.size()+1, 0);
+
 	/* init random generators */
 	m_generator.seed(m_seed);
 	m_explore = new std::bernoulli_distribution(epsilon);
@@ -78,10 +93,11 @@ LearningEngineFeaturewise::~LearningEngineFeaturewise()
 	}
 }
 
-uint32_t LearningEngineFeaturewise::chooseAction(State *state)
+uint32_t LearningEngineFeaturewise::chooseAction(State *state, float &max_to_avg_q_ratio)
 {
 	stats.action.called++;
 	uint32_t action = 0;
+	max_to_avg_q_ratio = 0.0;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		if((*m_explore)(m_generator))
@@ -93,9 +109,11 @@ uint32_t LearningEngineFeaturewise::chooseAction(State *state)
 		}
 		else
 		{
-			action = getMaxAction(state);
+			float max_q = 0.0;
+			action = getMaxAction(state, max_q, max_to_avg_q_ratio);
 			stats.action.exploit++;
 			stats.action.dist[action][1]++;
+			gather_stats(max_q, max_to_avg_q_ratio); /* for only stats collection's sake */
 			MYLOG("action taken %u exploit, state %s, scores %s", action, state->to_string().c_str(), getStringQ(state).c_str());
 		}
 	}
@@ -128,20 +146,48 @@ void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t r
 	}
 }
 
-uint32_t LearningEngineFeaturewise::getMaxAction(State *state)
+uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio)
 {
-	float max_q_value = 0.0, q_value = 0.0;
-	uint32_t selected_action = 0;
+	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
+	uint32_t selected_action = 0, init_index = 0;
 
-	for(uint32_t action = 0; action < m_actions; ++action)
+	if(!knob::le_featurewise_enable_action_fallback)
+	{
+		max_q_value = consultQ(state, 0);
+		total_q_value += max_q_value;
+		init_index = 1;
+	}
+
+	for(uint32_t action = init_index; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
+		total_q_value += q_value;
 		if(q_value > max_q_value)
 		{
 			max_q_value = q_value;
 			selected_action = action;
 		}
 	}
+	if(knob::le_featurewise_enable_action_fallback && max_q_value == 0.0)
+	{
+		stats.action.fallback++;
+	}
+
+	float avg_q_value = total_q_value/m_actions;
+	if((max_q_value > 0 && avg_q_value > 0) || (max_q_value < 0 && avg_q_value < 0))
+	{
+		max_to_avg_q_ratio = abs(max_q_value)/abs(avg_q_value) - 1;
+	}
+	else
+	{
+		max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
+	}
+	if(max_q_value < knob::le_featurewise_max_q_thresh*m_max_q_value)
+	{
+		max_to_avg_q_ratio = 0.0;
+	}
+
+	max_q = max_q_value;
 	return selected_action;
 }
 
@@ -164,14 +210,37 @@ float LearningEngineFeaturewise::consultQ(State *state, uint32_t action)
 void LearningEngineFeaturewise::dump_stats()
 {
 	Scooby *scooby = (Scooby*)m_parent;
-	fprintf(stdout, "learning_engine.action.called %lu\n", stats.action.called);
-	fprintf(stdout, "learning_engine.action.explore %lu\n", stats.action.explore);
-	fprintf(stdout, "learning_engine.action.exploit %lu\n", stats.action.exploit);
+	fprintf(stdout, "learning_engine_featurewise.action.called %lu\n", stats.action.called);
+	fprintf(stdout, "learning_engine_featurewise.action.explore %lu\n", stats.action.explore);
+	fprintf(stdout, "learning_engine_featurewise.action.exploit %lu\n", stats.action.exploit);
+	fprintf(stdout, "learning_engine_cmac2.action.fallback %lu\n", stats.action.fallback);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		fprintf(stdout, "learning_engine.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
-		fprintf(stdout, "learning_engine.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
+		fprintf(stdout, "learning_engine_featurewise.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
+		fprintf(stdout, "learning_engine_featurewise.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
-	fprintf(stdout, "learning_engine.learn.called %lu\n", stats.learn.called);
+	fprintf(stdout, "learning_engine_featurewise.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");
+	
+	/* plot histogram */
+	for(uint32_t index = 0; index < m_q_value_histogram.size(); ++index)
+	{
+		fprintf (stdout, "learning_engine_featurewise.q_value_histogram.bucket_%u %lu\n", index, m_q_value_histogram[index]);
+	}
+	fprintf(stdout, "\n");
+}
+
+void LearningEngineFeaturewise::gather_stats(float max_q, float max_to_avg_q_ratio)
+{
+	float high = 0.0, low = 0.0;
+	for(uint32_t index = 0; index < m_q_value_buckets.size(); ++index)
+	{
+		low = index ? m_q_value_buckets[index-1] : -1000000000;
+		high = (index < m_q_value_buckets.size() - 1) ? m_q_value_buckets[index+1] : +1000000000;
+		if(max_q >= low && max_q < high)
+		{
+			m_q_value_histogram[index]++;
+			break;
+		}
+	}
 }

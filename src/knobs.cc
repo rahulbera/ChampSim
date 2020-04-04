@@ -212,7 +212,10 @@ namespace knob
 	vector<int32_t> le_featurewise_num_tilings; 
 	vector<int32_t> le_featurewise_num_tiles; 
 	vector<int32_t> le_featurewise_hash_types; 
-	vector<int32_t> le_featurewise_enable_tiling_offset; 
+	vector<int32_t> le_featurewise_enable_tiling_offset;
+	float le_featurewise_max_q_thresh;
+	bool le_featurewise_enable_action_fallback;
+
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -1030,6 +1033,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_enable_tiling_offset"))
 	{
 		knob::le_featurewise_enable_tiling_offset = get_array_int(value);
+	}
+	else if (MATCH("", "le_featurewise_max_q_thresh"))
+	{
+		knob::le_featurewise_max_q_thresh = atof(value);
+	}
+	else if (MATCH("", "le_featurewise_enable_action_fallback"))
+	{
+		knob::le_featurewise_enable_action_fallback = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Shaggy knobs */

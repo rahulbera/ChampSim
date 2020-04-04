@@ -120,11 +120,13 @@ namespace knob
 	extern bool         le_cmac2_enable_action_fallback;
 
 	/* Featurewise Engine knobs */
-	extern vector<int32_t> le_featurewise_active_features;
-	extern vector<int32_t> le_featurewise_num_tilings;
-	extern vector<int32_t> le_featurewise_num_tiles;
-	extern vector<int32_t> le_featurewise_hash_types;
-	extern vector<int32_t> le_featurewise_enable_tiling_offset;
+	extern vector<int32_t> 	le_featurewise_active_features;
+	extern vector<int32_t> 	le_featurewise_num_tilings;
+	extern vector<int32_t> 	le_featurewise_num_tiles;
+	extern vector<int32_t> 	le_featurewise_hash_types;
+	extern vector<int32_t> 	le_featurewise_enable_tiling_offset;
+	extern float			le_featurewise_max_q_thresh;
+	extern bool				le_featurewise_enable_action_fallback;
 }
 
 void Scooby::init_knobs()
@@ -351,6 +353,8 @@ void Scooby::print_config()
 		<< "le_featurewise_num_tiles " << array_to_string(knob::le_featurewise_num_tiles) << endl
 		<< "le_featurewise_hash_types " << array_to_string(knob::le_featurewise_hash_types) << endl
 		<< "le_featurewise_enable_tiling_offset " << array_to_string(knob::le_featurewise_enable_tiling_offset) << endl
+		<< "le_featurewise_max_q_thresh " << knob::le_featurewise_max_q_thresh << endl
+		<< "le_featurewise_enable_action_fallback " << knob::le_featurewise_enable_action_fallback << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -503,7 +507,12 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 	}
 	else if (knob::scooby_enable_featurewise_engine)
 	{
-		action_index = brain_featurewise->chooseAction(state);
+		float max_to_avg_q_ratio = 1.0;
+		action_index = brain_featurewise->chooseAction(state, max_to_avg_q_ratio);
+		if(knob::scooby_enable_dyn_degree)
+		{
+			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
+		}
 		if(knob::scooby_enable_state_action_stats)
 		{
 			update_stats(state, action_index, pref_degree);
