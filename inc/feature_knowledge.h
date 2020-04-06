@@ -16,6 +16,7 @@ typedef enum
 	F_PC_Path,		// 7
 	F_Delta_Path,	// 8
 	F_Offset_Path,	// 9
+	F_PC_Delta,		// 10
 
 	NumFeatureTypes
 } FeatureType;
@@ -50,6 +51,7 @@ private:
 	uint32_t process_PC_path(uint32_t tiling, uint32_t pc_path);
 	uint32_t process_delta_path(uint32_t tiling, uint32_t delta_path);
 	uint32_t process_offset_path(uint32_t tiling, uint32_t offset_path);
+	uint32_t process_PC_delta(uint32_t tiling, uint64_t pc, int32_t delta);
 
 public:
 	FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset);

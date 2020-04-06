@@ -26,7 +26,7 @@ string FeatureKnowledge::getFeatureString(FeatureType feature)
 }
 
 FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset)
-	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_num_tilings(num_tilings), m_num_tiles(num_tiles), m_weight(1.00), m_hash_type(hash_type), m_enable_tiling_offset(enable_tiling_offset ? true : false)
+	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_num_tilings(num_tilings), m_weight(1.00), m_num_tiles(num_tiles),  m_hash_type(hash_type), m_enable_tiling_offset(enable_tiling_offset ? true : false)
 {
 	assert(m_num_tilings < FK_MAX_TILINGS);
 	assert(m_num_tilings == 1 || m_enable_tiling_offset); /* enforce the use of tiling offsets in case of multiple tilings */
@@ -144,5 +144,7 @@ uint32_t FeatureKnowledge::get_tile_index(uint32_t tiling, State *state)
 		case F_PC_Path:			return process_PC_path(tiling, pc_path);
 		case F_Delta_Path:		return process_delta_path(tiling, delta_path);
 		case F_Offset_Path:		return process_offset_path(tiling, offset_path);
+		case F_PC_Delta:		return process_PC_delta(tiling, pc, delta);
+		default:				assert(false); return 0;
 	}
 }
