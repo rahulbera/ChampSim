@@ -17,7 +17,7 @@ namespace knob
 
 }
 
-const char* MapFeatureTypeString[] = {"PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path"};
+const char* MapFeatureTypeString[] = {"PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta"};
 
 string FeatureKnowledge::getFeatureString(FeatureType feature)
 {
