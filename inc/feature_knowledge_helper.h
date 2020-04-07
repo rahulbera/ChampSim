@@ -108,6 +108,17 @@ uint32_t FeatureKnowledge::process_PC_delta(uint32_t tiling, uint64_t pc, int32_
 	return (hashed_index % m_num_tiles);
 }
 
+uint32_t FeatureKnowledge::process_PC_offset_delta(uint32_t tiling, uint64_t pc, uint32_t offset, int32_t delta)
+{
+	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta;
+	uint64_t tmp = pc;
+	tmp = tmp << 6; tmp += offset;
+	tmp = tmp << 7; tmp += unsigned_delta;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
 
 #endif /* FEATURE_KNOWLEDGE_HELPER_H */
 

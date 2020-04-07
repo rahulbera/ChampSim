@@ -17,7 +17,7 @@ namespace knob
 
 }
 
-const char* MapFeatureTypeString[] = {"PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta"};
+const char* MapFeatureTypeString[] = {"PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta", "PC_Offset_Delta"};
 
 string FeatureKnowledge::getFeatureString(FeatureType feature)
 {
@@ -145,6 +145,7 @@ uint32_t FeatureKnowledge::get_tile_index(uint32_t tiling, State *state)
 		case F_Delta_Path:		return process_delta_path(tiling, delta_path);
 		case F_Offset_Path:		return process_offset_path(tiling, offset_path);
 		case F_PC_Delta:		return process_PC_delta(tiling, pc, delta);
+		case F_PC_Offset_Delta:	return process_PC_offset_delta(tiling, pc, offset, delta);
 		default:				assert(false); return 0;
 	}
 }
