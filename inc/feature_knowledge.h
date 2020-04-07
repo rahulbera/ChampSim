@@ -28,7 +28,7 @@ private:
 	FeatureType m_feature_type;
 	float m_alpha, m_gamma;
 	uint32_t m_actions;
-	bool m_init_value;
+	float m_init_value;
 	float m_weight;
 	uint32_t m_hash_type;
 	

@@ -264,7 +264,6 @@ uint32_t Scooby_STEntry::get_delta_sig2()
 uint32_t Scooby_STEntry::get_pc_sig()
 {
 	uint32_t signature = 0;
-	uint32_t pc = 0;
 
 	/* compute signature only using last 4 PCs */
 	uint32_t n = pcs.size();
@@ -282,7 +281,6 @@ uint32_t Scooby_STEntry::get_pc_sig()
 uint32_t Scooby_STEntry::get_offset_sig()
 {
 	uint32_t signature = 0;
-	uint32_t offset = 0;
 
 	/* compute signature only using last 4 offsets */
 	uint32_t n = offsets.size();

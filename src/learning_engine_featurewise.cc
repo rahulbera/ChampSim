@@ -186,8 +186,9 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 	{
 		max_to_avg_q_ratio = 0.0;
 	}
-
 	max_q = max_q_value;
+	// printf("max_q %0.2f avg_q %0.2f init_value %0.2f max_to_avg_ratio %0.2f\n", max_q_value, avg_q_value, m_max_q_value, max_to_avg_q_ratio);
+	
 	return selected_action;
 }
 

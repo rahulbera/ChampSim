@@ -163,7 +163,7 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 			action = (*m_actiongen)(m_generator);
 			stats.action.explore++;
 			stats.action.dist[action][0]++;
-			MYLOG("action taken %u explore, state %s", action, state->to_string().c_str());
+			// MYLOG("action taken %u explore, state %s", action, state->to_string().c_str());
 		}
 		else
 		{
@@ -173,7 +173,7 @@ uint32_t LearningEngineCMAC2::chooseAction(State *state, float &max_to_avg_q_rat
 			stats.action.exploit++;
 			stats.action.dist[action][1]++;
 			gather_stats(max_q, max_to_avg_q_ratio); /* for only stats collection's sake */
-			MYLOG("action taken %u exploit, state %s", action, state->to_string().c_str());
+			// MYLOG("action taken %u exploit, state %s", action, state->to_string().c_str());
 		}
 	}
 	else
@@ -252,6 +252,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 			{
 				max_to_avg_q_ratio = 0.0;
 			}
+			// printf("max_q %0.2f avg_q %0.2f init_value %0.2f max_to_avg_ratio %0.2f\n", max_q_value, avg_q_value, (m_init_value*m_num_planes), max_to_avg_q_ratio);
 			break;
 		case 4:
 			/* This is not really MAX to AVG ratio. This is MAX to 2nd MAX ratio */

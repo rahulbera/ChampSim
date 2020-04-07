@@ -26,7 +26,7 @@ string FeatureKnowledge::getFeatureString(FeatureType feature)
 }
 
 FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset)
-	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_num_tilings(num_tilings), m_weight(1.00), m_num_tiles(num_tiles),  m_hash_type(hash_type), m_enable_tiling_offset(enable_tiling_offset ? true : false)
+	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_weight(1.00), m_hash_type(hash_type), m_num_tilings(num_tilings), m_num_tiles(num_tiles), m_enable_tiling_offset(enable_tiling_offset ? true : false)
 {
 	assert(m_num_tilings < FK_MAX_TILINGS);
 	assert(m_num_tilings == 1 || m_enable_tiling_offset); /* enforce the use of tiling offsets in case of multiple tilings */
@@ -106,6 +106,9 @@ void FeatureKnowledge::updateQ(State *state1, uint32_t action1, int32_t reward, 
 	uint32_t tile_index1 = 0, tile_index2 = 0;
 	float Qsa1, Qsa2, Qsa1_old;
 
+	float QSa1_old_overall = retrieveQ(state1, action1);
+	float QSa2_old_overall = retrieveQ(state2, action2);
+
 	for(uint32_t tiling = 0; tiling < m_num_tilings; ++tiling)
 	{
 		tile_index1 = get_tile_index(tiling, state1);
@@ -116,9 +119,11 @@ void FeatureKnowledge::updateQ(State *state1, uint32_t action1, int32_t reward, 
 		/* SARSA */
 		Qsa1 = Qsa1 + m_alpha * ((float)reward + m_gamma * Qsa2 - Qsa1);
 		setQ(tiling, tile_index1, action1, Qsa1);
-		MYLOG("<tiling %u> Q(%x,%u) = %.2f, R = %d, Q(%x,%u) = %.2f, Q(%x,%u) = %.2f", tiling,  state1, action1, Qsa1_old, reward, state2, action2, Qsa2, state1, action1, Qsa1);
+		MYLOG("<tiling %u> Q(%s,%u) = %0.2f, R = %d, Q(%s,%u) = %0.2f, Q(%s,%u) = %0.2f", tiling, state1->to_string().c_str(), action1, Qsa1_old, reward, state2->to_string().c_str(), action2, Qsa2, state1->to_string().c_str(), action1, Qsa1);
 	}
-	MYLOG("state %x, scores %s", state1, getStringQ(state1).c_str());
+
+	float QSa1_new_overall = retrieveQ(state1, action1);
+	MYLOG("<feature %s> Q(%s,%u) = %0.2f, R = %d, Q(%s,%u) = %0.2f, Q(%s,%u) = %0.2f", getFeatureString(m_feature_type).c_str(), state1->to_string().c_str(), action1, QSa1_old_overall, reward, state2->to_string().c_str(), action2, QSa2_old_overall, state1->to_string().c_str(), action1, QSa1_new_overall);
 }
 
 uint32_t FeatureKnowledge::get_tile_index(uint32_t tiling, State *state)
