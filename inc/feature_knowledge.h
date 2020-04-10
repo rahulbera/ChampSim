@@ -6,18 +6,26 @@
 
 typedef enum
 {
-	F_PC = 0,		// 0
-	F_Offset,		// 1
-	F_Delta,		// 2
-	F_Address,		// 3
-	F_PC_Offset,	// 4
-	F_PC_Address,	// 5
-	F_PC_Page,		// 6
-	F_PC_Path,		// 7
-	F_Delta_Path,	// 8
-	F_Offset_Path,	// 9
-	F_PC_Delta,		// 10
-	F_PC_Offset_Delta, 	// 11
+	F_PC = 0,								// 0
+	F_Offset,								// 1
+	F_Delta,								// 2
+	F_Address,								// 3
+	F_PC_Offset,							// 4
+	F_PC_Address,							// 5
+	F_PC_Page,								// 6
+	F_PC_Path,								// 7
+	F_Delta_Path,							// 8
+	F_Offset_Path,							// 9
+	F_PC_Delta,								// 10
+	F_PC_Offset_Delta, 						// 11
+	F_Page,									// 12
+	F_PC_Path_Offset,						// 13
+	F_PC_Path_Offset_Path,					// 14
+	F_PC_Path_Delta,						// 15
+	F_PC_Path_Delta_Path,					// 16
+	F_PC_Path_Offset_Path_Delta_Path,		// 17
+	F_Offset_Path_PC,						// 18
+	F_Delta_Path_PC,						// 19
 
 	NumFeatureTypes
 } FeatureType;
@@ -54,6 +62,14 @@ private:
 	uint32_t process_offset_path(uint32_t tiling, uint32_t offset_path);
 	uint32_t process_PC_delta(uint32_t tiling, uint64_t pc, int32_t delta);
 	uint32_t process_PC_offset_delta(uint32_t tiling, uint64_t pc, uint32_t offset, int32_t delta);
+	uint32_t process_Page(uint32_t tiling, uint64_t page);
+	uint32_t process_PC_Path_Offset(uint32_t tiling, uint32_t pc_path, uint32_t offset);
+	uint32_t process_PC_Path_Offset_Path(uint32_t tiling, uint32_t pc_path, uint32_t offset_path);
+	uint32_t process_PC_Path_Delta(uint32_t tiling, uint32_t pc_path, int32_t delta);
+	uint32_t process_PC_Path_Delta_Path(uint32_t tiling, uint32_t pc_path, uint32_t delta_path);
+	uint32_t process_PC_Path_Offset_Path_Delta_Path(uint32_t tiling, uint32_t pc_path, uint32_t offset_path, uint32_t delta_path);
+	uint32_t process_Offset_Path_PC(uint32_t tiling, uint32_t offset_path, uint64_t pc);
+	uint32_t process_Delta_Path_PC(uint32_t tiling, uint32_t delta_path, uint64_t pc);
 
 public:
 	FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset);

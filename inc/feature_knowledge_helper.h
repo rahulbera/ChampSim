@@ -120,5 +120,93 @@ uint32_t FeatureKnowledge::process_PC_offset_delta(uint32_t tiling, uint64_t pc,
 	return (hashed_index % m_num_tiles);
 }
 
+uint32_t FeatureKnowledge::process_Page(uint32_t tiling, uint64_t page)
+{
+	uint32_t raw_index = folded_xor(page, 2); /* 32-b folded XOR */
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+
+}
+
+uint32_t FeatureKnowledge::process_PC_Path_Offset(uint32_t tiling, uint32_t pc_path, uint32_t offset)
+{
+	uint64_t tmp = pc_path;
+	tmp = tmp << 6;
+	tmp += offset;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+uint32_t FeatureKnowledge::process_PC_Path_Offset_Path(uint32_t tiling, uint32_t pc_path, uint32_t offset_path)
+{
+	uint64_t tmp = pc_path;
+	tmp = tmp << 16;
+	tmp += offset_path;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+uint32_t FeatureKnowledge::process_PC_Path_Delta(uint32_t tiling, uint32_t pc_path, int32_t delta)
+{
+	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta;
+	uint64_t tmp = pc_path;
+	tmp = tmp << 7;
+	tmp += unsigned_delta;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+uint32_t FeatureKnowledge::process_PC_Path_Delta_Path(uint32_t tiling, uint32_t pc_path, uint32_t delta_path)
+{
+	uint64_t tmp = pc_path;
+	tmp = tmp << 16;
+	tmp += delta_path;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+uint32_t FeatureKnowledge::process_PC_Path_Offset_Path_Delta_Path(uint32_t tiling, uint32_t pc_path, uint32_t offset_path, uint32_t delta_path)
+{
+	uint64_t tmp = pc_path;
+	tmp = tmp << 10; tmp ^= offset_path;
+	tmp = tmp << 10; tmp ^= delta_path;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+uint32_t FeatureKnowledge::process_Offset_Path_PC(uint32_t tiling, uint32_t offset_path, uint64_t pc)
+{
+	uint64_t tmp = offset_path;
+	tmp = tmp << 32;
+	tmp += pc;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+uint32_t FeatureKnowledge::process_Delta_Path_PC(uint32_t tiling, uint32_t delta_path, uint64_t pc)
+{
+	uint64_t tmp = delta_path;
+	tmp = tmp << 32;
+	tmp += pc;
+	uint32_t raw_index = folded_xor(tmp, 2);
+	if(m_enable_tiling_offset) raw_index = raw_index ^ tiling_offset[tiling];
+	uint32_t hashed_index = HashZoo::getHash(m_hash_type, raw_index);
+	return (hashed_index % m_num_tiles);
+}
+
+
 #endif /* FEATURE_KNOWLEDGE_HELPER_H */
 
