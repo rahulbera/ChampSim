@@ -139,18 +139,26 @@ uint32_t FeatureKnowledge::get_tile_index(uint32_t tiling, State *state)
 
 	switch(m_feature_type)
 	{
-		case F_PC:				return process_PC(tiling, pc);
-		case F_Offset:			return process_offset(tiling, offset);
-		case F_Delta:			return process_delta(tiling, delta);
-		case F_Address:			return process_address(tiling, address);
-		case F_PC_Offset:		return process_PC_offset(tiling, pc, offset);
-		case F_PC_Address:		return process_PC_address(tiling, pc, address);
-		case F_PC_Page:			return process_PC_page(tiling, pc, page);
-		case F_PC_Path:			return process_PC_path(tiling, pc_path);
-		case F_Delta_Path:		return process_delta_path(tiling, delta_path);
-		case F_Offset_Path:		return process_offset_path(tiling, offset_path);
-		case F_PC_Delta:		return process_PC_delta(tiling, pc, delta);
-		case F_PC_Offset_Delta:	return process_PC_offset_delta(tiling, pc, offset, delta);
-		default:				assert(false); return 0;
+		case F_PC:								return process_PC(tiling, pc);
+		case F_Offset:							return process_offset(tiling, offset);
+		case F_Delta:							return process_delta(tiling, delta);
+		case F_Address:							return process_address(tiling, address);
+		case F_PC_Offset:						return process_PC_offset(tiling, pc, offset);
+		case F_PC_Address:						return process_PC_address(tiling, pc, address);
+		case F_PC_Page:							return process_PC_page(tiling, pc, page);
+		case F_PC_Path:							return process_PC_path(tiling, pc_path);
+		case F_Delta_Path:						return process_delta_path(tiling, delta_path);
+		case F_Offset_Path:						return process_offset_path(tiling, offset_path);
+		case F_PC_Delta:						return process_PC_delta(tiling, pc, delta);
+		case F_PC_Offset_Delta:					return process_PC_offset_delta(tiling, pc, offset, delta);
+		case F_Page:							return process_Page(tiling, page);
+		case F_PC_Path_Offset:					return process_PC_Path_Offset(tiling, pc_path, offset);
+		case F_PC_Path_Offset_Path:				return process_PC_Path_Offset_Path(tiling, pc_path, offset_path);
+		case F_PC_Path_Delta:					return process_PC_Path_Delta(tiling, pc_path, delta);
+		case F_PC_Path_Delta_Path:				return process_PC_Path_Delta_Path(tiling, pc_path, delta_path);
+		case F_PC_Path_Offset_Path_Delta_Path:	return process_PC_Path_Offset_Path_Delta_Path(tiling, pc_path, offset_path, delta_path);
+		case F_Offset_Path_PC:					return process_Offset_Path_PC(tiling, offset_path, pc);
+		case F_Delta_Path_PC:					return process_Delta_Path_PC(tiling, delta_path, pc);
+		default:								assert(false); return 0;
 	}
 }
