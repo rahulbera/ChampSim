@@ -34,6 +34,14 @@ private:
 		{
 			uint64_t called;
 		} learn;
+
+		struct
+		{
+			uint64_t total;
+			uint64_t feature_align_dist[NumFeatureTypes];
+			uint64_t feature_align_all;
+		} consensus;
+
 	} stats;
 
 private:
@@ -42,6 +50,7 @@ private:
 	uint32_t getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio);
 	float consultQ(State *state, uint32_t action);
 	void gather_stats(float max_q, float max_to_avg_q_ratio);
+	void action_selection_consensus(State *state, uint32_t selected_action);
 
 public:
 	LearningEngineFeaturewise(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint64_t seed, std::string policy, std::string type, bool zero_init);

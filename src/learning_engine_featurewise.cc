@@ -25,6 +25,7 @@ namespace knob
 	extern vector<int32_t> 	le_featurewise_enable_tiling_offset;
 	extern float			le_featurewise_max_q_thresh;
 	extern bool				le_featurewise_enable_action_fallback;
+	extern vector<float>	le_featurewise_feature_weights;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -32,6 +33,7 @@ void LearningEngineFeaturewise::init_knobs()
 	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_num_tilings.size());
 	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_num_tiles.size());
 	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_enable_tiling_offset.size());
+	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_feature_weights.size());
 }
 
 void LearningEngineFeaturewise::init_stats()
@@ -53,7 +55,8 @@ LearningEngineFeaturewise::LearningEngineFeaturewise(Prefetcher *parent, float a
 		m_feature_knowledges[knob::le_featurewise_active_features[index]] = new FeatureKnowledge((FeatureType)knob::le_featurewise_active_features[index], 
 																							alpha, 
 																							gamma, 
-																							actions, 
+																							actions,
+																							knob::le_featurewise_feature_weights[index],
 																							knob::le_featurewise_num_tilings[index],
 																							knob::le_featurewise_num_tiles[index],
 																							zero_init,
@@ -173,6 +176,7 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 		stats.action.fallback++;
 	}
 
+	/* max to avg ratio calculation */
 	float avg_q_value = total_q_value/m_actions;
 	if((max_q_value > 0 && avg_q_value > 0) || (max_q_value < 0 && avg_q_value < 0))
 	{
@@ -187,8 +191,9 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 		max_to_avg_q_ratio = 0.0;
 	}
 	max_q = max_q_value;
-	// printf("max_q %0.2f avg_q %0.2f init_value %0.2f max_to_avg_ratio %0.2f\n", max_q_value, avg_q_value, m_max_q_value, max_to_avg_q_ratio);
-	
+
+	action_selection_consensus(state, selected_action);
+
 	return selected_action;
 }
 
@@ -214,7 +219,7 @@ void LearningEngineFeaturewise::dump_stats()
 	fprintf(stdout, "learning_engine_featurewise.action.called %lu\n", stats.action.called);
 	fprintf(stdout, "learning_engine_featurewise.action.explore %lu\n", stats.action.explore);
 	fprintf(stdout, "learning_engine_featurewise.action.exploit %lu\n", stats.action.exploit);
-	fprintf(stdout, "learning_engine_cmac2.action.fallback %lu\n", stats.action.fallback);
+	fprintf(stdout, "learning_engine_featurewise.action.fallback %lu\n", stats.action.fallback);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		fprintf(stdout, "learning_engine_featurewise.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
@@ -228,6 +233,20 @@ void LearningEngineFeaturewise::dump_stats()
 	{
 		fprintf (stdout, "learning_engine_featurewise.q_value_histogram.bucket_%u %lu\n", index, m_q_value_histogram[index]);
 	}
+	fprintf(stdout, "\n");
+
+	/* consensus stats */
+	fprintf(stdout, "learning_engine_featurewise.consensus.total %lu\n", stats.consensus.total);
+	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
+	{
+		if(m_feature_knowledges[index])
+		{
+			fprintf(stdout, "learning_engine_featurewise.consensus.feature_align_%s %lu\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), stats.consensus.feature_align_dist[index]);
+			fprintf(stdout, "learning_engine_featurewise.consensus.feature_align_%s_ratio %0.2f\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), (float)stats.consensus.feature_align_dist[index]/stats.consensus.total);
+		}
+	}
+	fprintf(stdout, "learning_engine_featurewise.consensus.feature_align_all %lu\n", stats.consensus.feature_align_all);
+	fprintf(stdout, "learning_engine_featurewise.consensus.feature_align_all_ratio %0.2f\n", (float)stats.consensus.feature_align_all/stats.consensus.total);
 	fprintf(stdout, "\n");
 }
 
@@ -243,5 +262,30 @@ void LearningEngineFeaturewise::gather_stats(float max_q, float max_to_avg_q_rat
 			m_q_value_histogram[index]++;
 			break;
 		}
+	}
+}
+
+/* consensus stats: whether each feature's maxAction decision aligns with the final selected action */
+void LearningEngineFeaturewise::action_selection_consensus(State *state, uint32_t selected_action)
+{
+	stats.consensus.total++;
+	bool all_features_align = true;
+	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
+	{
+		if(m_feature_knowledges[index])
+		{
+			if(m_feature_knowledges[index]->getMaxAction(state) == selected_action)
+			{
+				stats.consensus.feature_align_dist[index]++;
+			}
+			else
+			{
+				all_features_align = false;
+			}
+		}
+	}
+	if(all_features_align)
+	{
+		stats.consensus.feature_align_all++;
 	}
 }

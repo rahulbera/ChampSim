@@ -215,6 +215,7 @@ namespace knob
 	vector<int32_t> le_featurewise_enable_tiling_offset;
 	float le_featurewise_max_q_thresh;
 	bool le_featurewise_enable_action_fallback;
+	vector<float> le_featurewise_feature_weights;
 
 
 	/* Shaggy */
@@ -1041,6 +1042,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_enable_action_fallback"))
 	{
 		knob::le_featurewise_enable_action_fallback = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_feature_weights"))
+	{
+		knob::le_featurewise_feature_weights = get_array_float(value);
 	}
 
 	/* Shaggy knobs */

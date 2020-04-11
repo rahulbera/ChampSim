@@ -14,7 +14,7 @@
 
 namespace knob
 {
-
+	extern bool le_featurewise_enable_action_fallback;
 }
 
 const char* MapFeatureTypeString[] = {"PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta", "PC_Offset_Delta", "Page", "PC_Path_Offset", "PC_Path_Offset_Path", "PC_Path_Delta", "PC_Path_Delta_Path", "PC_Path_Offset_Path_Delta_Path", "Offset_Path_PC", "Delta_Path_PC"};
@@ -25,8 +25,8 @@ string FeatureKnowledge::getFeatureString(FeatureType feature)
 	return MapFeatureTypeString[(uint32_t)feature];
 }
 
-FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset)
-	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_weight(1.00), m_hash_type(hash_type), m_num_tilings(num_tilings), m_num_tiles(num_tiles), m_enable_tiling_offset(enable_tiling_offset ? true : false)
+FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t weight, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset)
+	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_weight(weight), m_hash_type(hash_type), m_num_tilings(num_tilings), m_num_tiles(num_tiles), m_enable_tiling_offset(enable_tiling_offset ? true : false)
 {
 	assert(m_num_tilings < FK_MAX_TILINGS);
 	assert(m_num_tilings == 1 || m_enable_tiling_offset); /* enforce the use of tiling offsets in case of multiple tilings */
@@ -161,4 +161,27 @@ uint32_t FeatureKnowledge::get_tile_index(uint32_t tiling, State *state)
 		case F_Delta_Path_PC:					return process_Delta_Path_PC(tiling, delta_path, pc);
 		default:								assert(false); return 0;
 	}
+}
+
+uint32_t FeatureKnowledge::getMaxAction(State *state)
+{
+	float max_q_value = 0.0, q_value = 0.0;
+	uint32_t selected_action = 0, init_index = 0;
+
+	if(!knob::le_featurewise_enable_action_fallback)
+	{
+		max_q_value = retrieveQ(state, 0);
+		init_index = 1;
+	}
+
+	for(uint32_t action = init_index; action < m_actions; ++action)
+	{
+		q_value = retrieveQ(state, action);
+		if(q_value > max_q_value)
+		{
+			max_q_value = q_value;
+			selected_action = action;
+		}
+	}
+	return selected_action;
 }

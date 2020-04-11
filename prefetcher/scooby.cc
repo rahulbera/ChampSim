@@ -127,6 +127,7 @@ namespace knob
 	extern vector<int32_t> 	le_featurewise_enable_tiling_offset;
 	extern float			le_featurewise_max_q_thresh;
 	extern bool				le_featurewise_enable_action_fallback;
+	extern vector<float> 	le_featurewise_feature_weights;
 }
 
 void Scooby::init_knobs()
@@ -355,6 +356,7 @@ void Scooby::print_config()
 		<< "le_featurewise_enable_tiling_offset " << array_to_string(knob::le_featurewise_enable_tiling_offset) << endl
 		<< "le_featurewise_max_q_thresh " << knob::le_featurewise_max_q_thresh << endl
 		<< "le_featurewise_enable_action_fallback " << knob::le_featurewise_enable_action_fallback << endl
+		<< "le_featurewise_feature_weights " << array_to_string(knob::le_featurewise_feature_weights) << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)

@@ -72,11 +72,12 @@ private:
 	uint32_t process_Delta_Path_PC(uint32_t tiling, uint32_t delta_path, uint64_t pc);
 
 public:
-	FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset);
+	FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, uint32_t weight, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset);
 	~FeatureKnowledge();
 	float retrieveQ(State *state, uint32_t action_index);
 	void updateQ(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2);
 	static string getFeatureString(FeatureType type);
+	uint32_t getMaxAction(State *state); /* Called by featurewise engine only to get a consensus from all the features */
 };
 
 #endif /* FEATURE_KNOWLEDGE */
