@@ -307,7 +307,6 @@ uint32_t DSPatch::get_hash(uint32_t key)
 		case 12: 	return HashZoo::Wang5shift(key);
 		case 13: 	return HashZoo::Wang4shift(key);
 		case 14: 	return HashZoo::Wang3shift(key);
-		case 15: 	return HashZoo::hybrid1(key);
 		default: 	assert(false);
 	}
 }

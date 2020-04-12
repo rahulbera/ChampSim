@@ -164,11 +164,6 @@ uint32_t State::get_hash(uint64_t key)
 			value = HashZoo::Wang3shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-	
-		case 15:
-			value = HashZoo::hybrid1((uint32_t)key);
-			value = (uint32_t)(value % knob::scooby_max_states);
-			break;
 
 		default:
 			assert(false);
