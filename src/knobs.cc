@@ -216,6 +216,10 @@ namespace knob
 	float le_featurewise_max_q_thresh;
 	bool le_featurewise_enable_action_fallback;
 	vector<float> le_featurewise_feature_weights;
+	bool le_featurewise_enable_dynamic_weight;
+	float le_featurewise_weight_gradient;
+	bool le_featurewise_disable_adjust_weight_all_features_align;
+	bool le_featurewise_selective_update;
 
 
 	/* Shaggy */
@@ -1046,6 +1050,22 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_feature_weights"))
 	{
 		knob::le_featurewise_feature_weights = get_array_float(value);
+	}
+	else if (MATCH("", "le_featurewise_enable_dynamic_weight"))
+	{
+		knob::le_featurewise_enable_dynamic_weight = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_weight_gradient"))
+	{
+		knob::le_featurewise_weight_gradient = atof(value);
+	}
+	else if (MATCH("", "le_featurewise_disable_adjust_weight_all_features_align"))
+	{
+		knob::le_featurewise_disable_adjust_weight_all_features_align = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_selective_update"))
+	{
+		knob::le_featurewise_selective_update = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Shaggy knobs */

@@ -22,42 +22,6 @@ using namespace std;
 /* forward declaration */
 class LearningEngine;
 
-typedef enum
-{
-	none = 0,
-	incorrect,
-	correct_untimely,
-	correct_timely,
-	out_of_bounds,
-	tracker_hit,
-
-	num_rewards
-} RewardType;
-
-class Scooby_PTEntry
-{
-public:
-	uint64_t address;
-	State *state;
-	uint32_t action_index;
-	/* set when prefetched line is filled into cache 
-	 * check during reward to measure timeliness */
-	bool is_filled;
-	/* set when prefetched line is alredy found in cache
-	 * donotes extreme untimely prefetch */
-	bool pf_cache_hit;
-	int32_t reward;
-	bool has_reward;
-	Scooby_PTEntry(uint64_t ad, State *st, uint32_t ac) : address(ad), state(st), action_index(ac)
-	{
-		is_filled = false;
-		pf_cache_hit = false;
-		reward = 0;
-		has_reward = false;
-	}
-	~Scooby_PTEntry(){}
-};
-
 class Scooby : public Prefetcher
 {
 private:

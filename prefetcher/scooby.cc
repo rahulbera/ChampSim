@@ -128,6 +128,10 @@ namespace knob
 	extern float			le_featurewise_max_q_thresh;
 	extern bool				le_featurewise_enable_action_fallback;
 	extern vector<float> 	le_featurewise_feature_weights;
+	extern bool				le_featurewise_enable_dynamic_weight;
+	extern float			le_featurewise_weight_gradient;
+	extern bool				le_featurewise_disable_adjust_weight_all_features_align;
+	extern bool				le_featurewise_selective_update;
 }
 
 void Scooby::init_knobs()
@@ -357,6 +361,10 @@ void Scooby::print_config()
 		<< "le_featurewise_max_q_thresh " << knob::le_featurewise_max_q_thresh << endl
 		<< "le_featurewise_enable_action_fallback " << knob::le_featurewise_enable_action_fallback << endl
 		<< "le_featurewise_feature_weights " << array_to_string(knob::le_featurewise_feature_weights) << endl
+		<< "le_featurewise_enable_dynamic_weight " << knob::le_featurewise_enable_dynamic_weight << endl
+		<< "le_featurewise_weight_gradient " << knob::le_featurewise_weight_gradient << endl
+		<< "le_featurewise_disable_adjust_weight_all_features_align " << knob::le_featurewise_disable_adjust_weight_all_features_align << endl
+		<< "le_featurewise_selective_update " << knob::le_featurewise_selective_update << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -485,6 +493,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 	/* query learning engine to get the next prediction */
 	uint32_t action_index = 0;
 	uint32_t pref_degree = knob::scooby_pref_degree;
+	vector<bool> consensus_vec; // only required for featurewise engine
 
 	if(knob::scooby_enable_cmac_engine)
 	{
@@ -510,7 +519,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 	else if (knob::scooby_enable_featurewise_engine)
 	{
 		float max_to_avg_q_ratio = 1.0;
-		action_index = brain_featurewise->chooseAction(state, max_to_avg_q_ratio);
+		action_index = brain_featurewise->chooseAction(state, max_to_avg_q_ratio, consensus_vec);
 		if(knob::scooby_enable_dyn_degree)
 		{
 			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
@@ -553,6 +562,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 				{
 					gen_multi_degree_pref(page, offset, Actions[action_index], pref_degree, pref_addr);
 				}
+				ptentry->consensus_vec = consensus_vec;
 			}
 			else
 			{
@@ -563,8 +573,8 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 					addr = 0xdeadbeef;
 					track(addr, state, action_index, &ptentry);
 					assert(ptentry);
-					// assign_reward(ptentry, knob::scooby_reward_tracker_hit);
 					assign_reward(ptentry, RewardType::tracker_hit);
+					ptentry->consensus_vec = consensus_vec;
 				}
 			}
 			stats.predict.action_dist[action_index]++;
@@ -579,8 +589,8 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 				addr = 0xdeadbeef;
 				track(addr, state, action_index, &ptentry);
 				assert(ptentry);
-				// assign_reward(ptentry, knob::scooby_reward_out_of_bounds);
 				assign_reward(ptentry, RewardType::out_of_bounds);
+				ptentry->consensus_vec = consensus_vec;
 			}
 		}
 	}
@@ -592,6 +602,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		/* track no prefetch */
 		track(addr, state, action_index, &ptentry);
 		stats.predict.action_dist[action_index]++;
+		ptentry->consensus_vec = consensus_vec;
 	}
 
 	stats.predict.predicted += pref_addr.size();
@@ -740,6 +751,7 @@ void Scooby::reward(uint64_t address)
 		{
 			stats.reward.correct_timely++;
 			stats.reward.dist[ptentry->action_index][RewardType::correct_timely]++;
+			ptentry->reward_type = RewardType::correct_timely;
 			ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_timely : knob::scooby_reward_correct_timely;
 			MYLOG("assigned reward correct_timely(%d)", ptentry->reward);
 		}
@@ -747,6 +759,7 @@ void Scooby::reward(uint64_t address)
 		{
 			stats.reward.correct_untimely++;
 			stats.reward.dist[ptentry->action_index][RewardType::correct_untimely]++;
+			ptentry->reward_type = RewardType::correct_untimely;
 			ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_untimely :knob::scooby_reward_correct_untimely;
 			MYLOG("assigned reward correct_untimely(%d)", ptentry->reward);
 		}
@@ -768,6 +781,7 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	{
 		stats.reward.no_pref++;
 		stats.reward.dist[ptentry->action_index][RewardType::none]++;
+		ptentry->reward_type = RewardType::none;
 		ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_none : knob::scooby_reward_none;
 		MYLOG("assigned reward no_pref(%d)", ptentry->reward);
 	}
@@ -775,6 +789,7 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	{
 		stats.reward.incorrect++;
 		stats.reward.dist[ptentry->action_index][RewardType::incorrect]++;
+		ptentry->reward_type = RewardType::incorrect;
 		ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_incorrect : knob::scooby_reward_incorrect;
 		MYLOG("assigned reward incorrect(%d)", ptentry->reward);
 	}
@@ -787,17 +802,20 @@ void Scooby::assign_reward(Scooby_PTEntry *ptentry, RewardType type)
 	stats.reward.assign_reward.called++;
 	assert(!ptentry->has_reward);
 	int32_t reward = 0;
+	RewardType reward_type;
 
 	switch(type)
 	{
 		case RewardType::out_of_bounds:
 			reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_out_of_bounds : knob::scooby_reward_out_of_bounds;
+			reward_type = RewardType::out_of_bounds;
 			stats.reward.out_of_bounds++;
 			MYLOG("assigned reward out_of_bounds(%d)", reward);
 			break;
 
 		case RewardType::tracker_hit:
 			reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_tracker_hit : knob::scooby_reward_tracker_hit;
+			reward_type = RewardType::tracker_hit;
 			stats.reward.tracker_hit++;
 			MYLOG("assigned reward tracker_hit(%d)", reward);
 			break;
@@ -809,6 +827,7 @@ void Scooby::assign_reward(Scooby_PTEntry *ptentry, RewardType type)
 
 	stats.reward.dist[ptentry->action_index][type]++;
 	ptentry->reward = reward;
+	ptentry->reward_type = reward_type;
 	ptentry->has_reward = true;
 }
 
@@ -839,7 +858,8 @@ void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
 	}
 	else if(knob::scooby_enable_featurewise_engine)
 	{
-		brain_featurewise->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index);
+		brain_featurewise->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index, 
+								last_evicted->consensus_vec, last_evicted->reward_type);
 	}
 	else
 	{

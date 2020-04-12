@@ -26,6 +26,10 @@ namespace knob
 	extern float			le_featurewise_max_q_thresh;
 	extern bool				le_featurewise_enable_action_fallback;
 	extern vector<float>	le_featurewise_feature_weights;
+	extern bool				le_featurewise_enable_dynamic_weight;
+	extern float 			le_featurewise_weight_gradient; /* hyperparameter */
+	extern bool 			le_featurewise_disable_adjust_weight_all_features_align;
+	extern bool 			le_featurewise_selective_update;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -57,6 +61,7 @@ LearningEngineFeaturewise::LearningEngineFeaturewise(Prefetcher *parent, float a
 																							gamma, 
 																							actions,
 																							knob::le_featurewise_feature_weights[index],
+																							knob::le_featurewise_weight_gradient,
 																							knob::le_featurewise_num_tilings[index],
 																							knob::le_featurewise_num_tiles[index],
 																							zero_init,
@@ -96,11 +101,13 @@ LearningEngineFeaturewise::~LearningEngineFeaturewise()
 	}
 }
 
-uint32_t LearningEngineFeaturewise::chooseAction(State *state, float &max_to_avg_q_ratio)
+uint32_t LearningEngineFeaturewise::chooseAction(State *state, float &max_to_avg_q_ratio, vector<bool> &consensus_vec)
 {
 	stats.action.called++;
 	uint32_t action = 0;
 	max_to_avg_q_ratio = 0.0;
+	consensus_vec.resize(NumFeatureTypes, false);
+
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		if((*m_explore)(m_generator))
@@ -113,7 +120,7 @@ uint32_t LearningEngineFeaturewise::chooseAction(State *state, float &max_to_avg
 		else
 		{
 			float max_q = 0.0;
-			action = getMaxAction(state, max_q, max_to_avg_q_ratio);
+			action = getMaxAction(state, max_q, max_to_avg_q_ratio, consensus_vec);
 			stats.action.exploit++;
 			stats.action.dist[action][1]++;
 			gather_stats(max_q, max_to_avg_q_ratio); /* for only stats collection's sake */
@@ -129,7 +136,7 @@ uint32_t LearningEngineFeaturewise::chooseAction(State *state, float &max_to_avg
 	return action;
 }
 
-void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2)
+void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2, vector<bool> consensus_vec, RewardType reward_type)
 {
 	stats.learn.called++;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
@@ -138,8 +145,16 @@ void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t r
 		{
 			if(m_feature_knowledges[index])
 			{
-				m_feature_knowledges[index]->updateQ(state1, action1, reward, state2, action2);
+				if(!knob::le_featurewise_selective_update || consensus_vec[index])
+				{
+					m_feature_knowledges[index]->updateQ(state1, action1, reward, state2, action2);
+				}
 			}
+		}
+
+		if(knob::le_featurewise_enable_dynamic_weight)
+		{
+			adjust_feature_weights(consensus_vec, reward_type);
 		}
 	}
 	else
@@ -149,7 +164,7 @@ void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t r
 	}
 }
 
-uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio)
+uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio, vector<bool> &consensus_vec)
 {
 	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
 	uint32_t selected_action = 0, init_index = 0;
@@ -192,7 +207,7 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 	}
 	max_q = max_q_value;
 
-	action_selection_consensus(state, selected_action);
+	action_selection_consensus(state, selected_action, consensus_vec);
 
 	return selected_action;
 }
@@ -248,6 +263,16 @@ void LearningEngineFeaturewise::dump_stats()
 	fprintf(stdout, "learning_engine_featurewise.consensus.feature_align_all %lu\n", stats.consensus.feature_align_all);
 	fprintf(stdout, "learning_engine_featurewise.consensus.feature_align_all_ratio %0.2f\n", (float)stats.consensus.feature_align_all/stats.consensus.total);
 	fprintf(stdout, "\n");
+
+	/* weight stats */
+	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
+	{
+		if(m_feature_knowledges[index])
+		{
+			fprintf(stdout, "learning_engine_featurewise.feature_%s_min_weight %0.8f\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), m_feature_knowledges[index]->get_min_weight());
+			fprintf(stdout, "learning_engine_featurewise.feature_%s_max_weight %0.8f\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), m_feature_knowledges[index]->get_max_weight());
+		}
+	}
 }
 
 void LearningEngineFeaturewise::gather_stats(float max_q, float max_to_avg_q_ratio)
@@ -266,7 +291,7 @@ void LearningEngineFeaturewise::gather_stats(float max_q, float max_to_avg_q_rat
 }
 
 /* consensus stats: whether each feature's maxAction decision aligns with the final selected action */
-void LearningEngineFeaturewise::action_selection_consensus(State *state, uint32_t selected_action)
+void LearningEngineFeaturewise::action_selection_consensus(State *state, uint32_t selected_action, vector<bool> &consensus_vec)
 {
 	stats.consensus.total++;
 	bool all_features_align = true;
@@ -277,6 +302,7 @@ void LearningEngineFeaturewise::action_selection_consensus(State *state, uint32_
 			if(m_feature_knowledges[index]->getMaxAction(state) == selected_action)
 			{
 				stats.consensus.feature_align_dist[index]++;
+				consensus_vec[index] = true;
 			}
 			else
 			{
@@ -288,4 +314,36 @@ void LearningEngineFeaturewise::action_selection_consensus(State *state, uint32_
 	{
 		stats.consensus.feature_align_all++;
 	}
+}
+
+void LearningEngineFeaturewise::adjust_feature_weights(vector<bool> consensus_vec, RewardType reward_type)
+{
+	assert(consensus_vec.size() == NumFeatureTypes);
+	
+	if(knob::le_featurewise_disable_adjust_weight_all_features_align && std::accumulate(consensus_vec.begin(), consensus_vec.end(), 0) == knob::le_featurewise_active_features.size())
+	{
+		return;
+	}
+
+	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
+	{
+		if(consensus_vec[index]) /* the feature algined with the overall decision */
+		{
+			assert(m_feature_knowledges[index]);
+			
+			/* if the prefetch decision is indeed proven to be correct
+			 * increase the weight of the feature, else decrease it */
+			if(isRewardCorrect(reward_type))
+			{
+				m_feature_knowledges[index]->increase_weight();
+			}
+			else if (isRewardIncorrect(reward_type))
+			{
+				m_feature_knowledges[index]->decrease_weight();
+			}
+
+		}
+		// if(m_feature_knowledges[index]) fprintf(stdout, "(%s, %0.6f) ", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), m_feature_knowledges[index]->get_weight());
+	}
+	// fprintf(stdout, "\n");
 }

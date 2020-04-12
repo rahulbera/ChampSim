@@ -26,6 +26,21 @@ typedef enum
 
 const char* getFeatureString(Feature feature);
 
+typedef enum
+{
+	none = 0,
+	incorrect,
+	correct_untimely,
+	correct_timely,
+	out_of_bounds,
+	tracker_hit,
+
+	num_rewards
+} RewardType;
+
+inline bool isRewardCorrect(RewardType type) { return (type == correct_timely || type == correct_untimely); }
+inline bool isRewardIncorrect(RewardType type) { return type == incorrect; }
+
 class State
 {
 public:
@@ -104,6 +119,34 @@ public:
 	uint32_t get_offset_sig();
 	void update(uint64_t page, uint64_t pc, uint32_t offset, uint64_t address);
 	void track_prefetch(uint32_t offset);
+};
+
+class Scooby_PTEntry
+{
+public:
+	uint64_t address;
+	State *state;
+	uint32_t action_index;
+	/* set when prefetched line is filled into cache 
+	 * check during reward to measure timeliness */
+	bool is_filled;
+	/* set when prefetched line is alredy found in cache
+	 * donotes extreme untimely prefetch */
+	bool pf_cache_hit;
+	int32_t reward;
+	RewardType reward_type;
+	bool has_reward;
+	vector<bool> consensus_vec; // only used in featurewise engine
+	
+	Scooby_PTEntry(uint64_t ad, State *st, uint32_t ac) : address(ad), state(st), action_index(ac)
+	{
+		is_filled = false;
+		pf_cache_hit = false;
+		reward = 0;
+		reward_type = RewardType::none;
+		has_reward = false;
+	}
+	~Scooby_PTEntry(){}
 };
 
 /* some data structures to mine information from workloads */

@@ -47,16 +47,17 @@ private:
 private:
 	void init_knobs();
 	void init_stats();
-	uint32_t getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio);
+	uint32_t getMaxAction(State *state, float &max_q, float &max_to_avg_q_ratio, vector<bool> &consensus_vec);
 	float consultQ(State *state, uint32_t action);
 	void gather_stats(float max_q, float max_to_avg_q_ratio);
-	void action_selection_consensus(State *state, uint32_t selected_action);
+	void action_selection_consensus(State *state, uint32_t selected_action, vector<bool> &consensus_vec);
+	void adjust_feature_weights(vector<bool> consensus_vec, RewardType reward_type);
 
 public:
 	LearningEngineFeaturewise(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint64_t seed, std::string policy, std::string type, bool zero_init);
 	~LearningEngineFeaturewise();
-	uint32_t chooseAction(State *state, float &max_to_avg_q_ratio);
-	void learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2);
+	uint32_t chooseAction(State *state, float &max_to_avg_q_ratio, vector<bool> &consensus_vec);
+	void learn(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2, vector<bool> consensus_vec, RewardType reward_type);
 	void dump_stats();
 };
 
