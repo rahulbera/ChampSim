@@ -179,10 +179,31 @@ uint32_t HashZoo::Wang3shift( uint32_t key)
     return key;
 }
 
-uint32_t HashZoo::hybrid1(uint32_t key)
-{
-	return knuth(jenkins(key));
-}
+uint32_t HashZoo::three_hybrid1(uint32_t key) { return knuth(hash64shift(jenkins32(key))); }
+uint32_t HashZoo::three_hybrid2(uint32_t key) { return jenkins32(Wang5shift(hash5shift(key))); }
+uint32_t HashZoo::three_hybrid3(uint32_t key) { return jenkins(hash32shiftmult(Wang3shift(key))); }
+uint32_t HashZoo::three_hybrid4(uint32_t key) { return Wang6shift(hash32shift(Wang5shift(key))); }
+uint32_t HashZoo::three_hybrid5(uint32_t key) { return hash64shift(hash32shift(knuth(key))); }
+uint32_t HashZoo::three_hybrid6(uint32_t key) { return hash5shift(jenkins(Wang6shift(key))); }
+uint32_t HashZoo::three_hybrid7(uint32_t key) { return Wang4shift(jenkins32(hash7shift(key))); }
+uint32_t HashZoo::three_hybrid8(uint32_t key) { return Wang3shift(Wang6shift(hash64shift(key))); }
+uint32_t HashZoo::three_hybrid9(uint32_t key) { return hash32shift(Wang3shift(jenkins(key))); }
+uint32_t HashZoo::three_hybrid10(uint32_t key) { return hash32shiftmult(Wang4shift(hash32shiftmult(key))); }
+uint32_t HashZoo::three_hybrid11(uint32_t key) { return hash7shift(hash5shift(Wang4shift(key))); }
+uint32_t HashZoo::three_hybrid12(uint32_t key) { return Wang5shift(jenkins32(hash32shift(key))); }
+
+uint32_t HashZoo::four_hybrid1(uint32_t key) { return Wang6shift(Wang5shift(Wang3shift(Wang4shift(key)))); }
+uint32_t HashZoo::four_hybrid2(uint32_t key) { return hash32shiftmult(jenkins(Wang5shift(Wang6shift(key)))); }
+uint32_t HashZoo::four_hybrid3(uint32_t key) { return hash64shift(hash7shift(jenkins32(hash32shift(key)))); }
+uint32_t HashZoo::four_hybrid4(uint32_t key) { return knuth(knuth(hash32shiftmult(hash5shift(key)))); }
+uint32_t HashZoo::four_hybrid5(uint32_t key) { return jenkins32(Wang4shift(hash64shift(hash32shiftmult(key)))); }
+uint32_t HashZoo::four_hybrid6(uint32_t key) { return jenkins(hash32shift(Wang4shift(Wang3shift(key)))); }
+uint32_t HashZoo::four_hybrid7(uint32_t key) { return hash32shift(hash64shift(hash5shift(hash64shift(key)))); }
+uint32_t HashZoo::four_hybrid8(uint32_t key) { return hash7shift(hash5shift(hash32shiftmult(Wang6shift(key)))); }
+uint32_t HashZoo::four_hybrid9(uint32_t key) { return hash32shiftmult(Wang6shift(jenkins32(knuth(key)))); }
+uint32_t HashZoo::four_hybrid10(uint32_t key) { return Wang3shift(jenkins32(knuth(jenkins(key)))); }
+uint32_t HashZoo::four_hybrid11(uint32_t key) { return hash5shift(hash32shiftmult(hash32shift(jenkins32(key)))); }
+uint32_t HashZoo::four_hybrid12(uint32_t key) { return Wang4shift(Wang3shift(jenkins(hash7shift(key)))); }
 
 uint32_t HashZoo::getHash(uint32_t selector, uint32_t key)
 {
@@ -202,7 +223,35 @@ uint32_t HashZoo::getHash(uint32_t selector, uint32_t key)
         case 12:    return Wang5shift(key);
         case 13:    return Wang4shift(key);
         case 14:    return Wang3shift(key);
-        case 15:    return hybrid1(key);
+        
+        /* three hybrid */
+        case 101:  return three_hybrid1(key);
+        case 102:  return three_hybrid2(key);
+        case 103:  return three_hybrid3(key);
+        case 104:  return three_hybrid4(key);
+        case 105:  return three_hybrid5(key);
+        case 106:  return three_hybrid6(key);
+        case 107:  return three_hybrid7(key);
+        case 108:  return three_hybrid8(key);
+        case 109:  return three_hybrid9(key);
+        case 110:  return three_hybrid10(key);
+        case 111:  return three_hybrid11(key);
+        case 112:  return three_hybrid12(key);
+
+        /* four hybrid */
+        case 1001:  return four_hybrid1(key);
+        case 1002:  return four_hybrid2(key);
+        case 1003:  return four_hybrid3(key);
+        case 1004:  return four_hybrid4(key);
+        case 1005:  return four_hybrid5(key);
+        case 1006:  return four_hybrid6(key);
+        case 1007:  return four_hybrid7(key);
+        case 1008:  return four_hybrid8(key);
+        case 1009:  return four_hybrid9(key);
+        case 1010:  return four_hybrid10(key);
+        case 1011:  return four_hybrid11(key);
+        case 1012:  return four_hybrid12(key);
+
         default:    assert(false);
     }
 }
