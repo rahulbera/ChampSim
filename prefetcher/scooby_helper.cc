@@ -326,6 +326,21 @@ void ScoobyRecorder::record_access_knowledge(Scooby_STEntry *stentry)
 		unique_bitmaps_seen++;
 	}
 	total_bitmaps_seen++;
+
+	/* delta statistics */
+	for(uint32_t hop = 1; hop <= MAX_HOP_COUNT; ++hop)
+	{
+		for(uint32_t index = 0; index < stentry->offsets.size(); ++index)
+		{
+			int32_t delta = 0;
+			if(index+hop < stentry->offsets.size())
+			{
+				delta = (stentry->offsets[index+hop] - stentry->offsets[index]);
+				if(delta < 0) delta = (-1)*delta + 63;
+				hop_delta_dist[hop][delta]++;
+			}
+		}
+	}
 }
 
 void ScoobyRecorder::dump_stats()
@@ -343,10 +358,31 @@ void ScoobyRecorder::dump_stats()
 
 	sort(pairs.begin(), pairs.end(), [](std::pair<uint64_t, uint64_t>& a, std::pair<uint64_t, uint64_t>& b){return a.second > b.second;});
 
+	cout << "Bitmap, #count" <<endl;
+	uint32_t total_occ = 0, top_20_occ = 0;;
 	for(uint32_t index = 0; index < pairs.size(); ++index)
 	{
-		cout << setw(20) << hex << pairs[index].first << dec << "," << pairs[index].second << endl;
+		total_occ += pairs[index].second;
+		if(index < 20)
+		{
+			top_20_occ += pairs[index].second;
+			cout << hex << pairs[index].first << dec << "," << pairs[index].second << endl;
+		}
 	}
+	cout << "top_20_perc " << (float)top_20_occ/total_occ*100 << "%" << endl;
+	cout << std::endl;
+
+	/* delta statistics */
+	for(uint32_t hop = 1; hop <= MAX_HOP_COUNT; ++hop)
+	{
+		cout << "hop_" << hop << "_delta_dist ";
+		for(uint32_t index = 0; index < 127; ++index)
+		{
+			cout << hop_delta_dist[hop][index] << ",";
+		}
+		cout << endl;
+	}
+	cout << std::endl;
 }
 
 void print_access_debug(Scooby_STEntry *stentry)

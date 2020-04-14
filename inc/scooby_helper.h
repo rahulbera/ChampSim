@@ -10,6 +10,8 @@
 
 using namespace std;
 
+#define MAX_HOP_COUNT 16
+
 typedef enum
 {
 	PC = 0,
@@ -157,6 +159,8 @@ public:
 	unordered_set<uint64_t> unique_trigger_pcs;
 	unordered_set<uint64_t> unique_pages;
 	unordered_map<uint64_t, uint64_t> access_bitmap_dist;
+	// vector<unordered_map<int32_t, uint64_t>> hop_delta_dist;
+	uint64_t hop_delta_dist[MAX_HOP_COUNT+1][127];
 	uint64_t total_bitmaps_seen;
 	uint64_t unique_bitmaps_seen;
 	ScoobyRecorder(){}

@@ -85,43 +85,50 @@ for $trace (@trace_info)
 				{
 					$value = $records{$metric_name};
 					# print "value: $value\n";
-					my @tokens = split(',', $value);
-					$stat->clear();
-					$stat->add_data(@tokens);
-					if($metric_type eq "sum")
+					if($metric_type eq "array")
 					{
-						$value = $stat->sum();
-					}
-					elsif($metric_type eq "mean")
-					{
-						$value = $stat->mean();
-					}
-					elsif($metric_type eq "nzmean")
-					{
-						$stat->clear();
-						@tokens = grep {trim($_)} @tokens;
-					       	$stat->add_data(@tokens);
-						$value = $stat->mean();
-					}
-					elsif($metric_type eq "min")
-					{
-						$value = $stat->min();
-					}
-					elsif($metric_type eq "max")
-					{
-						$value = $stat->max();
-					}
-					elsif($metric_type eq "standard_deviation")
-					{
-						$value = $stat->standard_deviation();
-					}
-					elsif($metric_type eq "variance")
-					{
-						$value = $stat->variance();
+						# the array is the value
 					}
 					else
 					{
-						die "invalid summary type\n";
+						my @tokens = split(',', $value);
+						$stat->clear();
+						$stat->add_data(@tokens);
+						if($metric_type eq "sum")
+						{
+							$value = $stat->sum();
+						}
+						elsif($metric_type eq "mean")
+						{
+							$value = $stat->mean();
+						}
+						elsif($metric_type eq "nzmean")
+						{
+							$stat->clear();
+							@tokens = grep {trim($_)} @tokens;
+							$stat->add_data(@tokens);
+							$value = $stat->mean();
+						}
+						elsif($metric_type eq "min")
+						{
+							$value = $stat->min();
+						}
+						elsif($metric_type eq "max")
+						{
+							$value = $stat->max();
+						}
+						elsif($metric_type eq "standard_deviation")
+						{
+							$value = $stat->standard_deviation();
+						}
+						elsif($metric_type eq "variance")
+						{
+							$value = $stat->variance();
+						}
+						else
+						{
+							die "invalid summary type\n";
+						}
 					}
 				}
 				else
