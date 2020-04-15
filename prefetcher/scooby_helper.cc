@@ -30,6 +30,7 @@ namespace knob
 	extern bool 	scooby_enable_pt_address_compression;
 	extern uint32_t scooby_pt_address_hash_type;
 	extern uint32_t scooby_pt_address_hashed_bits;
+	extern bool     scooby_access_debug;
 }
 
 const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
@@ -352,37 +353,40 @@ void ScoobyRecorder::dump_stats()
 		<< "unique_bitmaps_seen " << unique_bitmaps_seen << endl
 		<< endl;
 
-	std::vector<std::pair<uint64_t, uint64_t>> pairs;
-	for (auto itr = access_bitmap_dist.begin(); itr != access_bitmap_dist.end(); ++itr)
-	    pairs.push_back(*itr);
-
-	sort(pairs.begin(), pairs.end(), [](std::pair<uint64_t, uint64_t>& a, std::pair<uint64_t, uint64_t>& b){return a.second > b.second;});
-
-	cout << "Bitmap, #count" <<endl;
-	uint32_t total_occ = 0, top_20_occ = 0;;
-	for(uint32_t index = 0; index < pairs.size(); ++index)
+	if(knob::scooby_access_debug)
 	{
-		total_occ += pairs[index].second;
-		if(index < 20)
-		{
-			top_20_occ += pairs[index].second;
-			cout << hex << pairs[index].first << dec << "," << pairs[index].second << endl;
-		}
-	}
-	cout << "top_20_perc " << (float)top_20_occ/total_occ*100 << "%" << endl;
-	cout << std::endl;
+		std::vector<std::pair<uint64_t, uint64_t>> pairs;
+		for (auto itr = access_bitmap_dist.begin(); itr != access_bitmap_dist.end(); ++itr)
+		    pairs.push_back(*itr);
 
-	/* delta statistics */
-	for(uint32_t hop = 1; hop <= MAX_HOP_COUNT; ++hop)
-	{
-		cout << "hop_" << hop << "_delta_dist ";
-		for(uint32_t index = 0; index < 127; ++index)
+		sort(pairs.begin(), pairs.end(), [](std::pair<uint64_t, uint64_t>& a, std::pair<uint64_t, uint64_t>& b){return a.second > b.second;});
+
+		cout << "Bitmap, #count" <<endl;
+		uint32_t total_occ = 0, top_20_occ = 0;;
+		for(uint32_t index = 0; index < pairs.size(); ++index)
 		{
-			cout << hop_delta_dist[hop][index] << ",";
+			total_occ += pairs[index].second;
+			if(index < 20)
+			{
+				top_20_occ += pairs[index].second;
+				cout << hex << pairs[index].first << dec << "," << pairs[index].second << endl;
+			}
 		}
-		cout << endl;
+		cout << "top_20_perc " << (float)top_20_occ/total_occ*100 << "%" << endl;
+		cout << std::endl;
+
+		/* delta statistics */
+		for(uint32_t hop = 1; hop <= MAX_HOP_COUNT; ++hop)
+		{
+			cout << "hop_" << hop << "_delta_dist ";
+			for(uint32_t index = 0; index < 127; ++index)
+			{
+				cout << hop_delta_dist[hop][index] << ",";
+			}
+			cout << endl;
+		}
+		cout << std::endl;
 	}
-	cout << std::endl;
 }
 
 void print_access_debug(Scooby_STEntry *stentry)
