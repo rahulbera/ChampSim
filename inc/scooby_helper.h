@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include "bitmap.h"
+#include "bf/all.hpp"
 
 using namespace std;
 
@@ -168,6 +169,29 @@ public:
 	void record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset);
 	void record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset);
 	void record_access_knowledge(Scooby_STEntry *stentry);
+	void dump_stats();
+};
+
+class DegreeDetector
+{
+public:
+	uint32_t opt_hash_functions;
+	bf::basic_bloom_filter *bf;
+	uint32_t num_insert, num_hit, num_access;
+	float ratio;
+
+	/* stats */
+	struct
+	{
+		uint64_t epochs;
+		uint64_t histogram[10];
+	} stats;
+
+	DegreeDetector();
+	~DegreeDetector(){}
+	void add_pf(uint64_t addr);
+	void add_dm(uint64_t addr);
+	inline float get_ratio() {return ratio;}
 	void dump_stats();
 };
 

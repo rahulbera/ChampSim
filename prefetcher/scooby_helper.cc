@@ -31,6 +31,10 @@ namespace knob
 	extern uint32_t scooby_pt_address_hash_type;
 	extern uint32_t scooby_pt_address_hashed_bits;
 	extern bool     scooby_access_debug;
+	extern uint32_t scooby_seed;
+	extern uint32_t scooby_bloom_filter_size;
+	extern bool     scooby_enable_dyn_degree_detector;
+	extern uint32_t scooby_epoch_length;
 }
 
 const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
@@ -454,4 +458,59 @@ string print_active_features2(vector<int32_t> features)
 		ss << FeatureKnowledge::getFeatureString((FeatureType)features[index]);
 	}
 	return ss.str();
+}
+
+DegreeDetector::DegreeDetector()
+{
+	/* for a given m (bloom filter bit array length) and n (number of elements to be inserted)
+	 * the k (number of hash functions) to produce minimal false +ve rate would be m/n*ln(2)
+	 * https://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives */
+	opt_hash_functions = (uint32_t)ceil(knob::scooby_bloom_filter_size/knob::scooby_epoch_length * log(2));
+	bf = new bf::basic_bloom_filter(bf::make_hasher(opt_hash_functions, knob::scooby_seed, true), knob::scooby_bloom_filter_size);
+	assert(bf);
+	num_insert = 0;
+	num_hit = 0;
+	num_access = 0;
+}
+
+void DegreeDetector::add_pf(uint64_t addr)
+{
+	bf->add(addr);
+	num_insert++;
+}
+
+void DegreeDetector::add_dm(uint64_t addr)
+{
+	num_access++;
+	if(bf->lookup(addr))
+	{
+		num_hit++;
+	}
+
+	/* look for end of epoch */
+	if(num_access >= knob::scooby_epoch_length)
+	{
+		float new_ratio = (float)num_hit/num_insert;
+		ratio = (ratio + new_ratio) / 2;
+		num_access = 0;
+		num_hit = 0;
+		num_insert = 0;
+		bf->clear();
+
+		/* collect stats */
+		stats.epochs++;
+		uint32_t index = (ratio * 100) / 10;
+		stats.histogram[index]++;
+	}
+}
+
+void DegreeDetector::dump_stats()
+{
+	cout << "deg_detector.epochs " << stats.epochs
+		<< endl;
+	for(uint32_t index = 0; index < 10; ++index)
+	{
+		cout << "deg_detector.hist_bucket_" << index << " " << stats.histogram[index] << endl;
+	}
+	cout << endl;
 }

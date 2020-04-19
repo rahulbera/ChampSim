@@ -163,6 +163,9 @@ namespace knob
 	bool 	 scooby_enable_pt_address_compression;
 	uint32_t scooby_pt_address_hash_type;
 	uint32_t scooby_pt_address_hashed_bits;
+	uint32_t scooby_bloom_filter_size;
+	bool     scooby_enable_dyn_degree_detector;
+	uint32_t scooby_epoch_length;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -861,6 +864,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_pt_address_hashed_bits = atoi(value);
 	}
+	else if (MATCH("", "scooby_bloom_filter_size"))
+	{
+		knob::scooby_bloom_filter_size = atoi(value);
+	}
+	else if (MATCH("", "scooby_enable_dyn_degree_detector"))
+	{
+		knob::scooby_enable_dyn_degree_detector = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_epoch_length"))
+	{
+		knob::scooby_epoch_length = atoi(value);
+	}	
 	
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))

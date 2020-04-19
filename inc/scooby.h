@@ -42,6 +42,9 @@ private:
 
 	/* Data structures for debugging */
 	unordered_map<string, uint64_t> target_action_state;
+
+	/* to manipulate dynamic degree */
+	DegreeDetector *deg_detector;
 	
 	struct
 	{

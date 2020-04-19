@@ -75,6 +75,9 @@ namespace knob
 	extern bool 	scooby_enable_pt_address_compression;
 	extern uint32_t scooby_pt_address_hash_type;
 	extern uint32_t scooby_pt_address_hashed_bits;
+	extern uint32_t scooby_bloom_filter_size;
+	extern bool     scooby_enable_dyn_degree_detector;
+	extern uint32_t scooby_epoch_length;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -248,6 +251,11 @@ Scooby::Scooby(string type) : Prefetcher(type)
 
 	bw_level = 0;
 	core_ipc = 0;
+
+	if(knob::scooby_enable_dyn_degree_detector)
+	{
+		deg_detector = new DegreeDetector();
+	}
 }
 
 Scooby::~Scooby()
@@ -256,6 +264,7 @@ Scooby::~Scooby()
 	if(brain_cmac2) delete brain_cmac2;
 	if(brain_featurewise) delete brain_featurewise;
 	if(brain) 		delete brain;
+	if(deg_detector) delete deg_detector;
 }
 
 void Scooby::print_config()
@@ -311,6 +320,9 @@ void Scooby::print_config()
 		<< "scooby_enable_pt_address_compression " << knob::scooby_enable_pt_address_compression << endl
 		<< "scooby_pt_address_hash_type " << knob::scooby_pt_address_hash_type << endl
 		<< "scooby_pt_address_hashed_bits " << knob::scooby_pt_address_hashed_bits << endl
+		<< "scooby_bloom_filter_size " << knob::scooby_bloom_filter_size << endl
+		<< "scooby_enable_dyn_degree_detector " << knob::scooby_enable_dyn_degree_detector << endl
+		<< "scooby_epoch_length " << knob::scooby_epoch_length << endl
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -383,6 +395,9 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 
 	/* compute reward on demand */
 	reward(address);
+
+	/* pass the demand address to degree detector */
+	if(deg_detector) deg_detector->add_dm(address);
 
 	/* record the access: just to gain some insights from the workload
 	 * defined in scooby_helper.h(cc) */
@@ -685,6 +700,11 @@ void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t actio
 				MYLOG("degree %u pred_off %d pred_addr %lx", degree, predicted_offset, addr);
 				stats.predict.multi_deg++;
 				stats.predict.multi_deg_histogram[degree]++;
+				/* insert this address into bloom filter */
+				if(deg_detector)
+				{
+					deg_detector->add_pf(addr);
+				}
 			}
 		}
 	}
@@ -1160,6 +1180,11 @@ void Scooby::dump_stats()
 	if(knob::scooby_enable_shaggy)
 	{
 		shaggy->dump_stats();
+	}
+
+	if(deg_detector)
+	{
+		deg_detector->dump_stats();
 	}
 
 	cout << "scooby_bw_epochs " << stats.bandwidth.epochs << endl;
