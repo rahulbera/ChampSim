@@ -295,12 +295,21 @@ uint32_t Scooby_STEntry::get_offset_sig()
 	return signature;
 }
 
-void Scooby_STEntry::track_prefetch(uint32_t pred_offset)
+void Scooby_STEntry::track_prefetch(uint32_t pred_offset, int32_t pref_offset)
 {
 	if(!bmp_pred[pred_offset])
 	{
 		bmp_pred[pred_offset] = 1;
 		total_prefetches++;
+		if(last_pref_offset == pref_offset)
+		{
+			last_pref_offset_conf++;
+		}
+		else
+		{
+			last_pref_offset = pref_offset;
+			last_pref_offset_conf = 0;
+		}
 	}
 }
 
@@ -346,6 +355,8 @@ void ScoobyRecorder::record_access_knowledge(Scooby_STEntry *stentry)
 			}
 		}
 	}
+
+	cout << "last_pref_offset " << stentry->last_pref_offset << " last_pref_offset_conf " << stentry->last_pref_offset_conf << endl;
 }
 
 void ScoobyRecorder::dump_stats()

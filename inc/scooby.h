@@ -167,9 +167,9 @@ private:
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
 	void update_stats(uint32_t state, uint32_t action_index, uint32_t pref_degree = 1);
 	void update_stats(State *state, uint32_t action_index, uint32_t degree = 1);
-	void track_in_st(uint64_t page, uint32_t pred_offset);
+	void track_in_st(uint64_t page, uint32_t pred_offset, int32_t pref_offset);
 	void gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, uint32_t pref_degree, vector<uint64_t> &pref_addr);
-	uint32_t get_dyn_pref_degree(float max_to_avg_q_ratio); /* only implemented for CMAC engine 2.0 */
+	uint32_t get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page = 0xdeadbeef, int32_t action = 0); /* only implemented for CMAC engine 2.0 */
 
 public:
 	Scooby(string type);

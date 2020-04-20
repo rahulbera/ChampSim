@@ -78,6 +78,9 @@ namespace knob
 	extern uint32_t scooby_bloom_filter_size;
 	extern bool     scooby_enable_dyn_degree_detector;
 	extern uint32_t scooby_epoch_length;
+	extern uint32_t scooby_multi_deg_select_type;
+	extern vector<int32_t> scooby_last_pref_offset_conf_thresholds;
+	extern vector<int32_t> scooby_dyn_degrees_type2;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -323,6 +326,10 @@ void Scooby::print_config()
 		<< "scooby_bloom_filter_size " << knob::scooby_bloom_filter_size << endl
 		<< "scooby_enable_dyn_degree_detector " << knob::scooby_enable_dyn_degree_detector << endl
 		<< "scooby_epoch_length " << knob::scooby_epoch_length << endl
+		<< "scooby_multi_deg_select_type " << knob::scooby_multi_deg_select_type << endl
+		<< "scooby_last_pref_offset_conf_thresholds " << array_to_string(knob::scooby_last_pref_offset_conf_thresholds) << endl
+		<< "scooby_dyn_degrees_type2 " << array_to_string(knob::scooby_dyn_degrees_type2) << endl
+
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
 		<< "le_trace_interval " << knob::le_trace_interval << endl
@@ -537,7 +544,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 		action_index = brain_featurewise->chooseAction(state, max_to_avg_q_ratio, consensus_vec);
 		if(knob::scooby_enable_dyn_degree)
 		{
-			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio);
+			pref_degree = get_dyn_pref_degree(max_to_avg_q_ratio, page, Actions[action_index]);
 		}
 		if(knob::scooby_enable_state_action_stats)
 		{
@@ -571,7 +578,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 			if(new_addr)
 			{
 				pref_addr.push_back(addr);
-				track_in_st(page, predicted_offset); /* will be used for debugging */
+				track_in_st(page, predicted_offset, Actions[action_index]);
 				stats.predict.issue_dist[action_index]++;
 				if(pref_degree > 1)
 				{
@@ -710,22 +717,57 @@ void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t actio
 	}
 }
 
-uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio)
+uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, int32_t action)
 {
 	uint32_t counted = false;
 	uint32_t degree = 1;
-	for(uint32_t index = 0; index < knob::scooby_max_to_avg_q_thresholds.size(); ++index)
+
+	if(knob::scooby_multi_deg_select_type == 1)
 	{
-		if(max_to_avg_q_ratio < knob::scooby_max_to_avg_q_thresholds[index])
+		for(uint32_t index = 0; index < knob::scooby_max_to_avg_q_thresholds.size(); ++index)
 		{
-			degree = knob::scooby_dyn_degrees[index];
-			counted = true;
-			break;
+			/* scooby_max_to_avg_q_thresholds is a sorted list in ascending order of values */
+			if(max_to_avg_q_ratio < knob::scooby_max_to_avg_q_thresholds[index])
+			{
+				degree = knob::scooby_dyn_degrees[index];
+				counted = true;
+				break;
+			}
+		}
+		if(!counted)
+		{
+			degree = knob::scooby_dyn_degrees.back();
 		}
 	}
-	if(!counted)
+	else if(knob::scooby_multi_deg_select_type == 2)
 	{
-		degree = knob::scooby_dyn_degrees.back();
+		auto st_index = find_if(signature_table.begin(), signature_table.end(), [page](Scooby_STEntry *stentry){return stentry->page == page;});
+		if(st_index != signature_table.end())
+		{
+			int32_t last_pref_offset = (*st_index)->last_pref_offset;
+			uint32_t last_pref_offset_conf = (*st_index)->last_pref_offset_conf;
+
+			if(action == last_pref_offset)
+			{
+				for(uint32_t index = 0; index < knob::scooby_last_pref_offset_conf_thresholds.size(); ++index)
+				{
+					/* scooby_last_pref_offset_conf_thresholds is a sorted list in ascending order of values */
+					if(last_pref_offset_conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
+					{
+						degree = knob::scooby_dyn_degrees_type2[index];
+						counted = true;
+					}
+				}
+				if(!counted)
+				{
+					degree = knob::scooby_dyn_degrees_type2.back();
+				}
+			}
+			else
+			{
+				degree = 1;
+			}
+		}
 	}
 	return degree;
 }
@@ -1002,12 +1044,12 @@ int32_t Scooby::getAction(uint32_t action_index)
 	return Actions[action_index];
 }
 
-void Scooby::track_in_st(uint64_t page, uint32_t pred_offset)
+void Scooby::track_in_st(uint64_t page, uint32_t pred_offset, int32_t pref_offset)
 {
 	auto st_index = find_if(signature_table.begin(), signature_table.end(), [page](Scooby_STEntry *stentry){return stentry->page == page;});
 	if(st_index != signature_table.end())
 	{
-		(*st_index)->track_prefetch(pred_offset);
+		(*st_index)->track_prefetch(pred_offset, pref_offset);
 	}
 }
 

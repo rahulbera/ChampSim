@@ -166,6 +166,9 @@ namespace knob
 	uint32_t scooby_bloom_filter_size;
 	bool     scooby_enable_dyn_degree_detector;
 	uint32_t scooby_epoch_length;
+	uint32_t scooby_multi_deg_select_type;
+	vector<int32_t> scooby_last_pref_offset_conf_thresholds;
+	vector<int32_t> scooby_dyn_degrees_type2;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -875,7 +878,19 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_epoch_length"))
 	{
 		knob::scooby_epoch_length = atoi(value);
-	}	
+	}
+	else if (MATCH("", "scooby_multi_deg_select_type"))
+	{
+		knob::scooby_multi_deg_select_type = atoi(value);
+	}
+	else if (MATCH("", "scooby_last_pref_offset_conf_thresholds"))
+	{
+		knob::scooby_last_pref_offset_conf_thresholds = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_dyn_degrees_type2"))
+	{
+		knob::scooby_dyn_degrees_type2 = get_array_int(value);
+	}
 	
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
