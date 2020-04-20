@@ -475,8 +475,11 @@ DegreeDetector::DegreeDetector()
 
 void DegreeDetector::add_pf(uint64_t addr)
 {
-	bf->add(addr);
-	num_insert++;
+	if(!bf->lookup(addr))
+	{
+		bf->add(addr);
+		num_insert++;
+	}
 }
 
 void DegreeDetector::add_dm(uint64_t addr)
@@ -491,6 +494,7 @@ void DegreeDetector::add_dm(uint64_t addr)
 	if(num_access >= knob::scooby_epoch_length)
 	{
 		float new_ratio = (float)num_hit/num_insert;
+		// cout << "num_hit " << num_hit << " num_insert " << num_insert << endl;
 		ratio = (ratio + new_ratio) / 2;
 		num_access = 0;
 		num_hit = 0;
@@ -499,7 +503,7 @@ void DegreeDetector::add_dm(uint64_t addr)
 
 		/* collect stats */
 		stats.epochs++;
-		uint32_t index = (ratio * 100) / 10;
+		uint32_t index = ratio < 1 ? (ratio * 100) / 10 : 9;
 		stats.histogram[index]++;
 	}
 }

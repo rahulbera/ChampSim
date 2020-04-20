@@ -33,6 +33,7 @@ private:
 		struct
 		{
 			uint64_t called;
+			uint64_t su_skip[NumFeatureTypes];
 		} learn;
 
 		struct

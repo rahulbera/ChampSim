@@ -149,6 +149,10 @@ void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t r
 				{
 					m_feature_knowledges[index]->updateQ(state1, action1, reward, state2, action2);
 				}
+				else if(knob::le_featurewise_selective_update && !consensus_vec[index])
+				{
+					stats.learn.su_skip[index]++;
+				}
 			}
 		}
 
@@ -241,6 +245,13 @@ void LearningEngineFeaturewise::dump_stats()
 		fprintf(stdout, "learning_engine_featurewise.action.index_%d_exploited %lu\n", scooby->getAction(action), stats.action.dist[action][1]);
 	}
 	fprintf(stdout, "learning_engine_featurewise.learn.called %lu\n", stats.learn.called);
+	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
+	{	
+		if(m_feature_knowledges[index])
+		{
+			fprintf(stdout, "learning_engine_featurewise.learn.su_skip_%s %lu\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), stats.learn.su_skip[index]);
+		}
+	}
 	fprintf(stdout, "\n");
 	
 	/* plot histogram */
