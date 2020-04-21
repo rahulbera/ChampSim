@@ -4,7 +4,12 @@
 #include "cache.h"
 
 using namespace std;
-//using namespace spp;
+
+namespace knob
+{
+    extern uint32_t spp_dev2_fill_threshold;
+    extern uint32_t spp_dev2_pf_threshold;
+}
 
 // TODO: Find a good 64-bit hash function
 uint64_t get_hash(uint64_t key)
@@ -214,7 +219,7 @@ void PATTERN_TABLE::read_pattern(uint32_t curr_sig, int *delta_q, uint32_t *conf
             local_conf = (100 * c_delta[set][way]) / c_sig[set];
             pf_conf = depth ? (GHR.global_accuracy * c_delta[set][way] / c_sig[set] * lookahead_conf / 100) : local_conf;
 
-            if (pf_conf >= PF_THRESHOLD) {
+            if (pf_conf >= knob::spp_dev2_pf_threshold) {
                 confidence_q[pf_q_tail] = pf_conf;
                 delta_q[pf_q_tail] = delta[set][way];
 
@@ -226,20 +231,20 @@ void PATTERN_TABLE::read_pattern(uint32_t curr_sig, int *delta_q, uint32_t *conf
                 pf_q_tail++;
 
                 SPP_DP (
-                    cout << "[PT] " << __func__ << " HIGH CONF: " << pf_conf << " sig: " << hex << curr_sig << dec << " set: " << set << " way: " << way;
+                    cout << "[PT] " << __func__ << " PF_THRESH: " << knob::spp_dev2_pf_threshold << " HIGH CONF: " << pf_conf << " sig: " << hex << curr_sig << dec << " set: " << set << " way: " << way;
                     cout << " delta: " << delta[set][way] << " c_delta: " << c_delta[set][way] << " c_sig: " << c_sig[set];
                     cout << " conf: " << local_conf << " depth: " << depth << endl;
                 );
             } else {
                 SPP_DP (
-                    cout << "[PT] " << __func__ << "  LOW CONF: " << pf_conf << " sig: " << hex << curr_sig << dec << " set: " << set << " way: " << way;
+                    cout << "[PT] " << __func__ << " PF_THRESH: " << knob::spp_dev2_pf_threshold << "  LOW CONF: " << pf_conf << " sig: " << hex << curr_sig << dec << " set: " << set << " way: " << way;
                     cout << " delta: " << delta[set][way] << " c_delta: " << c_delta[set][way] << " c_sig: " << c_sig[set];
                     cout << " conf: " << local_conf << " depth: " << depth << endl;
                 );
             }
         }
         lookahead_conf = max_conf;
-        if (lookahead_conf >= PF_THRESHOLD) depth++;
+        if (lookahead_conf >= knob::spp_dev2_pf_threshold) depth++;
 
         SPP_DP (cout << "global_accuracy: " << GHR.global_accuracy << " lookahead_conf: " << lookahead_conf << endl;);
     } else confidence_q[pf_q_tail] = 0;
@@ -287,7 +292,7 @@ bool PREFETCH_FILTER::check(uint64_t check_addr, FILTER_REQUEST filter_request, 
 
                 return false; // False return indicates "Do not prefetch"
             } else {
-                // NOTE: SPP_LLC_PREFETCH has relatively low confidence (FILL_THRESHOLD <= SPP_LLC_PREFETCH < PF_THRESHOLD) 
+                // NOTE: SPP_LLC_PREFETCH has relatively low confidence (knob::spp_dev2_fill_threshold <= SPP_LLC_PREFETCH < knob::spp_dev2_pf_threshold) 
                 // Therefore, it is safe to prefetch this cache line in the large LLC and save precious L2C capacity
                 // If this prefetch request becomes more confident and SPP eventually issues SPP_L2C_PREFETCH,
                 // we can get this cache line immediately from the LLC (not from DRAM)

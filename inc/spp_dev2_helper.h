@@ -9,7 +9,7 @@
 #define GHR_ON
 #define SPP_SANITY_CHECK
 
-//#define SPP_DEBUG_PRINT
+// #define SPP_DEBUG_PRINT
 #ifdef SPP_DEBUG_PRINT
 #define SPP_DP(x) x
 #else
@@ -39,8 +39,10 @@
 #define REMAINDER_BIT 6
 #define HASH_BIT (QUOTIENT_BIT + REMAINDER_BIT + 1)
 #define FILTER_SET (1 << QUOTIENT_BIT)
-#define FILL_THRESHOLD 90
-#define PF_THRESHOLD 25
+
+// Knobbed these two parameters
+// #define FILL_THRESHOLD 90
+// #define PF_THRESHOLD 25
 
 // Global register parameters
 #define GLOBAL_COUNTER_BIT 10

@@ -131,7 +131,7 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
                             cout << "[ChampSim] " << __func__ << " base_addr: " << hex << base_addr << " pf_addr: " << pf_addr;
                             cout << " pf_cache_line: " << (pf_addr >> LOG2_BLOCK_SIZE);
                             cout << " prefetch_delta: " << dec << delta_q[i] << " confidence: " << confidence_q[i];
-                            cout << " depth: " << i << " fill_level: " << ((confidence_q[i] >= knob::spp_dev2_fill_threshold) ? FILL_L2 : FILL_LLC) << endl;
+                            cout << " depth: " << i << " FILL_THRESH: " << knob::spp_dev2_fill_threshold << " fill_level: " << ((confidence_q[i] >= knob::spp_dev2_fill_threshold) ? FILL_L2 : FILL_LLC) << endl;
                         );
                     }
 
