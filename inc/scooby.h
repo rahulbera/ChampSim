@@ -69,7 +69,8 @@ private:
 			uint64_t shaggy_called;
 			uint64_t multi_deg;
 			uint64_t multi_deg_called;
-			uint64_t multi_deg_histogram[MAX_SCOOBY_DEGREE];
+			uint64_t multi_deg_histogram[MAX_SCOOBY_DEGREE+1];
+			uint64_t deg_histogram[MAX_SCOOBY_DEGREE+1];
 		} predict;
 
 		struct

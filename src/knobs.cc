@@ -65,6 +65,10 @@ namespace knob
 	uint32_t spp_signature_bits = 12;
 	uint32_t spp_alpha_epoch = 1024;
 
+	/* SPP_dev2 */
+	uint32_t spp_dev2_fill_threshold = 90;
+	uint32_t spp_dev2_pf_threshold = 25;
+
 	/* BOP */
 	vector<int32_t> bop_candidates;
 	uint32_t bop_max_rounds = 100;
@@ -509,6 +513,16 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "spp_alpha_epoch"))
 	{
 		knob::spp_alpha_epoch = atoi(value);
+	}
+
+	/* SPP_dev2 */
+	else if (MATCH("", "spp_dev2_fill_threshold"))
+	{
+		knob::spp_dev2_fill_threshold = atoi(value);
+	}
+	else if (MATCH("", "spp_dev2_pf_threshold"))
+	{
+		knob::spp_dev2_pf_threshold = atoi(value);
 	}
 
 	/* BOP */

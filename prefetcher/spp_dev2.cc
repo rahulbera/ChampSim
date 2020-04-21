@@ -7,7 +7,8 @@ using namespace std;
 
 namespace knob
 {
-
+    extern uint32_t spp_dev2_fill_threshold;
+    extern uint32_t spp_dev2_pf_threshold;
 }
 
 void SPP_dev2::init_knobs()
@@ -37,6 +38,8 @@ SPP_dev2::SPP_dev2(std::string type, CACHE *cache) : Prefetcher(type), m_parent_
         << endl 
         << "Initialize PREFETCH FILTER" << endl
         << "FILTER_SET: " << FILTER_SET << endl
+        << "fill_threshold: " << knob::spp_dev2_fill_threshold << endl
+        << "pf_threshold: " << knob::spp_dev2_pf_threshold << endl
         << endl;
 }
 
@@ -102,20 +105,20 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
         do_lookahead = 0;
         breadth = 0;
         for (uint32_t i = pf_q_head; i < pf_q_tail; i++) {
-            if (confidence_q[i] >= PF_THRESHOLD) {
+            if (confidence_q[i] >= knob::spp_dev2_pf_threshold) {
                 uint64_t pf_addr = (base_addr & ~(BLOCK_SIZE - 1)) + (delta_q[i] << LOG2_BLOCK_SIZE);
 
                 if ((addr & ~(PAGE_SIZE - 1)) == (pf_addr & ~(PAGE_SIZE - 1))) { // Prefetch request is in the same physical page
-                    if (FILTER.check(pf_addr, confidence_q[i] >= FILL_THRESHOLD ? SPP_L2C_PREFETCH : SPP_LLC_PREFETCH, GHR)) {
-                        m_parent_cache->prefetch_line(ip, addr, pf_addr, ((confidence_q[i] >= FILL_THRESHOLD) ? FILL_L2 : FILL_LLC), 0); // Use addr (not base_addr) to obey the same physical page boundary
+                    if (FILTER.check(pf_addr, confidence_q[i] >= knob::spp_dev2_fill_threshold ? SPP_L2C_PREFETCH : SPP_LLC_PREFETCH, GHR)) {
+                        m_parent_cache->prefetch_line(ip, addr, pf_addr, ((confidence_q[i] >= knob::spp_dev2_fill_threshold) ? FILL_L2 : FILL_LLC), 0); // Use addr (not base_addr) to obey the same physical page boundary
                         
                         stats.pref.total++;
-                        if(confidence_q[i] >= FILL_THRESHOLD) 
+                        if(confidence_q[i] >= knob::spp_dev2_fill_threshold) 
                             stats.pref.at_L2++;
                         else
                             stats.pref.at_LLC++;
 
-                        if (confidence_q[i] >= FILL_THRESHOLD) {
+                        if (confidence_q[i] >= knob::spp_dev2_fill_threshold) {
                             GHR.pf_issued++;
                             if (GHR.pf_issued > GLOBAL_COUNTER_MAX) {
                                 GHR.pf_issued >>= 1;
@@ -128,7 +131,7 @@ void SPP_dev2::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hit, 
                             cout << "[ChampSim] " << __func__ << " base_addr: " << hex << base_addr << " pf_addr: " << pf_addr;
                             cout << " pf_cache_line: " << (pf_addr >> LOG2_BLOCK_SIZE);
                             cout << " prefetch_delta: " << dec << delta_q[i] << " confidence: " << confidence_q[i];
-                            cout << " depth: " << i << " fill_level: " << ((confidence_q[i] >= FILL_THRESHOLD) ? FILL_L2 : FILL_LLC) << endl;
+                            cout << " depth: " << i << " fill_level: " << ((confidence_q[i] >= knob::spp_dev2_fill_threshold) ? FILL_L2 : FILL_LLC) << endl;
                         );
                     }
 

@@ -155,6 +155,7 @@ void Scooby::init_knobs()
 	}
 	assert(knob::scooby_pref_degree >= 1 && (knob::scooby_pref_degree == 1 || !knob::scooby_enable_dyn_degree));
 	assert(knob::scooby_max_to_avg_q_thresholds.size() == knob::scooby_dyn_degrees.size()-1);
+	assert(knob::scooby_last_pref_offset_conf_thresholds.size() == knob::scooby_dyn_degrees_type2.size()-1);
 }
 
 void Scooby::init_stats()
@@ -584,6 +585,7 @@ uint32_t Scooby::predict(uint64_t base_address, uint64_t page, uint32_t offset, 
 				{
 					gen_multi_degree_pref(page, offset, Actions[action_index], pref_degree, pref_addr);
 				}
+				stats.predict.deg_histogram[pref_degree]++;
 				ptentry->consensus_vec = consensus_vec;
 			}
 			else
@@ -697,7 +699,7 @@ void Scooby::gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t actio
 	int32_t predicted_offset = 0;
 	if(action != 0)
 	{
-		for(uint32_t degree = 2; degree < pref_degree; ++degree)
+		for(uint32_t degree = 2; degree <= pref_degree; ++degree)
 		{
 			predicted_offset = (int32_t)offset + degree * action;
 			if(predicted_offset >=0 && predicted_offset < 64)
@@ -756,6 +758,7 @@ uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, in
 					{
 						degree = knob::scooby_dyn_degrees_type2[index];
 						counted = true;
+						break;
 					}
 				}
 				if(!counted)
@@ -767,6 +770,11 @@ uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, in
 			{
 				degree = 1;
 			}
+
+			// if(degree == 4 || degree == 6 || degree == 8)
+			// {
+			// 	cout << "deg " << degree << " last_pref_offset_conf " << last_pref_offset_conf << endl;
+			// }
 		}
 	}
 	return degree;
@@ -1096,6 +1104,11 @@ void Scooby::dump_stats()
 	for(uint32_t index = 2; index < MAX_SCOOBY_DEGREE; ++index)
 	{
 		cout << "scooby_predict_multi_deg_" << index << " " << stats.predict.multi_deg_histogram[index] << endl;
+	}
+	cout << endl;
+	for(uint32_t index = 1; index < MAX_SCOOBY_DEGREE; ++index)
+	{
+		cout << "scooby_selected_deg_" << index << " " << stats.predict.deg_histogram[index] << endl;
 	}
 	cout << endl;
 
