@@ -30,6 +30,7 @@ namespace knob
 	extern float 			le_featurewise_weight_gradient; /* hyperparameter */
 	extern bool 			le_featurewise_disable_adjust_weight_all_features_align;
 	extern bool 			le_featurewise_selective_update;
+	extern uint32_t         le_featurewise_pooling_type;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -220,13 +221,30 @@ float LearningEngineFeaturewise::consultQ(State *state, uint32_t action)
 {
 	assert(action < m_actions);
 	float q_value = 0.0;
+	float max = -1000000000.0;
 
-	/* accumulate Q-value accross all feature tables */
+	/* pool Q-value accross all feature tables */
 	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
 	{
 		if(m_feature_knowledges[index])
 		{
-			q_value += m_feature_knowledges[index]->retrieveQ(state, action);
+			if(knob::le_featurewise_pooling_type == 1) /* sum pooling */
+			{
+				q_value += m_feature_knowledges[index]->retrieveQ(state, action);
+			}
+			else if(knob::le_featurewise_pooling_type == 2) /* max pooling */
+			{
+				float tmp = m_feature_knowledges[index]->retrieveQ(state, action);
+				if(tmp >= max)
+				{
+					max = tmp;
+					q_value = tmp;
+				}
+			}
+			else
+			{
+				assert(false);
+			}
 		}
 	}
 	return q_value;

@@ -138,6 +138,7 @@ namespace knob
 	extern float			le_featurewise_weight_gradient;
 	extern bool				le_featurewise_disable_adjust_weight_all_features_align;
 	extern bool				le_featurewise_selective_update;
+	extern uint32_t 		le_featurewise_pooling_type;
 }
 
 void Scooby::init_knobs()
@@ -385,6 +386,7 @@ void Scooby::print_config()
 		<< "le_featurewise_weight_gradient " << knob::le_featurewise_weight_gradient << endl
 		<< "le_featurewise_disable_adjust_weight_all_features_align " << knob::le_featurewise_disable_adjust_weight_all_features_align << endl
 		<< "le_featurewise_selective_update " << knob::le_featurewise_selective_update << endl
+		<< "le_featurewise_pooling_type " << knob::le_featurewise_pooling_type << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)

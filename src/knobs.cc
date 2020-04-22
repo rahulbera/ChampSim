@@ -230,6 +230,7 @@ namespace knob
 	float le_featurewise_weight_gradient;
 	bool le_featurewise_disable_adjust_weight_all_features_align;
 	bool le_featurewise_selective_update;
+	uint32_t le_featurewise_pooling_type;
 
 
 	/* Shaggy */
@@ -1110,6 +1111,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_selective_update"))
 	{
 		knob::le_featurewise_selective_update = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_pooling_type"))
+	{
+		knob::le_featurewise_pooling_type = atoi(value);
 	}
 
 	/* Shaggy knobs */
