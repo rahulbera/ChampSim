@@ -35,6 +35,7 @@ namespace knob
 	extern uint32_t scooby_bloom_filter_size;
 	extern bool     scooby_enable_dyn_degree_detector;
 	extern uint32_t scooby_epoch_length;
+	extern bool     scooby_print_trace;
 }
 
 const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
@@ -221,6 +222,11 @@ void Scooby_STEntry::update(uint64_t page, uint64_t pc, uint32_t offset, uint64_
 
 	/* update demanded pattern */
 	this->bmp_real[offset] = 1;
+
+	if(knob::scooby_print_trace)
+	{
+		fprintf(stdout, "[TRACE] page %16lx| pc %16lx| offset %2u\n", page, pc, offset);
+	}
 }
 
 uint32_t Scooby_STEntry::get_delta_sig()
@@ -355,8 +361,6 @@ void ScoobyRecorder::record_access_knowledge(Scooby_STEntry *stentry)
 			}
 		}
 	}
-
-	cout << "last_pref_offset " << stentry->last_pref_offset << " last_pref_offset_conf " << stentry->last_pref_offset_conf << endl;
 }
 
 void ScoobyRecorder::dump_stats()

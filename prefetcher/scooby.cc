@@ -51,6 +51,7 @@ namespace knob
 	extern uint32_t scooby_state_type;
 	extern bool     scooby_access_debug;
 	extern bool     scooby_print_access_debug;
+	extern bool     scooby_print_trace;	
 	extern bool     scooby_enable_state_action_stats;
 	extern bool     scooby_enable_reward_tracker_hit;
 	extern int32_t  scooby_reward_tracker_hit;
@@ -302,6 +303,7 @@ void Scooby::print_config()
 		<< "scooby_state_hash_type " << knob::scooby_state_hash_type << endl
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
 		<< "scooby_print_access_debug " << knob::scooby_print_access_debug << endl
+		<< "scooby_print_trace " << knob::scooby_print_trace << endl
 		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
 		<< "scooby_reward_tracker_hit " << knob::scooby_reward_tracker_hit << endl

@@ -7,8 +7,8 @@ use Math::Combinatorics;
 my @feature_names = ("PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta", "PC_Offset_Delta", "Page", "PC_Path_Offset", "PC_Path_Offset_Path", "PC_Path_Delta", "PC_Path_Delta_Path", "PC_Path_Offset_Path_Delta_Path", "Offset_Path_PC", "Delta_Path_PC");
 
 ############# CHANGE ONLY THESE PARAMS #############
-my @selected_features = ("0", "8");
-my @num_combs = ("1", "2");
+my @selected_features = ("10", "8", "5", "16");
+my @num_combs = ("1", "2", "3");
 my $tilings = 3;
 my $tiles = 128;
 ####################################################
@@ -29,7 +29,7 @@ foreach my $combo (@combinations)
 	my @combo2 = @$combo;
 	$sel_feat_ids = join(",", @combo2);
 	$sel_feat_names = join("+", map { $feature_names[$_] } @combo2);
-	$exp_name = "feat_sweep_tiny_${sel_feat_names}_${tilings}x${tiles}_hash2_no_dyn_weight_no_sel_update";
+	$exp_name = "scooby_${sel_feat_names}_${tilings}x${tiles}_max_pool";
 	print "${exp_name}  \$(BASE) \$(SCOOBY) --le_featurewise_active_features=${sel_feat_ids} $cmdline\n";
 }
 print "\n";
