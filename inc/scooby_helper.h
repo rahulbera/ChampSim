@@ -80,6 +80,15 @@ public:
 	std::string to_string();
 };
 
+class ActionTracker
+{
+public:
+	int32_t action;
+	uint32_t conf;
+	ActionTracker(int32_t act, uint32_t c) : action(act), conf(c) {}
+	~ActionTracker() {}
+};
+
 class Scooby_STEntry
 {
 public:
@@ -94,8 +103,11 @@ public:
 	uint64_t trigger_pc;
 	uint32_t trigger_offset;
 	bool streaming;
-	int32_t last_pref_offset;
-	uint32_t last_pref_offset_conf;
+	// int32_t last_pref_offset;
+	// uint32_t last_pref_offset_conf;
+
+	/* tracks last n actions on a page to determine degree */
+	deque<ActionTracker*> action_tracker;
 
 	uint32_t total_prefetches;
 
@@ -111,8 +123,8 @@ public:
 		trigger_pc = pc;
 		trigger_offset = offset;
 		streaming = false;
-		last_pref_offset = 0;
-		last_pref_offset_conf = 0;
+		// last_pref_offset = 0;
+		// last_pref_offset_conf = 0;
 
 		pcs.push_back(pc);
 		offsets.push_back(offset);
@@ -126,6 +138,8 @@ public:
 	uint32_t get_offset_sig();
 	void update(uint64_t page, uint64_t pc, uint32_t offset, uint64_t address);
 	void track_prefetch(uint32_t offset, int32_t pref_offset);
+	void insert_action_tracker(int32_t pref_offset);
+	bool search_action_tracker(int32_t action, uint32_t &conf);
 };
 
 class Scooby_PTEntry

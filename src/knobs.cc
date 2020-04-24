@@ -174,6 +174,7 @@ namespace knob
 	uint32_t scooby_multi_deg_select_type;
 	vector<int32_t> scooby_last_pref_offset_conf_thresholds;
 	vector<int32_t> scooby_dyn_degrees_type2;
+	uint32_t scooby_action_tracker_size;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -910,6 +911,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_dyn_degrees_type2"))
 	{
 		knob::scooby_dyn_degrees_type2 = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_action_tracker_size"))
+	{
+		knob::scooby_action_tracker_size = atoi(value);
 	}
 	
 	/* Learning Engine */

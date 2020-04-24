@@ -36,6 +36,7 @@ namespace knob
 	extern bool     scooby_enable_dyn_degree_detector;
 	extern uint32_t scooby_epoch_length;
 	extern bool     scooby_print_trace;
+	extern uint32_t scooby_action_tracker_size;
 }
 
 const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
@@ -307,15 +308,55 @@ void Scooby_STEntry::track_prefetch(uint32_t pred_offset, int32_t pref_offset)
 	{
 		bmp_pred[pred_offset] = 1;
 		total_prefetches++;
-		if(last_pref_offset == pref_offset)
+
+		// if(last_pref_offset == pref_offset)
+		// {
+		// 	last_pref_offset_conf++;
+		// }
+		// else
+		// {
+		// 	last_pref_offset = pref_offset;
+		// 	last_pref_offset_conf = 0;
+		// }
+		insert_action_tracker(pref_offset);
+	}
+}
+
+void Scooby_STEntry::insert_action_tracker(int32_t pref_offset)
+{
+	bool found = false;
+	auto it = find_if(action_tracker.begin(), action_tracker.end(), [pref_offset](ActionTracker *at){return at->action == pref_offset;});
+	if(it != action_tracker.end())
+	{
+		(*it)->conf++;
+		/* maintain the recency order */
+		action_tracker.erase(it);
+		action_tracker.push_back((*it));
+	}
+	else
+	{
+		if(action_tracker.size() >= knob::scooby_action_tracker_size)
 		{
-			last_pref_offset_conf++;
+			ActionTracker *victim = action_tracker.front();
+			action_tracker.pop_front();
+			delete victim;
 		}
-		else
-		{
-			last_pref_offset = pref_offset;
-			last_pref_offset_conf = 0;
-		}
+		action_tracker.push_back(new ActionTracker(pref_offset, 0));
+	}
+}
+
+bool Scooby_STEntry::search_action_tracker(int32_t action, uint32_t &conf)
+{
+	conf = 0;
+	auto it = find_if(action_tracker.begin(), action_tracker.end(), [action](ActionTracker *at){return at->action == action;});
+	if(it != action_tracker.end())
+	{
+		conf = (*it)->conf;
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }
 

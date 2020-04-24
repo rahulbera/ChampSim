@@ -82,6 +82,7 @@ namespace knob
 	extern uint32_t scooby_multi_deg_select_type;
 	extern vector<int32_t> scooby_last_pref_offset_conf_thresholds;
 	extern vector<int32_t> scooby_dyn_degrees_type2;
+	extern uint32_t scooby_action_tracker_size;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -333,6 +334,7 @@ void Scooby::print_config()
 		<< "scooby_multi_deg_select_type " << knob::scooby_multi_deg_select_type << endl
 		<< "scooby_last_pref_offset_conf_thresholds " << array_to_string(knob::scooby_last_pref_offset_conf_thresholds) << endl
 		<< "scooby_dyn_degrees_type2 " << array_to_string(knob::scooby_dyn_degrees_type2) << endl
+		<< "scooby_action_tracker_size " << knob::scooby_action_tracker_size << endl
 
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
@@ -750,15 +752,19 @@ uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, in
 		auto st_index = find_if(signature_table.begin(), signature_table.end(), [page](Scooby_STEntry *stentry){return stentry->page == page;});
 		if(st_index != signature_table.end())
 		{
-			int32_t last_pref_offset = (*st_index)->last_pref_offset;
-			uint32_t last_pref_offset_conf = (*st_index)->last_pref_offset_conf;
+			// int32_t last_pref_offset = (*st_index)->last_pref_offset;
+			// uint32_t last_pref_offset_conf = (*st_index)->last_pref_offset_conf;
+			uint32_t conf = 0;
+			bool found = (*st_index)->search_action_tracker(action, conf);
 
-			if(action == last_pref_offset)
+			// if(action == last_pref_offset)
+			if(found)
 			{
 				for(uint32_t index = 0; index < knob::scooby_last_pref_offset_conf_thresholds.size(); ++index)
 				{
 					/* scooby_last_pref_offset_conf_thresholds is a sorted list in ascending order of values */
-					if(last_pref_offset_conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
+					// if(last_pref_offset_conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
+					if(conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
 					{
 						degree = knob::scooby_dyn_degrees_type2[index];
 						counted = true;
