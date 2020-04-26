@@ -45,6 +45,7 @@ private:
 
 	/* to manipulate dynamic degree */
 	DegreeDetector *deg_detector;
+	unordered_map<int32_t, uint32_t> global_action_tracker;
 	
 	struct
 	{
@@ -171,6 +172,10 @@ private:
 	void track_in_st(uint64_t page, uint32_t pred_offset, int32_t pref_offset);
 	void gen_multi_degree_pref(uint64_t page, uint32_t offset, int32_t action, uint32_t pref_degree, vector<uint64_t> &pref_addr);
 	uint32_t get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page = 0xdeadbeef, int32_t action = 0); /* only implemented for CMAC engine 2.0 */
+	void insert_global_action_tracker(Scooby_STEntry *stentry);
+	void print_global_action_tracker();
+	void lookup_global_action_tracker(Scooby_STEntry *stentry);
+
 
 public:
 	Scooby(string type);

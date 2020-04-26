@@ -108,6 +108,8 @@ public:
 
 	/* tracks last n actions on a page to determine degree */
 	deque<ActionTracker*> action_tracker;
+	unordered_set<int32_t> action_with_max_degree;
+	unordered_set<int32_t> afterburning_actions;
 
 	uint32_t total_prefetches;
 

@@ -7,8 +7,8 @@ use Math::Combinatorics;
 my @feature_names = ("PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta", "PC_Offset_Delta", "Page", "PC_Path_Offset", "PC_Path_Offset_Path", "PC_Path_Delta", "PC_Path_Delta_Path", "PC_Path_Offset_Path_Delta_Path", "Offset_Path_PC", "Delta_Path_PC");
 
 ############# CHANGE ONLY THESE PARAMS #############
-my @selected_features = ("10", "8", "5", "16");
-my @num_combs = ("1", "2", "3");
+my @selected_features = ("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19");
+my @num_combs = ("1", "2");
 my $tilings = 3;
 my $tiles = 128;
 ####################################################

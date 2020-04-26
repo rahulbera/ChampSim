@@ -83,6 +83,10 @@ namespace knob
 	extern vector<int32_t> scooby_last_pref_offset_conf_thresholds;
 	extern vector<int32_t> scooby_dyn_degrees_type2;
 	extern uint32_t scooby_action_tracker_size;
+	extern bool     scooby_enable_afterburner;
+	extern uint32_t scooby_afterburner_degree_threshold;
+	extern uint32_t scooby_afterburner_page_threshold;
+	extern vector<int32_t> scooby_dyn_degrees_afterburning;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -159,6 +163,7 @@ void Scooby::init_knobs()
 	assert(knob::scooby_pref_degree >= 1 && (knob::scooby_pref_degree == 1 || !knob::scooby_enable_dyn_degree));
 	assert(knob::scooby_max_to_avg_q_thresholds.size() == knob::scooby_dyn_degrees.size()-1);
 	assert(knob::scooby_last_pref_offset_conf_thresholds.size() == knob::scooby_dyn_degrees_type2.size()-1);
+	assert(knob::scooby_dyn_degrees_type2.size() == knob::scooby_dyn_degrees_afterburning.size());
 }
 
 void Scooby::init_stats()
@@ -263,6 +268,14 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	{
 		deg_detector = new DegreeDetector();
 	}
+
+	if(knob::scooby_enable_afterburner)
+	{
+		for(uint32_t index = 0; index < knob::scooby_actions.size(); ++index)
+		{
+			global_action_tracker.insert(pair<int32_t, uint32_t>(knob::scooby_actions[index], 0));
+		}
+	}
 }
 
 Scooby::~Scooby()
@@ -335,6 +348,10 @@ void Scooby::print_config()
 		<< "scooby_last_pref_offset_conf_thresholds " << array_to_string(knob::scooby_last_pref_offset_conf_thresholds) << endl
 		<< "scooby_dyn_degrees_type2 " << array_to_string(knob::scooby_dyn_degrees_type2) << endl
 		<< "scooby_action_tracker_size " << knob::scooby_action_tracker_size << endl
+		<< "scooby_enable_afterburner " << knob::scooby_enable_afterburner << endl
+		<< "scooby_afterburner_degree_threshold " << knob::scooby_afterburner_degree_threshold << endl
+		<< "scooby_afterburner_page_threshold " << knob::scooby_afterburner_page_threshold << endl
+		<< "scooby_dyn_degrees_afterburning " << array_to_string(knob::scooby_dyn_degrees_afterburning) << endl
 
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
@@ -495,6 +512,10 @@ Scooby_STEntry* Scooby::update_local_state(uint64_t pc, uint64_t page, uint32_t 
 			{
 				shaggy->record_signature(stentry);
 			}
+			if(knob::scooby_enable_afterburner)
+			{
+				insert_global_action_tracker(stentry);
+			}
 			delete stentry;
 		}
 
@@ -505,6 +526,10 @@ Scooby_STEntry* Scooby::update_local_state(uint64_t pc, uint64_t page, uint32_t 
 		{
 			stentry->streaming = shaggy->lookup_signature(pc, page, offset);
 			stats.st.streaming++;
+		}
+		if(knob::scooby_enable_afterburner)
+		{
+			lookup_global_action_tracker(stentry);
 		}
 		signature_table.push_back(stentry);
 		return stentry;
@@ -752,39 +777,37 @@ uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, in
 		auto st_index = find_if(signature_table.begin(), signature_table.end(), [page](Scooby_STEntry *stentry){return stentry->page == page;});
 		if(st_index != signature_table.end())
 		{
-			// int32_t last_pref_offset = (*st_index)->last_pref_offset;
-			// uint32_t last_pref_offset_conf = (*st_index)->last_pref_offset_conf;
 			uint32_t conf = 0;
 			bool found = (*st_index)->search_action_tracker(action, conf);
+			bool is_afterburning = ((*st_index)->afterburning_actions.find(action) != (*st_index)->afterburning_actions.end());
 
-			// if(action == last_pref_offset)
 			if(found)
 			{
 				for(uint32_t index = 0; index < knob::scooby_last_pref_offset_conf_thresholds.size(); ++index)
 				{
 					/* scooby_last_pref_offset_conf_thresholds is a sorted list in ascending order of values */
-					// if(last_pref_offset_conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
 					if(conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
 					{
-						degree = knob::scooby_dyn_degrees_type2[index];
+						degree = is_afterburning ? knob::scooby_dyn_degrees_afterburning[index] : knob::scooby_dyn_degrees_type2[index];
 						counted = true;
 						break;
 					}
 				}
 				if(!counted)
 				{
-					degree = knob::scooby_dyn_degrees_type2.back();
+					degree = is_afterburning ? knob::scooby_dyn_degrees_afterburning.back() : knob::scooby_dyn_degrees_type2.back();
 				}
 			}
 			else
 			{
 				degree = 1;
 			}
-
-			// if(degree == 4 || degree == 6 || degree == 8)
-			// {
-			// 	cout << "deg " << degree << " last_pref_offset_conf " << last_pref_offset_conf << endl;
-			// }
+			
+			/* remember the action that achieved max degree */
+			if(knob::scooby_enable_afterburner && degree >= knob::scooby_afterburner_degree_threshold)
+			{
+				(*st_index)->action_with_max_degree.insert(action);
+			}
 		}
 	}
 	return degree;
@@ -1087,6 +1110,55 @@ void Scooby::update_ipc(uint8_t ipc)
 	stats.ipc.histogram[ipc]++;
 }
 
+void Scooby::insert_global_action_tracker(Scooby_STEntry *stentry)
+{
+	assert(stentry);
+	assert(knob::scooby_enable_afterburner);
+	unordered_set<int32_t> action_with_max_degree = stentry->action_with_max_degree;
+	for(auto it = global_action_tracker.begin(); it != global_action_tracker.end(); ++it)
+	{
+		if(it->second != 0)
+		{
+			if(action_with_max_degree.find(it->first) != action_with_max_degree.end())
+			{
+				it->second++;
+			}
+			else
+			{
+				it->second = 0;
+			}
+		}
+	}
+	for(auto it = action_with_max_degree.begin(); it != action_with_max_degree.end(); ++it)
+	{
+		if(global_action_tracker[(*it)] == 0)
+		{
+			global_action_tracker[(*it)] = 1;
+		}
+	}
+	// print_global_action_tracker();
+}
+
+void Scooby::lookup_global_action_tracker(Scooby_STEntry *stentry)
+{
+	for(auto it = global_action_tracker.begin(); it != global_action_tracker.end(); ++it)
+	{
+		if(it->second >= knob::scooby_afterburner_page_threshold)
+		{
+			stentry->afterburning_actions.insert(it->first);
+		}
+	}
+}
+
+void Scooby::print_global_action_tracker()
+{
+	for(auto it = global_action_tracker.begin(); it != global_action_tracker.end(); ++it)
+	{
+		cout << "(" << it->first << "," << it->second << ")" << " ";
+	}
+	cout << endl;
+}
+
 void Scooby::dump_stats()
 {
 	cout << "scooby_st_lookup " << stats.st.lookup << endl
@@ -1111,12 +1183,12 @@ void Scooby::dump_stats()
 	cout << "scooby_predict_multi_deg_called " << stats.predict.multi_deg_called << endl
 		<< "scooby_predict_predicted " << stats.predict.predicted << endl
 		<< "scooby_predict_multi_deg " << stats.predict.multi_deg << endl;
-	for(uint32_t index = 2; index < MAX_SCOOBY_DEGREE; ++index)
+	for(uint32_t index = 2; index <= MAX_SCOOBY_DEGREE; ++index)
 	{
 		cout << "scooby_predict_multi_deg_" << index << " " << stats.predict.multi_deg_histogram[index] << endl;
 	}
 	cout << endl;
-	for(uint32_t index = 1; index < MAX_SCOOBY_DEGREE; ++index)
+	for(uint32_t index = 1; index <= MAX_SCOOBY_DEGREE; ++index)
 	{
 		cout << "scooby_selected_deg_" << index << " " << stats.predict.deg_histogram[index] << endl;
 	}

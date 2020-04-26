@@ -175,6 +175,10 @@ namespace knob
 	vector<int32_t> scooby_last_pref_offset_conf_thresholds;
 	vector<int32_t> scooby_dyn_degrees_type2;
 	uint32_t scooby_action_tracker_size;
+	bool     scooby_enable_afterburner;
+	uint32_t scooby_afterburner_degree_threshold;
+	uint32_t scooby_afterburner_page_threshold;
+	vector<int32_t> scooby_dyn_degrees_afterburning;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -915,6 +919,22 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_action_tracker_size"))
 	{
 		knob::scooby_action_tracker_size = atoi(value);
+	}
+	else if (MATCH("", "scooby_enable_afterburner"))
+	{
+		knob::scooby_enable_afterburner = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_afterburner_degree_threshold"))
+	{
+		knob::scooby_afterburner_degree_threshold = atoi(value);
+	}
+	else if (MATCH("", "scooby_afterburner_page_threshold"))
+	{
+		knob::scooby_afterburner_page_threshold = atoi(value);
+	}
+	else if (MATCH("", "scooby_dyn_degrees_afterburning"))
+	{
+		knob::scooby_dyn_degrees_afterburning = get_array_int(value);
 	}
 	
 	/* Learning Engine */

@@ -309,15 +309,6 @@ void Scooby_STEntry::track_prefetch(uint32_t pred_offset, int32_t pref_offset)
 		bmp_pred[pred_offset] = 1;
 		total_prefetches++;
 
-		// if(last_pref_offset == pref_offset)
-		// {
-		// 	last_pref_offset_conf++;
-		// }
-		// else
-		// {
-		// 	last_pref_offset = pref_offset;
-		// 	last_pref_offset_conf = 0;
-		// }
 		insert_action_tracker(pref_offset);
 	}
 }
