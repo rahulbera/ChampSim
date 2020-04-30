@@ -18,6 +18,10 @@ namespace knob
 	bool     l1d_perfect = false;
 	bool     l2c_perfect = false;
 	bool     llc_perfect = false;
+	bool     l1d_semi_perfect = false;
+	bool     l2c_semi_perfect = false;
+	bool     llc_semi_perfect = false;
+	uint32_t semi_perfect_cache_page_buffer_size = 64;
 	bool     measure_ipc = false;
 	uint64_t measure_ipc_epoch = 1000;
 	uint32_t dram_io_freq = 2400;
@@ -357,6 +361,22 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
     else if (MATCH("", "llc_perfect"))
     {
 		knob::llc_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "l1d_semi_perfect"))
+    {
+		knob::l1d_semi_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "l2c_semi_perfect"))
+    {
+		knob::l2c_semi_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "llc_semi_perfect"))
+    {
+		knob::llc_semi_perfect = !strcmp(value, "true") ? true : false;
+    }
+    else if (MATCH("", "semi_perfect_cache_page_buffer_size"))
+    {
+		knob::semi_perfect_cache_page_buffer_size = atoi(value);
     }
     else if (MATCH("", "measure_ipc"))
     {

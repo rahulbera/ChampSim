@@ -124,6 +124,9 @@ class CACHE : public MEMORY {
 
     /* Array of prefetchers associated with this cache */
     vector<Prefetcher*> prefetchers;
+
+    /* For semi-perfect cache */
+    deque<uint64_t> page_buffer;
     
     // constructor
     CACHE(string v1, uint32_t v2, int v3, uint32_t v4, uint32_t v5, uint32_t v6, uint32_t v7, uint32_t v8) 
@@ -255,6 +258,8 @@ class CACHE : public MEMORY {
              find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
              llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
              lru_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
+
+    bool search_and_add(uint64_t page);
 };
 
 #endif

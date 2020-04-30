@@ -36,6 +36,13 @@ namespace knob
     extern uint32_t dram_io_freq;
     extern bool     measure_dram_bw;
     extern uint64_t measure_dram_bw_epoch;
+    extern bool l1d_perfect;
+    extern bool l2c_perfect;
+    extern bool llc_perfect;
+    extern bool l1d_semi_perfect;
+    extern bool l2c_semi_perfect;
+    extern bool llc_semi_perfect;
+    extern uint32_t semi_perfect_cache_page_buffer_size;
 }
 
 time_t start_time;
@@ -515,6 +522,13 @@ void print_knobs()
         << "measure_ipc_epoch " << knob::measure_ipc_epoch << endl
         << "measure_dram_bw " << knob::measure_dram_bw << endl
         << "measure_dram_bw_epoch " << knob::measure_dram_bw_epoch << endl
+        << "l1d_perfect " << knob::l1d_perfect << endl
+        << "l2c_perfect " << knob::l2c_perfect << endl
+        << "llc_perfect " << knob::llc_perfect << endl
+        << "l1d_semi_perfect " << knob::l1d_semi_perfect << endl
+        << "l2c_semi_perfect " << knob::l2c_semi_perfect << endl
+        << "llc_semi_perfect " << knob::llc_semi_perfect << endl
+        << "semi_perfect_cache_page_buffer_size " << knob::semi_perfect_cache_page_buffer_size << endl
         << endl;
     cout << "num_cpus " << NUM_CPUS << endl
         << "cpu_freq " << CPU_FREQ << endl

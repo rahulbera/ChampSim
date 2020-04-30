@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "cache.h"
 #include "set.h"
 
@@ -8,6 +9,10 @@ namespace knob
     extern bool l1d_perfect;
     extern bool l2c_perfect;
     extern bool llc_perfect;
+    extern bool l1d_semi_perfect;
+    extern bool l2c_semi_perfect;
+    extern bool llc_semi_perfect;
+    extern uint32_t semi_perfect_cache_page_buffer_size;
 }
 
 void print_cache_config()
@@ -1177,6 +1182,22 @@ int CACHE::check_hit(PACKET *packet)
         match_way = 0;
         return match_way;
     }
+    
+    if((cache_type == IS_L1D && knob::l1d_semi_perfect)
+        || (cache_type == IS_L2C && knob::l2c_semi_perfect)
+        || (cache_type == IS_LLC && knob::llc_semi_perfect))
+    {
+        if(packet->type == LOAD)
+        {
+            /* lookup the page buffer and decide whether to charge latency or not */
+            bool found = search_and_add((packet->address >> LOG2_PAGE_SIZE));
+            if(found)
+            {
+                match_way = 0;
+                return match_way;
+            }
+        }
+    }
 
     // hit
     for (uint32_t way=0; way<NUM_WAY; way++) {
@@ -1822,3 +1843,18 @@ void CACHE::broadcast_ipc(uint8_t ipc)
         llc_prefetcher_broadcast_ipc(ipc);
 }
 
+bool CACHE::search_and_add(uint64_t page)
+{
+    bool found = false;
+    auto it = find_if(page_buffer.begin(), page_buffer.end(), [page](uint64_t p){return p == page;});
+    if(it != page_buffer.end()) found = true;
+    if(!found)
+    {
+        if(page_buffer.size() >= knob::semi_perfect_cache_page_buffer_size)
+        {
+            page_buffer.pop_front();
+        }
+        page_buffer.push_back(page);
+    }
+    return found;
+}
