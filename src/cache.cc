@@ -1704,35 +1704,36 @@ void CACHE::add_mshr(PACKET *packet)
     }
 
     /* Get b/w buckets from LLC MSHR occupancy */
-    if (cache_type == IS_LLC)
-    {
-        bw_compute_epoch++;
-        if(bw_compute_epoch == LLC_BW_COMPUTE_EPOCH)
-        {
-            bw_compute_epoch = 0;
-            uint32_t occupancy_perc = 100*(float)MSHR.occupancy/MSHR_SIZE;
-            uint8_t bw_level = 0;
-            if (occupancy_perc < 25)
-            {
-                bw_level = 0;
-            }
-            else if (occupancy_perc >= 25 && occupancy_perc < 50)
-            {
-                bw_level = 1;
-            }
-            else if (occupancy_perc >= 50 && occupancy_perc < 75)
-            {
-                bw_level = 2;
-            }
-            else
-            {
-                bw_level = 3;
-            }
+    /* The new b/w measure is shifted to main.cc */
+    // if (cache_type == IS_LLC)
+    // {
+    //     bw_compute_epoch++;
+    //     if(bw_compute_epoch == LLC_BW_COMPUTE_EPOCH)
+    //     {
+    //         bw_compute_epoch = 0;
+    //         uint32_t occupancy_perc = 100*(float)MSHR.occupancy/MSHR_SIZE;
+    //         uint8_t bw_level = 0;
+    //         if (occupancy_perc < 25)
+    //         {
+    //             bw_level = 0;
+    //         }
+    //         else if (occupancy_perc >= 25 && occupancy_perc < 50)
+    //         {
+    //             bw_level = 1;
+    //         }
+    //         else if (occupancy_perc >= 50 && occupancy_perc < 75)
+    //         {
+    //             bw_level = 2;
+    //         }
+    //         else
+    //         {
+    //             bw_level = 3;
+    //         }
 
-            /* broadcast to all caches */
-            broadcast_bw(bw_level);
-        }
-    }
+    //         /* broadcast to all caches */
+    //         broadcast_bw(bw_level);
+    //     }
+    // }
 }
 
 void CACHE::broadcast_bw(uint8_t bw_level)

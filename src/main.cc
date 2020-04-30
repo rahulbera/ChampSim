@@ -906,6 +906,7 @@ int main(int argc, char** argv)
             MYLOG("cycle %lu rq_enqueue_count %lu last_enqueue_count %lu epoch_enqueue_count %lu QUARTILE %u", uncore.cycle, uncore.DRAM.rq_enqueue_count, uncore.DRAM.last_enqueue_count, uncore.DRAM.epoch_enqueue_count, uncore.DRAM.bw);
             uncore.DRAM.last_enqueue_count = uncore.DRAM.rq_enqueue_count;
             uncore.DRAM.next_bw_measure_cycle = uncore.cycle + knob::measure_dram_bw_epoch;
+            uncore.LLC.broadcast_bw(uncore.DRAM.bw);
         }
 
         uncore.LLC.operate();
