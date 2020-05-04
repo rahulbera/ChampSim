@@ -176,6 +176,13 @@ void print_dram_stats()
         cout << "avg_congested_cycle " << (total_congested_cycle / uncore.DRAM.dbus_congested[NUM_TYPES][NUM_TYPES]) << endl;
     else
         cout << "avg_congested_cycle 0" << endl;
+    cout << endl;
+    
+    cout << "DRAM_bw_pochs " << uncore.DRAM.total_bw_epochs << endl;
+    for(uint32_t index = 0; index < DRAM_BW_LEVELS; ++index)
+    {
+        cout << "DRAM_bw_level_" << index << " " << uncore.DRAM.bw_level_hist[index] << endl;
+    }
 }
 
 void reset_cache_stats(uint32_t cpu, CACHE *cache)
@@ -920,6 +927,8 @@ int main(int argc, char** argv)
             MYLOG("cycle %lu rq_enqueue_count %lu last_enqueue_count %lu epoch_enqueue_count %lu QUARTILE %u", uncore.cycle, uncore.DRAM.rq_enqueue_count, uncore.DRAM.last_enqueue_count, uncore.DRAM.epoch_enqueue_count, uncore.DRAM.bw);
             uncore.DRAM.last_enqueue_count = uncore.DRAM.rq_enqueue_count;
             uncore.DRAM.next_bw_measure_cycle = uncore.cycle + knob::measure_dram_bw_epoch;
+            uncore.DRAM.total_bw_epochs++;
+            uncore.DRAM.bw_level_hist[uncore.DRAM.bw]++;
             uncore.LLC.broadcast_bw(uncore.DRAM.bw);
         }
 
@@ -935,20 +944,20 @@ int main(int argc, char** argv)
     
     cout << endl << "ChampSim completed all CPUs" << endl;
     if (NUM_CPUS > 1) {
-        cout << endl << "Total Simulation Statistics (not including warmup)" << endl;
-        for (uint32_t i=0; i<NUM_CPUS; i++) {
-            cout << endl << "CPU " << i << " cumulative IPC: " << (float) (ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr) / (current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle); 
-            cout << " instructions: " << ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr << " cycles: " << current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle << endl;
-#ifndef CRC2_COMPILE
-            print_sim_stats(i, &ooo_cpu[i].L1D);
-            print_sim_stats(i, &ooo_cpu[i].L1I);
-            print_sim_stats(i, &ooo_cpu[i].L2C);
-            ooo_cpu[i].L1D.l1d_prefetcher_final_stats();
-            ooo_cpu[i].L2C.l2c_prefetcher_final_stats();
-#endif
-            print_sim_stats(i, &uncore.LLC);
-        }
-        uncore.LLC.llc_prefetcher_final_stats();
+//         cout << endl << "Total Simulation Statistics (not including warmup)" << endl;
+//         for (uint32_t i=0; i<NUM_CPUS; i++) {
+//             cout << endl << "CPU " << i << " cumulative IPC: " << (float) (ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr) / (current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle); 
+//             cout << " instructions: " << ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr << " cycles: " << current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle << endl;
+// #ifndef CRC2_COMPILE
+//             print_sim_stats(i, &ooo_cpu[i].L1D);
+//             print_sim_stats(i, &ooo_cpu[i].L1I);
+//             print_sim_stats(i, &ooo_cpu[i].L2C);
+//             ooo_cpu[i].L1D.l1d_prefetcher_final_stats();
+//             ooo_cpu[i].L2C.l2c_prefetcher_final_stats();
+// #endif
+//             print_sim_stats(i, &uncore.LLC);
+//         }
+//         uncore.LLC.llc_prefetcher_final_stats();
     }
 
     cout << endl << "[ROI Statistics]" << endl;

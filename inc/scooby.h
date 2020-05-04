@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include "champsim.h"
 #include "prefetcher.h"
 #include "scooby_helper.h"
 #include "learning_engine_basic.h"
@@ -16,7 +17,6 @@ using namespace std;
 #define MAX_ACTIONS 64
 #define MAX_REWARDS 16
 #define MAX_SCOOBY_DEGREE 16
-#define SCOOBY_MAX_BW_LEVEL 4
 #define SCOOBY_MAX_IPC_LEVEL 4
 
 /* forward declaration */
@@ -101,6 +101,11 @@ private:
 			{
 				uint64_t called;
 			} assign_reward;
+
+			struct
+			{
+				uint64_t dist[MAX_REWARDS][2];
+			} compute_reward;
 			
 			uint64_t correct_timely;
 			uint64_t correct_untimely;
@@ -140,7 +145,7 @@ private:
 		struct 
 		{
 			uint64_t epochs;
-			uint64_t histogram[SCOOBY_MAX_BW_LEVEL];
+			uint64_t histogram[DRAM_BW_LEVELS];
 		} bandwidth;
 
 		struct 
@@ -165,6 +170,7 @@ private:
 	void reward(uint64_t address);
 	void reward(Scooby_PTEntry *ptentry);
 	void assign_reward(Scooby_PTEntry *ptentry, RewardType type);
+	int32_t compute_reward(Scooby_PTEntry *ptentry, RewardType type);
 	void train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted);
 	vector<Scooby_PTEntry*> search_pt(uint64_t address, bool search_all = false);
 	void update_stats(uint32_t state, uint32_t action_index, uint32_t pref_degree = 1);
@@ -175,7 +181,7 @@ private:
 	void insert_global_action_tracker(Scooby_STEntry *stentry);
 	void print_global_action_tracker();
 	void lookup_global_action_tracker(Scooby_STEntry *stentry);
-
+	bool is_high_bw();
 
 public:
 	Scooby(string type);

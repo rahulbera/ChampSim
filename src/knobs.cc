@@ -183,6 +183,14 @@ namespace knob
 	uint32_t scooby_afterburner_degree_threshold;
 	uint32_t scooby_afterburner_page_threshold;
 	vector<int32_t> scooby_dyn_degrees_afterburning;
+	uint32_t scooby_high_bw_thresh;
+	bool     scooby_enable_hbw_reward;
+	int32_t  scooby_reward_hbw_correct_timely;
+	int32_t  scooby_reward_hbw_correct_untimely;
+	int32_t  scooby_reward_hbw_incorrect;
+	int32_t  scooby_reward_hbw_none;
+	int32_t  scooby_reward_hbw_out_of_bounds;
+	int32_t  scooby_reward_hbw_tracker_hit;
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -241,7 +249,7 @@ namespace knob
 	bool le_featurewise_disable_adjust_weight_all_features_align;
 	bool le_featurewise_selective_update;
 	uint32_t le_featurewise_pooling_type;
-
+	bool le_featurewise_enable_dyn_action_fallback;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -956,6 +964,38 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_dyn_degrees_afterburning = get_array_int(value);
 	}
+	else if (MATCH("", "scooby_high_bw_thresh"))
+	{
+		knob::scooby_high_bw_thresh = atoi(value);
+	}
+	else if (MATCH("", "scooby_enable_hbw_reward"))
+	{
+		knob::scooby_enable_hbw_reward = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "scooby_reward_hbw_correct_timely"))
+	{
+		knob::scooby_reward_hbw_correct_timely = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_hbw_correct_untimely"))
+	{
+		knob::scooby_reward_hbw_correct_untimely = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_hbw_incorrect"))
+	{
+		knob::scooby_reward_hbw_incorrect = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_hbw_none"))
+	{
+		knob::scooby_reward_hbw_none = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_hbw_out_of_bounds"))
+	{
+		knob::scooby_reward_hbw_out_of_bounds = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_hbw_tracker_hit"))
+	{
+		knob::scooby_reward_hbw_tracker_hit = atoi(value);
+	}
 	
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
@@ -1165,6 +1205,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_pooling_type"))
 	{
 		knob::le_featurewise_pooling_type = atoi(value);
+	}
+	else if (MATCH("", "le_featurewise_enable_dyn_action_fallback"))
+	{
+		knob::le_featurewise_enable_dyn_action_fallback = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Shaggy knobs */

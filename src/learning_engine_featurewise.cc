@@ -31,6 +31,7 @@ namespace knob
 	extern bool 			le_featurewise_disable_adjust_weight_all_features_align;
 	extern bool 			le_featurewise_selective_update;
 	extern uint32_t         le_featurewise_pooling_type;
+	extern bool             le_featurewise_enable_dyn_action_fallback;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -173,14 +174,23 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 {
 	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
 	uint32_t selected_action = 0, init_index = 0;
+	
+	bool fallback = knob::le_featurewise_enable_action_fallback;
+	if(knob::le_featurewise_enable_dyn_action_fallback)
+	{
+		if(state->is_high_bw)
+		{
+			fallback = false;
+			stats.action.dyn_fallback_saved++;
+		}
+	}
 
-	if(!knob::le_featurewise_enable_action_fallback)
+	if(!fallback)
 	{
 		max_q_value = consultQ(state, 0);
 		total_q_value += max_q_value;
 		init_index = 1;
 	}
-
 	for(uint32_t action = init_index; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
@@ -191,7 +201,7 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 			selected_action = action;
 		}
 	}
-	if(knob::le_featurewise_enable_action_fallback && max_q_value == 0.0)
+	if(fallback && max_q_value == 0.0)
 	{
 		stats.action.fallback++;
 	}
@@ -257,6 +267,7 @@ void LearningEngineFeaturewise::dump_stats()
 	fprintf(stdout, "learning_engine_featurewise.action.explore %lu\n", stats.action.explore);
 	fprintf(stdout, "learning_engine_featurewise.action.exploit %lu\n", stats.action.exploit);
 	fprintf(stdout, "learning_engine_featurewise.action.fallback %lu\n", stats.action.fallback);
+	fprintf(stdout, "learning_engine_featurewise.action.dyn_fallback_saved %lu\n", stats.action.dyn_fallback_saved);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		fprintf(stdout, "learning_engine_featurewise.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);

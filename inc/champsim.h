@@ -70,6 +70,7 @@
 #define DRAM_SIZE (DRAM_CHANNELS*DRAM_RANKS*DRAM_BANKS*DRAM_ROWS*DRAM_ROW_SIZE/1024) 
 #define DRAM_PAGES ((DRAM_SIZE<<10)>>2) 
 //#define DRAM_PAGES 10
+#define DRAM_BW_LEVELS 4
 
 using namespace std;
 

@@ -18,6 +18,11 @@ private:
 	vector<float> m_q_value_buckets;
 	vector<uint64_t> m_q_value_histogram;
 
+	/* tracing related knobs */
+	uint32_t trace_interval;
+	uint64_t trace_timestamp;
+	FILE *trace;
+
 	/* stats */
 	struct
 	{
@@ -28,6 +33,7 @@ private:
 			uint64_t exploit;
 			uint64_t dist[MAX_ACTIONS][2]; /* 0:explored, 1:exploited */
 			uint64_t fallback;
+			uint64_t dyn_fallback_saved;
 		} action;
 
 		struct

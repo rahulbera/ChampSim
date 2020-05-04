@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include "champsim.h"
 #include "scooby_helper.h"
 #include "util.h"
 #include "feature_knowledge.h"
@@ -44,6 +45,13 @@ const char* getFeatureString(Feature feature)
 {
 	assert(feature < Feature::NumFeatures);
 	return MapFeatureString[(uint32_t)feature];
+}
+
+const char* MapRewardTypeString[] = {"none", "incorrect", "correct_untimely", "correct_timely", "out_of_bounds", "tracker_hit"};
+const char* getRewardTypeString(RewardType type)
+{
+	assert(type < RewardType::num_rewards);
+	return MapRewardTypeString[(uint32_t)type];
 }
 
 uint32_t State::value()
@@ -351,10 +359,26 @@ bool Scooby_STEntry::search_action_tracker(int32_t action, uint32_t &conf)
 	}
 }
 
-void ScoobyRecorder::record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset)
+void ScoobyRecorder::record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset, uint8_t bw_level)
 {
 	unique_pcs.insert(pc);
 	unique_pages.insert(page);
+
+	/* pc bw distribution */
+	assert(bw_level < DRAM_BW_LEVELS);
+	auto it = pc_bw_dist.find(pc);
+	if(it != pc_bw_dist.end())
+	{
+		assert(it->second.size() == DRAM_BW_LEVELS);
+		it->second[bw_level]++;
+	}
+	else
+	{
+		vector<uint64_t> v;
+		v.resize(DRAM_BW_LEVELS, 0);
+		v[bw_level]++;
+		pc_bw_dist.insert(pair<uint64_t, vector<uint64_t> >(pc, v));
+	}
 }
 
 void ScoobyRecorder::record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset)
@@ -403,6 +427,20 @@ void ScoobyRecorder::dump_stats()
 		<< "total_bitmaps_seen " << total_bitmaps_seen << endl
 		<< "unique_bitmaps_seen " << unique_bitmaps_seen << endl
 		<< endl;
+
+	/* PC BW distribution */
+	for(auto it = pc_bw_dist.begin(); it != pc_bw_dist.end(); ++it)
+	{
+		uint64_t sum = 0;
+		cout << "PC_bw_dist_" << hex << it->first << dec << " ";
+		for(uint32_t index = 0; index < DRAM_BW_LEVELS; ++index)
+		{
+			cout << it->second[index] << ",";
+			sum += it->second[index];
+		}
+		cout << sum << endl;
+	}
+	cout << endl;
 
 	if(knob::scooby_access_debug)
 	{

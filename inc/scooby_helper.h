@@ -41,6 +41,8 @@ typedef enum
 	num_rewards
 } RewardType;
 
+const char* getRewardTypeString(RewardType type);
+
 inline bool isRewardCorrect(RewardType type) { return (type == correct_timely || type == correct_untimely); }
 inline bool isRewardIncorrect(RewardType type) { return type == incorrect; }
 
@@ -56,7 +58,8 @@ public:
 	uint32_t local_delta_sig2;
 	uint32_t local_pc_sig;
 	uint32_t local_offset_sig;
-	
+	uint8_t  bw_level;
+	bool     is_high_bw;	
 	/* 
 	 * Add more states here
 	 */
@@ -72,6 +75,8 @@ public:
 		local_delta_sig2 = 0;
 		local_pc_sig = 0;
 		local_offset_sig = 0;
+		bw_level = 0;
+		is_high_bw = false;
 	}
 	State(){reset();}
 	~State(){}
@@ -184,9 +189,11 @@ public:
 	uint64_t hop_delta_dist[MAX_HOP_COUNT+1][127];
 	uint64_t total_bitmaps_seen;
 	uint64_t unique_bitmaps_seen;
+	unordered_map<uint64_t, vector<uint64_t> > pc_bw_dist;
+
 	ScoobyRecorder(){}
 	~ScoobyRecorder(){}	
-	void record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset);
+	void record_access(uint64_t pc, uint64_t address, uint64_t page, uint32_t offset, uint8_t bw_level);
 	void record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset);
 	void record_access_knowledge(Scooby_STEntry *stentry);
 	void dump_stats();

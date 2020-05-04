@@ -43,6 +43,8 @@ class MEMORY_CONTROLLER : public MEMORY {
     // to measure bandwidth
     uint64_t rq_enqueue_count, last_enqueue_count, epoch_enqueue_count, next_bw_measure_cycle;
     uint8_t bw;
+    uint64_t total_bw_epochs;
+    uint64_t bw_level_hist[DRAM_BW_LEVELS];
 
     // constructor
     MEMORY_CONTROLLER(string v1) : NAME (v1) {

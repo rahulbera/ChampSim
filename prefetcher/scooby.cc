@@ -87,6 +87,14 @@ namespace knob
 	extern uint32_t scooby_afterburner_degree_threshold;
 	extern uint32_t scooby_afterburner_page_threshold;
 	extern vector<int32_t> scooby_dyn_degrees_afterburning;
+	extern uint32_t scooby_high_bw_thresh;
+	extern bool     scooby_enable_hbw_reward;
+	extern int32_t  scooby_reward_hbw_correct_timely;
+	extern int32_t  scooby_reward_hbw_correct_untimely;
+	extern int32_t  scooby_reward_hbw_incorrect;
+	extern int32_t  scooby_reward_hbw_none;
+	extern int32_t  scooby_reward_hbw_out_of_bounds;
+	extern int32_t  scooby_reward_hbw_tracker_hit;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -145,6 +153,7 @@ namespace knob
 	extern bool				le_featurewise_disable_adjust_weight_all_features_align;
 	extern bool				le_featurewise_selective_update;
 	extern uint32_t 		le_featurewise_pooling_type;
+	extern bool             le_featurewise_enable_dyn_action_fallback;
 }
 
 void Scooby::init_knobs()
@@ -352,6 +361,14 @@ void Scooby::print_config()
 		<< "scooby_afterburner_degree_threshold " << knob::scooby_afterburner_degree_threshold << endl
 		<< "scooby_afterburner_page_threshold " << knob::scooby_afterburner_page_threshold << endl
 		<< "scooby_dyn_degrees_afterburning " << array_to_string(knob::scooby_dyn_degrees_afterburning) << endl
+		<< "scooby_high_bw_thresh " << knob::scooby_high_bw_thresh << endl
+		<< "scooby_enable_hbw_reward " << knob::scooby_enable_hbw_reward << endl
+		<< "scooby_reward_hbw_correct_timely " << knob::scooby_reward_hbw_correct_timely << endl
+		<< "scooby_reward_hbw_correct_untimely " << knob::scooby_reward_hbw_correct_untimely << endl
+		<< "scooby_reward_hbw_incorrect " << knob::scooby_reward_hbw_incorrect << endl
+		<< "scooby_reward_hbw_none " << knob::scooby_reward_hbw_none << endl
+		<< "scooby_reward_hbw_out_of_bounds " << knob::scooby_reward_hbw_out_of_bounds << endl
+		<< "scooby_reward_hbw_tracker_hit " << knob::scooby_reward_hbw_tracker_hit << endl
 
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
@@ -408,6 +425,7 @@ void Scooby::print_config()
 		<< "le_featurewise_disable_adjust_weight_all_features_align " << knob::le_featurewise_disable_adjust_weight_all_features_align << endl
 		<< "le_featurewise_selective_update " << knob::le_featurewise_selective_update << endl
 		<< "le_featurewise_pooling_type " << knob::le_featurewise_pooling_type << endl
+		<< "le_featurewise_enable_dyn_action_fallback " << knob::le_featurewise_enable_dyn_action_fallback << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -432,7 +450,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 
 	/* record the access: just to gain some insights from the workload
 	 * defined in scooby_helper.h(cc) */
-	recorder->record_access(pc, address, page, offset);
+	recorder->record_access(pc, address, page, offset, bw_level);
 
 	/* global state tracking */
 	update_global_state(pc, page, offset, address);
@@ -453,6 +471,8 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->local_delta_sig2 = stentry->get_delta_sig2();
 	state->local_pc_sig = stentry->get_pc_sig();
 	state->local_offset_sig = stentry->get_offset_sig();
+	state->bw_level = bw_level;
+	state->is_high_bw = is_high_bw();
 
 	/* Shaggy only predicts for streaming accesses */
 	bool cond_streaming = (knob::scooby_enable_shaggy && stentry->streaming);
@@ -852,18 +872,20 @@ void Scooby::reward(uint64_t address)
 
 		if(ptentry->is_filled) /* timely */
 		{
-			stats.reward.correct_timely++;
-			stats.reward.dist[ptentry->action_index][RewardType::correct_timely]++;
-			ptentry->reward_type = RewardType::correct_timely;
-			ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_timely : knob::scooby_reward_correct_timely;
+			assign_reward(ptentry, RewardType::correct_timely);
+			// stats.reward.correct_timely++;
+			// stats.reward.dist[ptentry->action_index][RewardType::correct_timely]++;
+			// ptentry->reward_type = RewardType::correct_timely;
+			// ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_timely : knob::scooby_reward_correct_timely;
 			MYLOG("assigned reward correct_timely(%d)", ptentry->reward);
 		}
 		else
 		{
-			stats.reward.correct_untimely++;
-			stats.reward.dist[ptentry->action_index][RewardType::correct_untimely]++;
-			ptentry->reward_type = RewardType::correct_untimely;
-			ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_untimely :knob::scooby_reward_correct_untimely;
+			assign_reward(ptentry, RewardType::correct_untimely);
+			// stats.reward.correct_untimely++;
+			// stats.reward.dist[ptentry->action_index][RewardType::correct_untimely]++;
+			// ptentry->reward_type = RewardType::correct_untimely;
+			// ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_correct_untimely :knob::scooby_reward_correct_untimely;
 			MYLOG("assigned reward correct_untimely(%d)", ptentry->reward);
 		}
 		ptentry->has_reward = true;
@@ -882,18 +904,20 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 	 * hence it either can be incorrect, or no prefetch */
 	if(ptentry->address == 0xdeadbeef) /* no prefetch */
 	{
-		stats.reward.no_pref++;
-		stats.reward.dist[ptentry->action_index][RewardType::none]++;
-		ptentry->reward_type = RewardType::none;
-		ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_none : knob::scooby_reward_none;
+		assign_reward(ptentry, RewardType::none);
+		// stats.reward.no_pref++;
+		// stats.reward.dist[ptentry->action_index][RewardType::none]++;
+		// ptentry->reward_type = RewardType::none;
+		// ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_none : knob::scooby_reward_none;
 		MYLOG("assigned reward no_pref(%d)", ptentry->reward);
 	}
 	else /* incorrect prefetch */
 	{
-		stats.reward.incorrect++;
-		stats.reward.dist[ptentry->action_index][RewardType::incorrect]++;
-		ptentry->reward_type = RewardType::incorrect;
-		ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_incorrect : knob::scooby_reward_incorrect;
+		assign_reward(ptentry, RewardType::incorrect);
+		// stats.reward.incorrect++;
+		// stats.reward.dist[ptentry->action_index][RewardType::incorrect]++;
+		// ptentry->reward_type = RewardType::incorrect;
+		// ptentry->reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_incorrect : knob::scooby_reward_incorrect;
 		MYLOG("assigned reward incorrect(%d)", ptentry->reward);
 	}
 	ptentry->has_reward = true;
@@ -902,36 +926,191 @@ void Scooby::reward(Scooby_PTEntry *ptentry)
 void Scooby::assign_reward(Scooby_PTEntry *ptentry, RewardType type)
 {
 	MYLOG("assign_reward PT evict %lx state %x act_idx %u act %d", ptentry->address, ptentry->state->value(), ptentry->action_index, Actions[ptentry->action_index]);
-	stats.reward.assign_reward.called++;
 	assert(!ptentry->has_reward);
-	int32_t reward = 0;
-	RewardType reward_type;
+	
+	/* compute the reward */
+	int32_t reward = compute_reward(ptentry, type);
 
+	/* assign */
+	ptentry->reward = reward;
+	ptentry->reward_type = type;
+	ptentry->has_reward = true;
+
+	/* maintain stats */
+	stats.reward.assign_reward.called++;
 	switch(type)
 	{
-		case RewardType::out_of_bounds:
-			reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_out_of_bounds : knob::scooby_reward_out_of_bounds;
-			reward_type = RewardType::out_of_bounds;
-			stats.reward.out_of_bounds++;
-			MYLOG("assigned reward out_of_bounds(%d)", reward);
-			break;
+		case RewardType::correct_timely: 	stats.reward.correct_timely++; break;
+		case RewardType::correct_untimely: 	stats.reward.correct_untimely++; break;
+		case RewardType::incorrect: 		stats.reward.incorrect++; break;
+		case RewardType::none: 				stats.reward.no_pref++; break;
+		case RewardType::out_of_bounds: 	stats.reward.out_of_bounds++; break;
+		case RewardType::tracker_hit: 		stats.reward.tracker_hit++; break;
+	}
+	stats.reward.dist[ptentry->action_index][type]++;
 
-		case RewardType::tracker_hit:
-			reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_tracker_hit : knob::scooby_reward_tracker_hit;
-			reward_type = RewardType::tracker_hit;
-			stats.reward.tracker_hit++;
-			MYLOG("assigned reward tracker_hit(%d)", reward);
-			break;
+	// switch(type)
+	// {
+	// 	case RewardType::correct_timely:
+	// 		break;
 
-		default:
-			cout << "assign_reward called for invalid reward type: " << type << endl;
-			assert(false);
+	// 	case RewardType::correct_untimely:
+	// 		break;
+
+	// 	case RewardType::incorrect:
+	// 		break;
+
+	// 	case RewardType::none:
+	// 		break;
+
+	// 	case RewardType::out_of_bounds:
+	// 		reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_out_of_bounds : knob::scooby_reward_out_of_bounds;
+	// 		reward_type = RewardType::out_of_bounds;
+	// 		stats.reward.out_of_bounds++;
+	// 		MYLOG("assigned reward out_of_bounds(%d)", reward);
+	// 		break;
+
+	// 	case RewardType::tracker_hit:
+	// 		reward = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? knob::scooby_reward_fa_tracker_hit : knob::scooby_reward_tracker_hit;
+	// 		reward_type = RewardType::tracker_hit;
+	// 		stats.reward.tracker_hit++;
+	// 		MYLOG("assigned reward tracker_hit(%d)", reward);
+	// 		break;
+
+	// 	default:
+	// 		cout << "assign_reward called for invalid reward type: " << type << endl;
+	// 		assert(false);
+	// }
+
+	// stats.reward.dist[ptentry->action_index][type]++;
+	// ptentry->reward = reward;
+	// ptentry->reward_type = reward_type;
+	// ptentry->has_reward = true;
+}
+
+int32_t Scooby::compute_reward(Scooby_PTEntry *ptentry, RewardType type)
+{
+	bool is_first_action = (knob::scooby_enable_het_reward && ptentry->action_index == 0) ? true : false;
+	bool high_bw = (knob::scooby_enable_hbw_reward && is_high_bw()) ? true : false;
+	int32_t reward = 0;
+
+	stats.reward.compute_reward.dist[type][high_bw]++;
+
+	if(type == RewardType::correct_timely)
+	{
+		if(high_bw)
+		{
+			reward = knob::scooby_reward_hbw_correct_timely;
+		}
+		else
+		{
+			if(is_first_action)
+			{
+				reward = knob::scooby_reward_fa_correct_timely;
+			}
+			else
+			{
+				reward = knob::scooby_reward_correct_timely;
+			}
+		}
+	}
+	else if(type == RewardType::correct_untimely)
+	{
+		if(high_bw)
+		{
+			reward = knob::scooby_reward_hbw_correct_untimely;
+		}
+		else
+		{
+			if(is_first_action)
+			{
+				reward = knob::scooby_reward_fa_correct_untimely;
+			}
+			else
+			{
+				reward = knob::scooby_reward_correct_untimely;
+			}
+		}
+	}
+	else if(type == RewardType::incorrect)
+	{
+		if(high_bw)
+		{
+			reward = knob::scooby_reward_hbw_incorrect;
+		}
+		else
+		{
+			if(is_first_action)
+			{
+				reward = knob::scooby_reward_fa_incorrect;
+			}
+			else
+			{
+				reward = knob::scooby_reward_incorrect;
+			}
+		}
+	}
+	else if(type == RewardType::none)
+	{
+		if(high_bw)
+		{
+			reward = knob::scooby_reward_hbw_none;
+		}
+		else
+		{
+			if(is_first_action)
+			{
+				reward = knob::scooby_reward_fa_none;
+			}
+			else
+			{
+				reward = knob::scooby_reward_none;
+			}
+		}
+	}
+	else if(type == RewardType::out_of_bounds)
+	{
+		if(high_bw)
+		{
+			reward = knob::scooby_reward_hbw_out_of_bounds;
+		}
+		else
+		{
+			if(is_first_action)
+			{
+				reward = knob::scooby_reward_fa_out_of_bounds;
+			}
+			else
+			{
+				reward = knob::scooby_reward_out_of_bounds;
+			}
+		}
+	}
+	else if(type == RewardType::tracker_hit)
+	{
+		if(high_bw)
+		{
+			reward = knob::scooby_reward_hbw_tracker_hit;
+		}
+		else
+		{
+			if(is_first_action)
+			{
+				reward = knob::scooby_reward_fa_tracker_hit;
+			}
+			else
+			{
+				reward = knob::scooby_reward_tracker_hit;
+			}
+		}
+	}
+	else
+	{
+		cout << "Invalid reward type found " << type << endl;
+		assert(false);
 	}
 
-	stats.reward.dist[ptentry->action_index][type]++;
-	ptentry->reward = reward;
-	ptentry->reward_type = reward_type;
-	ptentry->has_reward = true;
+	return reward;
 }
 
 void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
@@ -1096,7 +1275,7 @@ void Scooby::track_in_st(uint64_t page, uint32_t pred_offset, int32_t pref_offse
 
 void Scooby::update_bw(uint8_t bw)
 {
-	assert(bw < SCOOBY_MAX_BW_LEVEL);
+	assert(bw < DRAM_BW_LEVELS);
 	bw_level = bw;
 	stats.bandwidth.epochs++;
 	stats.bandwidth.histogram[bw_level]++;
@@ -1157,6 +1336,11 @@ void Scooby::print_global_action_tracker()
 		cout << "(" << it->first << "," << it->second << ")" << " ";
 	}
 	cout << endl;
+}
+
+bool Scooby::is_high_bw()
+{
+	return bw_level >= knob::scooby_high_bw_thresh ? true : false;
 }
 
 void Scooby::dump_stats()
@@ -1257,6 +1441,14 @@ void Scooby::dump_stats()
 		<< "scooby_reward_out_of_bounds " << stats.reward.out_of_bounds << endl
 		<< "scooby_reward_tracker_hit " << stats.reward.tracker_hit << endl
 		<< endl;
+
+	for(uint32_t reward = 0; reward < RewardType::num_rewards; ++reward)
+	{
+		cout << "scooby_reward_" << getRewardTypeString((RewardType)reward) << "_low_bw " << stats.reward.compute_reward.dist[reward][0] << endl
+			<< "scooby_reward_" << getRewardTypeString((RewardType)reward) << "_high_bw " << stats.reward.compute_reward.dist[reward][1] << endl;
+	}
+	cout << endl;
+
 	for(uint32_t action = 0; action < Actions.size(); ++action)
 	{
 		cout << "scooby_reward_" << Actions[action] << " ";
@@ -1325,7 +1517,7 @@ void Scooby::dump_stats()
 	}
 
 	cout << "scooby_bw_epochs " << stats.bandwidth.epochs << endl;
-	for(uint32_t index = 0; index < SCOOBY_MAX_BW_LEVEL; ++index)
+	for(uint32_t index = 0; index < DRAM_BW_LEVELS; ++index)
 	{
 		cout << "scooby_bw_level_" << index << " " << stats.bandwidth.histogram[index] << endl;
 	}
