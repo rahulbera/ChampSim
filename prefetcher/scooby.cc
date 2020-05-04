@@ -95,6 +95,9 @@ namespace knob
 	extern int32_t  scooby_reward_hbw_none;
 	extern int32_t  scooby_reward_hbw_out_of_bounds;
 	extern int32_t  scooby_reward_hbw_tracker_hit;
+	extern vector<int32_t> scooby_last_pref_offset_conf_thresholds_hbw;
+	extern vector<int32_t> scooby_dyn_degrees_type2_hbw;
+	extern vector<int32_t> scooby_dyn_degrees_afterburning_hbw;
 
 	/* Learning Engine knobs */
 	extern bool     le_enable_trace;
@@ -369,6 +372,10 @@ void Scooby::print_config()
 		<< "scooby_reward_hbw_none " << knob::scooby_reward_hbw_none << endl
 		<< "scooby_reward_hbw_out_of_bounds " << knob::scooby_reward_hbw_out_of_bounds << endl
 		<< "scooby_reward_hbw_tracker_hit " << knob::scooby_reward_hbw_tracker_hit << endl
+		<< "scooby_last_pref_offset_conf_thresholds_hbw " << array_to_string(knob::scooby_last_pref_offset_conf_thresholds_hbw) << endl
+		<< "scooby_dyn_degrees_type2_hbw " << array_to_string(knob::scooby_dyn_degrees_type2_hbw) << endl
+		<< "scooby_dyn_degrees_afterburning_hbw " << array_to_string(knob::scooby_dyn_degrees_afterburning_hbw) << endl
+
 
 		<< endl
 		<< "le_enable_trace " << knob::le_enable_trace << endl
@@ -800,22 +807,27 @@ uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, in
 			uint32_t conf = 0;
 			bool found = (*st_index)->search_action_tracker(action, conf);
 			bool is_afterburning = ((*st_index)->afterburning_actions.find(action) != (*st_index)->afterburning_actions.end());
+			vector<int32_t> conf_thresholds, deg_afterburning, deg_normal;
+
+			conf_thresholds = is_high_bw() ? knob::scooby_last_pref_offset_conf_thresholds_hbw : knob::scooby_last_pref_offset_conf_thresholds;
+			deg_afterburning = is_high_bw() ? knob::scooby_dyn_degrees_afterburning_hbw : knob::scooby_dyn_degrees_afterburning;
+			deg_normal = is_high_bw() ? knob::scooby_dyn_degrees_type2_hbw : knob::scooby_dyn_degrees_type2;
 
 			if(found)
 			{
-				for(uint32_t index = 0; index < knob::scooby_last_pref_offset_conf_thresholds.size(); ++index)
+				for(uint32_t index = 0; index < conf_thresholds.size(); ++index)
 				{
 					/* scooby_last_pref_offset_conf_thresholds is a sorted list in ascending order of values */
-					if(conf <= knob::scooby_last_pref_offset_conf_thresholds[index])
+					if(conf <= conf_thresholds[index])
 					{
-						degree = is_afterburning ? knob::scooby_dyn_degrees_afterburning[index] : knob::scooby_dyn_degrees_type2[index];
+						degree = is_afterburning ? deg_afterburning[index] : deg_normal[index];
 						counted = true;
 						break;
 					}
 				}
 				if(!counted)
 				{
-					degree = is_afterburning ? knob::scooby_dyn_degrees_afterburning.back() : knob::scooby_dyn_degrees_type2.back();
+					degree = is_afterburning ? deg_afterburning.back() : deg_normal.back();
 				}
 			}
 			else
