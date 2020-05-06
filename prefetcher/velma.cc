@@ -92,7 +92,7 @@ Velma::Velma(string type) : Prefetcher(type)
 		else if(!knob::velma_candidate_prefetchers[index].compare("scooby"))
 		{
 			cout << "[Velma] Adding candidate: Scooby" << endl;
-			Scooby *pref_scooby = new Scooby(knob::velma_candidate_prefetchers[index]);
+			Scooby *pref_scooby = new Scooby(knob::velma_candidate_prefetchers[index], NULL);
 			m_prefetchers.push_back(pref_scooby);
 		}
 		else if(!knob::velma_candidate_prefetchers[index].compare("none"))

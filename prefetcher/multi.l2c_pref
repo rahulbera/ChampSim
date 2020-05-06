@@ -58,7 +58,7 @@ void CACHE::l2c_prefetcher_initialize()
 		else if(!knob::l2c_prefetcher_types[index].compare("scooby"))
 		{
 			cout << "adding L2C_PREFETCHER: Scooby" << endl;
-			Scooby *pref_scooby = new Scooby(knob::l2c_prefetcher_types[index]);
+			Scooby *pref_scooby = new Scooby(knob::l2c_prefetcher_types[index], this);
 			prefetchers.push_back(pref_scooby);
 		}
 		else if(!knob::l2c_prefetcher_types[index].compare("next_line"))

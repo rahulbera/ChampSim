@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include "champsim.h"
+#include "cache.h"
 #include "prefetcher.h"
 #include "scooby_helper.h"
 #include "learning_engine_basic.h"
@@ -25,6 +26,7 @@ class LearningEngine;
 class Scooby : public Prefetcher
 {
 private:
+	CACHE *parent;
 	deque<Scooby_STEntry*> signature_table;
 	LearningEngineBasic *brain;
 	LearningEngineCMAC *brain_cmac;
@@ -99,18 +101,15 @@ private:
 
 			struct
 			{
-				uint64_t called;
-			} assign_reward;
-
-			struct
-			{
 				uint64_t dist[MAX_REWARDS][2];
 			} compute_reward;
 			
+			uint64_t total_called;
 			uint64_t correct_timely;
 			uint64_t correct_untimely;
-			uint64_t no_pref;
-			uint64_t incorrect;
+			uint64_t none;
+			uint64_t incorrect_low_cache_acc;
+			uint64_t incorrect_high_cache_acc;
 			uint64_t out_of_bounds;
 			uint64_t tracker_hit;
 			uint64_t dist[MAX_ACTIONS][MAX_REWARDS];
@@ -153,6 +152,15 @@ private:
 			uint64_t epochs;
 			uint64_t histogram[SCOOBY_MAX_IPC_LEVEL];
 		} ipc;
+
+		struct
+		{
+			uint64_t called;
+			uint64_t high_acc;
+			uint64_t low_acc;
+			uint64_t low_fill_thresh;
+		} cache_acc;
+
 	} stats;
 
 	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;
@@ -182,9 +190,10 @@ private:
 	void print_global_action_tracker();
 	void lookup_global_action_tracker(Scooby_STEntry *stentry);
 	bool is_high_bw();
+	bool is_high_accuracy_in_cache();
 
 public:
-	Scooby(string type);
+	Scooby(string type, CACHE *parent);
 	~Scooby();
 	void invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr);
 	void register_fill(uint64_t address);

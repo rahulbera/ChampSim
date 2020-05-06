@@ -65,16 +65,25 @@ void record_roi_stats(uint32_t cpu, CACHE *cache)
 void print_roi_stats(uint32_t cpu, CACHE *cache)
 {
     uint64_t TOTAL_ACCESS = 0, TOTAL_HIT = 0, TOTAL_MISS = 0;
+    uint64_t TOTAL_READ_ACCESS = 0, TOTAL_READ_HIT = 0, TOTAL_READ_MISS = 0;
 
     for (uint32_t i=0; i<NUM_TYPES; i++) {
         TOTAL_ACCESS += cache->roi_access[cpu][i];
         TOTAL_HIT += cache->roi_hit[cpu][i];
         TOTAL_MISS += cache->roi_miss[cpu][i];
+        if(i == LOAD || i == PREFETCH) {
+            TOTAL_READ_ACCESS += cache->roi_access[cpu][i];
+            TOTAL_READ_HIT += cache->roi_hit[cpu][i];
+            TOTAL_READ_MISS += cache->roi_miss[cpu][i];            
+        }
     }
 
     cout<< "Core_" << cpu << "_" << cache->NAME << "_total_access " << TOTAL_ACCESS << endl
         << "Core_" << cpu << "_" << cache->NAME << "_total_hit " << TOTAL_HIT << endl
         << "Core_" << cpu << "_" << cache->NAME << "_total_miss " << TOTAL_MISS << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_total_read_access " << TOTAL_READ_ACCESS << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_total_read_hit " << TOTAL_READ_HIT << endl
+        << "Core_" << cpu << "_" << cache->NAME << "_total_read_miss " << TOTAL_READ_MISS << endl
         << "Core_" << cpu << "_" << cache->NAME << "_loads " << cache->roi_access[cpu][0] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_load_hit " << cache->roi_hit[cpu][0] << endl
         << "Core_" << cpu << "_" << cache->NAME << "_load_miss " << cache->roi_miss[cpu][0] << endl

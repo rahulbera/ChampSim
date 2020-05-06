@@ -47,7 +47,7 @@ const char* getFeatureString(Feature feature)
 	return MapFeatureString[(uint32_t)feature];
 }
 
-const char* MapRewardTypeString[] = {"none", "incorrect", "correct_untimely", "correct_timely", "out_of_bounds", "tracker_hit"};
+const char* MapRewardTypeString[] = {"none", "incorrect_low_cache_acc", "incorrect_high_cache_acc", "correct_untimely", "correct_timely", "out_of_bounds", "tracker_hit"};
 const char* getRewardTypeString(RewardType type)
 {
 	assert(type < RewardType::num_rewards);
@@ -365,20 +365,20 @@ void ScoobyRecorder::record_access(uint64_t pc, uint64_t address, uint64_t page,
 	unique_pages.insert(page);
 
 	/* pc bw distribution */
-	assert(bw_level < DRAM_BW_LEVELS);
-	auto it = pc_bw_dist.find(pc);
-	if(it != pc_bw_dist.end())
-	{
-		assert(it->second.size() == DRAM_BW_LEVELS);
-		it->second[bw_level]++;
-	}
-	else
-	{
-		vector<uint64_t> v;
-		v.resize(DRAM_BW_LEVELS, 0);
-		v[bw_level]++;
-		pc_bw_dist.insert(pair<uint64_t, vector<uint64_t> >(pc, v));
-	}
+	// assert(bw_level < DRAM_BW_LEVELS);
+	// auto it = pc_bw_dist.find(pc);
+	// if(it != pc_bw_dist.end())
+	// {
+	// 	assert(it->second.size() == DRAM_BW_LEVELS);
+	// 	it->second[bw_level]++;
+	// }
+	// else
+	// {
+	// 	vector<uint64_t> v;
+	// 	v.resize(DRAM_BW_LEVELS, 0);
+	// 	v[bw_level]++;
+	// 	pc_bw_dist.insert(pair<uint64_t, vector<uint64_t> >(pc, v));
+	// }
 }
 
 void ScoobyRecorder::record_trigger_access(uint64_t page, uint64_t pc, uint32_t offset)
@@ -429,18 +429,18 @@ void ScoobyRecorder::dump_stats()
 		<< endl;
 
 	/* PC BW distribution */
-	for(auto it = pc_bw_dist.begin(); it != pc_bw_dist.end(); ++it)
-	{
-		uint64_t sum = 0;
-		cout << "PC_bw_dist_" << hex << it->first << dec << " ";
-		for(uint32_t index = 0; index < DRAM_BW_LEVELS; ++index)
-		{
-			cout << it->second[index] << ",";
-			sum += it->second[index];
-		}
-		cout << sum << endl;
-	}
-	cout << endl;
+	// for(auto it = pc_bw_dist.begin(); it != pc_bw_dist.end(); ++it)
+	// {
+	// 	uint64_t sum = 0;
+	// 	cout << "PC_bw_dist_" << hex << it->first << dec << " ";
+	// 	for(uint32_t index = 0; index < DRAM_BW_LEVELS; ++index)
+	// 	{
+	// 		cout << it->second[index] << ",";
+	// 		sum += it->second[index];
+	// 	}
+	// 	cout << sum << endl;
+	// }
+	// cout << endl;
 
 	if(knob::scooby_access_debug)
 	{

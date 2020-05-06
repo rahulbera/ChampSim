@@ -133,7 +133,8 @@ namespace knob
 	uint32_t scooby_pt_size;
 	uint32_t scooby_st_size;
 	int32_t  scooby_reward_none;
-	int32_t  scooby_reward_incorrect;
+	int32_t  scooby_reward_incorrect_low_cache_acc;
+	int32_t  scooby_reward_incorrect_high_cache_acc;
 	int32_t  scooby_reward_correct_untimely;
 	int32_t  scooby_reward_correct_timely;
 	uint32_t scooby_max_pcs;
@@ -165,7 +166,8 @@ namespace knob
 	bool     scooby_enable_het_reward;
 	int32_t  scooby_reward_fa_correct_timely;
 	int32_t  scooby_reward_fa_correct_untimely;
-	int32_t  scooby_reward_fa_incorrect;
+	int32_t  scooby_reward_fa_incorrect_low_cache_acc;
+	int32_t  scooby_reward_fa_incorrect_high_cache_acc;
 	int32_t  scooby_reward_fa_none;
 	int32_t  scooby_reward_fa_out_of_bounds;
 	int32_t  scooby_reward_fa_tracker_hit;
@@ -187,13 +189,18 @@ namespace knob
 	bool     scooby_enable_hbw_reward;
 	int32_t  scooby_reward_hbw_correct_timely;
 	int32_t  scooby_reward_hbw_correct_untimely;
-	int32_t  scooby_reward_hbw_incorrect;
+	int32_t  scooby_reward_hbw_incorrect_low_cache_acc;
+	int32_t  scooby_reward_hbw_incorrect_high_cache_acc;
 	int32_t  scooby_reward_hbw_none;
 	int32_t  scooby_reward_hbw_out_of_bounds;
 	int32_t  scooby_reward_hbw_tracker_hit;
 	vector<int32_t> scooby_last_pref_offset_conf_thresholds_hbw;
 	vector<int32_t> scooby_dyn_degrees_type2_hbw;
 	vector<int32_t> scooby_dyn_degrees_afterburning_hbw;
+	uint32_t scooby_pref_fill_thresh;
+	uint32_t scooby_pref_acc_thresh;
+	bool     scooby_default_cache_acc;
+
 
 	/* Learning Engine */
 	bool     le_enable_trace;
@@ -767,9 +774,13 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_reward_none = atoi(value);
 	}
-	else if (MATCH("", "scooby_reward_incorrect"))
+	else if (MATCH("", "scooby_reward_incorrect_low_cache_acc"))
 	{
-		knob::scooby_reward_incorrect = atoi(value);
+		knob::scooby_reward_incorrect_low_cache_acc = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_incorrect_high_cache_acc"))
+	{
+		knob::scooby_reward_incorrect_high_cache_acc = atoi(value);
 	}
 	else if (MATCH("", "scooby_reward_correct_untimely"))
 	{
@@ -895,9 +906,13 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_reward_fa_correct_untimely = atoi(value);
 	}
-	else if (MATCH("", "scooby_reward_fa_incorrect"))
+	else if (MATCH("", "scooby_reward_fa_incorrect_low_cache_acc"))
 	{
-		knob::scooby_reward_fa_incorrect = atoi(value);
+		knob::scooby_reward_fa_incorrect_low_cache_acc = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_fa_incorrect_high_cache_acc"))
+	{
+		knob::scooby_reward_fa_incorrect_high_cache_acc = atoi(value);
 	}
 	else if (MATCH("", "scooby_reward_fa_none"))
 	{
@@ -983,9 +998,13 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_reward_hbw_correct_untimely = atoi(value);
 	}
-	else if (MATCH("", "scooby_reward_hbw_incorrect"))
+	else if (MATCH("", "scooby_reward_hbw_incorrect_low_cache_acc"))
 	{
-		knob::scooby_reward_hbw_incorrect = atoi(value);
+		knob::scooby_reward_hbw_incorrect_low_cache_acc = atoi(value);
+	}
+	else if (MATCH("", "scooby_reward_hbw_incorrect_high_cache_acc"))
+	{
+		knob::scooby_reward_hbw_incorrect_high_cache_acc = atoi(value);
 	}
 	else if (MATCH("", "scooby_reward_hbw_none"))
 	{
@@ -1010,6 +1029,18 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_dyn_degrees_afterburning_hbw"))
 	{
 		knob::scooby_dyn_degrees_afterburning_hbw = get_array_int(value);
+	}
+	else if (MATCH("", "scooby_pref_fill_thresh"))
+	{
+		knob::scooby_pref_fill_thresh = atoi(value);
+	}
+	else if (MATCH("", "scooby_pref_acc_thresh"))
+	{
+		knob::scooby_pref_acc_thresh = atoi(value);
+	}
+	else if (MATCH("", "scooby_default_cache_acc"))
+	{
+		knob::scooby_default_cache_acc = !strcmp(value, "true") ? true : false;
 	}
 	
 	/* Learning Engine */

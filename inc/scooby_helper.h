@@ -32,7 +32,8 @@ const char* getFeatureString(Feature feature);
 typedef enum
 {
 	none = 0,
-	incorrect,
+	incorrect_low_cache_acc,
+	incorrect_high_cache_acc,
 	correct_untimely,
 	correct_timely,
 	out_of_bounds,
@@ -44,7 +45,7 @@ typedef enum
 const char* getRewardTypeString(RewardType type);
 
 inline bool isRewardCorrect(RewardType type) { return (type == correct_timely || type == correct_untimely); }
-inline bool isRewardIncorrect(RewardType type) { return type == incorrect; }
+inline bool isRewardIncorrect(RewardType type) { return type == incorrect_low_cache_acc || type == incorrect_high_cache_acc; }
 
 class State
 {
