@@ -545,6 +545,7 @@ void print_knobs()
         << "max_read_per_cycle " << MAX_READ_PER_CYCLE << endl
         << "max_fill_per_cycle " << MAX_FILL_PER_CYCLE << endl
         << "dram_channels " << DRAM_CHANNELS << endl
+	<< "log2_dram_channels " << LOG2_DRAM_CHANNELS << endl
         << "dram_ranks " << DRAM_RANKS << endl
         << "dram_banks " << DRAM_BANKS << endl
         << "dram_rows " << DRAM_ROWS << endl
@@ -919,7 +920,7 @@ int main(int argc, char** argv)
         {
             uint64_t this_epoch_enqueue_count = uncore.DRAM.rq_enqueue_count - uncore.DRAM.last_enqueue_count;
             uncore.DRAM.epoch_enqueue_count = (uncore.DRAM.epoch_enqueue_count/2) + this_epoch_enqueue_count;
-            uint32_t quartile = (float)uncore.DRAM.epoch_enqueue_count/DRAM_DBUS_MAX_CAS * 100;
+            uint32_t quartile = ((float)100*uncore.DRAM.epoch_enqueue_count)/DRAM_DBUS_MAX_CAS;
             if(quartile <= 25)      uncore.DRAM.bw = 0;
             else if(quartile <= 50) uncore.DRAM.bw = 1;
             else if(quartile <= 75) uncore.DRAM.bw = 2;
