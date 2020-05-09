@@ -26,7 +26,7 @@ namespace knob
 	uint64_t measure_ipc_epoch = 1000;
 	uint32_t dram_io_freq = 2400;
 	bool     measure_dram_bw = true;
-	uint64_t measure_dram_bw_epoch = 10000;
+	uint64_t measure_dram_bw_epoch = 256;
 
 	/* next-line */
 	vector<int32_t>  next_line_deltas;

@@ -415,10 +415,10 @@ void MEMORY_CONTROLLER::process(PACKET_QUEUE *queue)
 
             dbus_cycle_congested[op_channel] += (dbus_cycle_available[op_channel] - current_core_cycle[op_cpu]);
             bank_request[op_channel][op_rank][op_bank].cycle_available = dbus_cycle_available[op_channel];
-            dbus_congested[NUM_TYPES][NUM_TYPES]++;
-            dbus_congested[NUM_TYPES][op_type]++;
-            dbus_congested[bank_request[op_channel][op_rank][op_bank].working_type][NUM_TYPES]++;
-            dbus_congested[bank_request[op_channel][op_rank][op_bank].working_type][op_type]++;
+            dbus_congested[op_channel][NUM_TYPES][NUM_TYPES]++;
+            dbus_congested[op_channel][NUM_TYPES][op_type]++;
+            dbus_congested[op_channel][bank_request[op_channel][op_rank][op_bank].working_type][NUM_TYPES]++;
+            dbus_congested[op_channel][bank_request[op_channel][op_rank][op_bank].working_type][op_type]++;
 
             DP ( if (warmup_complete[op_cpu]) {
             cout << "[" << queue->NAME << "] " <<  __func__ << " dbus_occupied" << hex;

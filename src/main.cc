@@ -165,15 +165,17 @@ void print_dram_stats()
             << "Channel_" << i << "_WQ_row_buffer_hit " << uncore.DRAM.WQ[i].ROW_BUFFER_HIT << endl
             << "Channel_" << i << "_WQ_row_buffer_miss " << uncore.DRAM.WQ[i].ROW_BUFFER_MISS << endl
             << "Channel_" << i << "_WQ_full " << uncore.DRAM.WQ[i].FULL << endl
-            << "Channel_" << i << "_dbus_congested " << uncore.DRAM.dbus_congested[NUM_TYPES][NUM_TYPES] << endl
+            << "Channel_" << i << "_dbus_congested " << uncore.DRAM.dbus_congested[i][NUM_TYPES][NUM_TYPES] << endl
             << endl;
     }
 
-    uint64_t total_congested_cycle = 0;
-    for (uint32_t i=0; i<DRAM_CHANNELS; i++)
+    uint64_t total_congested_cycle = 0, total_congested = 0;
+    for (uint32_t i=0; i<DRAM_CHANNELS; i++){
         total_congested_cycle += uncore.DRAM.dbus_cycle_congested[i];
-    if (uncore.DRAM.dbus_congested[NUM_TYPES][NUM_TYPES])
-        cout << "avg_congested_cycle " << (total_congested_cycle / uncore.DRAM.dbus_congested[NUM_TYPES][NUM_TYPES]) << endl;
+	total_congested += uncore.DRAM.dbus_congested[i][NUM_TYPES][NUM_TYPES];
+    }
+    if (total_congested)
+        cout << "avg_congested_cycle " << (total_congested_cycle / total_congested) << endl;
     else
         cout << "avg_congested_cycle 0" << endl;
     cout << endl;
@@ -607,7 +609,7 @@ int main(int argc, char** argv)
     // it takes 16 CPU cycles to tranfser 64B cache block on a 8B (64-bit) bus 
     // note that dram burst length = BLOCK_SIZE/DRAM_CHANNEL_WIDTH
     DRAM_DBUS_RETURN_TIME = (BLOCK_SIZE / DRAM_CHANNEL_WIDTH) * (1.0 * CPU_FREQ / DRAM_MTPS);
-    DRAM_DBUS_MAX_CAS = (knob::measure_dram_bw_epoch / DRAM_DBUS_RETURN_TIME);
+    DRAM_DBUS_MAX_CAS = DRAM_CHANNELS * (knob::measure_dram_bw_epoch / DRAM_DBUS_RETURN_TIME);
     // end consequence of knobs
 
     // search through the argv for "-traces"

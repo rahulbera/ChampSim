@@ -29,7 +29,7 @@ class MEMORY_CONTROLLER : public MEMORY {
     const string NAME;
 
     DRAM_ARRAY dram_array[DRAM_CHANNELS][DRAM_RANKS][DRAM_BANKS];
-    uint64_t dbus_cycle_available[DRAM_CHANNELS], dbus_cycle_congested[DRAM_CHANNELS], dbus_congested[NUM_TYPES+1][NUM_TYPES+1];
+    uint64_t dbus_cycle_available[DRAM_CHANNELS], dbus_cycle_congested[DRAM_CHANNELS], dbus_congested[DRAM_CHANNELS][NUM_TYPES+1][NUM_TYPES+1];
     uint64_t bank_cycle_available[DRAM_CHANNELS][DRAM_RANKS][DRAM_BANKS];
     uint8_t  do_write, write_mode[DRAM_CHANNELS]; 
     uint32_t processed_writes, scheduled_reads[DRAM_CHANNELS], scheduled_writes[DRAM_CHANNELS];
@@ -48,11 +48,13 @@ class MEMORY_CONTROLLER : public MEMORY {
 
     // constructor
     MEMORY_CONTROLLER(string v1) : NAME (v1) {
-        for (uint32_t i=0; i<NUM_TYPES+1; i++) {
-            for (uint32_t j=0; j<NUM_TYPES+1; j++) {
-                dbus_congested[i][j] = 0;
+	for(uint32_t channel = 0; channel < DRAM_CHANNELS; ++channel){    
+            for (uint32_t i=0; i<NUM_TYPES+1; i++) {
+                for (uint32_t j=0; j<NUM_TYPES+1; j++) {
+                    dbus_congested[channel][i][j] = 0;
+                }
             }
-        }
+	}
         do_write = 0;
         processed_writes = 0;
         for (uint32_t i=0; i<DRAM_CHANNELS; i++) {
