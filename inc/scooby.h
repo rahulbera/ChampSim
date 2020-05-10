@@ -35,6 +35,7 @@ private:
 	Shaggy *shaggy;
 	uint8_t bw_level;
 	uint8_t core_ipc;
+	uint32_t acc_level;
 
 	/* for workload insights only
 	 * has nothing to do with prefetching */
@@ -153,6 +154,12 @@ private:
 			uint64_t epochs;
 			uint64_t histogram[SCOOBY_MAX_IPC_LEVEL];
 		} ipc;
+
+		struct 
+		{
+			uint64_t epochs;
+			uint64_t histogram[SCOOBY_MAX_IPC_LEVEL];
+		} cache_acc;
 	} stats;
 
 	unordered_map<uint32_t, vector<uint64_t> > state_action_dist;
@@ -194,6 +201,7 @@ public:
 	int32_t getAction(uint32_t action_index);
 	void update_bw(uint8_t bw_level);
 	void update_ipc(uint8_t ipc);
+	void update_acc(uint32_t acc_level);
 };
 
 #endif /* SCOOBY_H */

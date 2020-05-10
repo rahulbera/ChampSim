@@ -109,3 +109,8 @@ void CACHE::l1d_prefetcher_broadcast_ipc(uint8_t ipc)
 {
 
 }
+
+void CACHE::l1d_prefetcher_broadcast_acc(uint32_t acc_level)
+{
+
+}

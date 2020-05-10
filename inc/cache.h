@@ -80,6 +80,8 @@ extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;
 #define LLC_LATENCY 20  // 5 (L1I or L1D) + 10 + 20 = 34 cycles
 #define LLC_BW_COMPUTE_EPOCH 100
 
+#define CACHE_ACC_LEVELS 8
+
 void print_cache_config();
 
 class CACHE : public MEMORY {
@@ -127,6 +129,12 @@ class CACHE : public MEMORY {
 
     /* For semi-perfect cache */
     deque<uint64_t> page_buffer;
+
+    /* For cache accuracy measurement */
+    uint64_t cycle, next_measure_cycle;
+    uint64_t pf_useful_epoch, pf_filled_epoch;
+    uint32_t pref_acc;
+    uint64_t total_acc_epochs, acc_epoch_hist[CACHE_ACC_LEVELS];
     
     // constructor
     CACHE(string v1, uint32_t v2, int v3, uint32_t v4, uint32_t v5, uint32_t v6, uint32_t v7, uint32_t v8) 
@@ -173,6 +181,11 @@ class CACHE : public MEMORY {
         pf_useful = 0;
         pf_useless = 0;
         pf_late = 0;
+
+        cycle = 0; next_measure_cycle = 0;
+        pf_useful_epoch = 0; pf_filled_epoch = 0;
+        pref_acc = 0;
+        total_acc_epochs = 0;
 
         bw_compute_epoch = 0;
     };
@@ -260,6 +273,12 @@ class CACHE : public MEMORY {
              lru_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
 
     bool search_and_add(uint64_t page);
+
+    void handle_prefetch_feedback();
+    void broadcast_acc(uint32_t acc_level),
+        l1d_prefetcher_broadcast_acc(uint32_t bw_level),
+        l2c_prefetcher_broadcast_acc(uint32_t bw_level),
+        llc_prefetcher_broadcast_acc(uint32_t bw_level);
 };
 
 #endif

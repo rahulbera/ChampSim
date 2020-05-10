@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iomanip>
 #include "champsim.h"
+#include "cache.h"
 #include "memory_class.h"
 #include "scooby.h"
 #include "util.h"
@@ -1301,6 +1302,14 @@ void Scooby::update_ipc(uint8_t ipc)
 	stats.ipc.histogram[ipc]++;
 }
 
+void Scooby::update_acc(uint32_t acc)
+{
+	assert(acc < CACHE_ACC_LEVELS);
+	acc_level = acc;
+	stats.cache_acc.epochs++;
+	stats.cache_acc.histogram[acc]++;
+}
+
 void Scooby::insert_global_action_tracker(Scooby_STEntry *stentry)
 {
 	assert(stentry);
@@ -1539,6 +1548,13 @@ void Scooby::dump_stats()
 	for(uint32_t index = 0; index < SCOOBY_MAX_IPC_LEVEL; ++index)
 	{
 		cout << "scooby_ipc_level_" << index << " " << stats.ipc.histogram[index] << endl;
+	}
+	cout << endl;
+
+	cout << "scooby_cache_acc_epochs " << stats.cache_acc.epochs << endl;
+	for(uint32_t index = 0; index < CACHE_ACC_LEVELS; ++index)
+	{
+		cout << "scooby_cache_acc_level_" << index << " " << stats.cache_acc.histogram[index] << endl;
 	}
 	cout << endl;
 }

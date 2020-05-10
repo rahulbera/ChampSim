@@ -36,6 +36,8 @@ namespace knob
     extern uint32_t dram_io_freq;
     extern bool     measure_dram_bw;
     extern uint64_t measure_dram_bw_epoch;
+    extern bool     measure_cache_acc;
+    extern uint64_t measure_cache_acc_epoch;
     extern bool l1d_perfect;
     extern bool l2c_perfect;
     extern bool llc_perfect;
@@ -114,6 +116,11 @@ void print_roi_stats(uint32_t cpu, CACHE *cache)
         << "Core_" << cpu << "_" << cache->NAME << "_pq_to_cache " << cache->PQ.TO_CACHE << endl
         << "Core_" << cpu << "_" << cache->NAME << "_pq_full " << cache->PQ.FULL << endl
         << endl;
+
+    cout<< "Core_" << cpu << "_" << cache->NAME << "_acc_epochs " << cache->total_acc_epochs << endl;
+    for(uint32_t i = 0; i < CACHE_ACC_LEVELS; ++i)
+        cout<< "Core_" << cpu << "_" << cache->NAME << "_acc_level_" << i << " " << cache->acc_epoch_hist[i] << endl;
+    cout << endl;
 }
 
 void print_sim_stats(uint32_t cpu, CACHE *cache)
@@ -531,6 +538,8 @@ void print_knobs()
         << "measure_ipc_epoch " << knob::measure_ipc_epoch << endl
         << "measure_dram_bw " << knob::measure_dram_bw << endl
         << "measure_dram_bw_epoch " << knob::measure_dram_bw_epoch << endl
+        << "measure_cache_acc " << knob::measure_cache_acc << endl
+        << "measure_cache_acc_epoch " << knob::measure_cache_acc_epoch << endl
         << "l1d_perfect " << knob::l1d_perfect << endl
         << "l2c_perfect " << knob::l2c_perfect << endl
         << "llc_perfect " << knob::llc_perfect << endl

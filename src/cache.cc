@@ -13,6 +13,8 @@ namespace knob
     extern bool l2c_semi_perfect;
     extern bool llc_semi_perfect;
     extern uint32_t semi_perfect_cache_page_buffer_size;
+    extern bool measure_cache_acc;
+    extern uint32_t measure_cache_acc_epoch;
 }
 
 void print_cache_config()
@@ -645,6 +647,7 @@ void CACHE::handle_read()
                 if (block[set][way].prefetch)
                 {
                     pf_useful++;
+                    pf_useful_epoch++;
                     block[set][way].prefetch = 0;
                 }
                 block[set][way].used = 1;
@@ -1098,6 +1101,9 @@ void CACHE::operate()
 
     if (PQ.occupancy && (reads_available_this_cycle > 0))
         handle_prefetch();
+
+    /* prefetch feedback broadcasting */
+    handle_prefetch_feedback();
 }
 
 uint32_t CACHE::get_set(uint64_t address)
@@ -1143,7 +1149,10 @@ void CACHE::fill_cache(uint32_t set, uint32_t way, PACKET *packet)
     block[set][way].used = 0;
 
     if (block[set][way].prefetch)
+    {
         pf_filled++;
+        pf_filled_epoch++;
+    }
 
     block[set][way].delta = packet->delta;
     block[set][way].depth = packet->depth;
@@ -1857,4 +1866,46 @@ bool CACHE::search_and_add(uint64_t page)
         page_buffer.push_back(page);
     }
     return found;
+}
+
+void CACHE::handle_prefetch_feedback()
+{
+    uint32_t this_epoch_accuracy = 0, acc_level = 0, pref_acc_prev = pref_acc;
+
+    cycle++;
+    if(knob::measure_cache_acc && cycle >= next_measure_cycle)
+    {
+        this_epoch_accuracy = pf_filled_epoch ? 100*(float)pf_useful_epoch/pf_filled_epoch : 0; 
+        pref_acc = (pref_acc + this_epoch_accuracy) / 2; // have some hysterisis
+        acc_level = (pref_acc / ((float)100/CACHE_ACC_LEVELS)); // quantize into 8 buckets
+        if(acc_level >= CACHE_ACC_LEVELS) acc_level = (CACHE_ACC_LEVELS - 1); // corner cases
+
+        pf_useful_epoch = 0;
+        pf_filled_epoch = 0;
+        next_measure_cycle = cycle + knob::measure_cache_acc_epoch;
+
+        total_acc_epochs++;
+        acc_epoch_hist[acc_level]++;
+
+        // cout << "cache " << NAME 
+        //     << " this_epoch_accuracy " << this_epoch_accuracy 
+        //     << " prev_acc " << pref_acc_prev
+        //     << " pref_acc " << pref_acc
+        //     << " acc_level " << acc_level
+        //     << endl;
+
+        broadcast_acc(acc_level);
+    }
+}
+
+void CACHE::broadcast_acc(uint32_t acc_level)
+{
+    /* boradcast to all the attached prefetchers */
+    switch(cache_type)
+    {
+        case IS_L1I:    return; 
+        case IS_L1D:    return l1d_prefetcher_broadcast_acc(acc_level);
+        case IS_L2C:    return l2c_prefetcher_broadcast_acc(acc_level);
+        case IS_LLC:    return llc_prefetcher_broadcast_acc(acc_level);
+    }
 }

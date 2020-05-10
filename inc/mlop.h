@@ -5,7 +5,9 @@
 #ifndef MLOP_H
 #define MLOP_H
 
-#include <bits/stdc++.h>
+#include <vector>
+#include <unordered_map>
+#include <sstream>
 #include "prefetcher.h"
 #include "cache.h"
 
