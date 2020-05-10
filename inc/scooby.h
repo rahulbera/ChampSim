@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include "champsim.h"
+#include "cache.h"
 #include "prefetcher.h"
 #include "scooby_helper.h"
 #include "learning_engine_basic.h"
@@ -158,7 +159,7 @@ private:
 		struct 
 		{
 			uint64_t epochs;
-			uint64_t histogram[SCOOBY_MAX_IPC_LEVEL];
+			uint64_t histogram[CACHE_ACC_LEVELS];
 		} cache_acc;
 	} stats;
 

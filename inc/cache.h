@@ -80,7 +80,7 @@ extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;
 #define LLC_LATENCY 20  // 5 (L1I or L1D) + 10 + 20 = 34 cycles
 #define LLC_BW_COMPUTE_EPOCH 100
 
-#define CACHE_ACC_LEVELS 8
+#define CACHE_ACC_LEVELS 10
 
 void print_cache_config();
 

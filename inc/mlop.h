@@ -8,6 +8,7 @@
 #include <vector>
 #include <unordered_map>
 #include <sstream>
+#include <algorithm>
 #include "prefetcher.h"
 #include "cache.h"
 
