@@ -255,6 +255,8 @@ namespace knob
 	bool le_featurewise_selective_update;
 	uint32_t le_featurewise_pooling_type;
 	bool le_featurewise_enable_dyn_action_fallback;
+	uint32_t le_featurewise_bw_acc_check_level;
+	uint32_t le_featurewise_acc_thresh;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -1234,6 +1236,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_enable_dyn_action_fallback"))
 	{
 		knob::le_featurewise_enable_dyn_action_fallback = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_bw_acc_check_level"))
+	{
+		knob::le_featurewise_bw_acc_check_level = atoi(value);
+	}
+	else if (MATCH("", "le_featurewise_acc_thresh"))
+	{
+		knob::le_featurewise_acc_thresh = atoi(value);
 	}
 
 	/* Shaggy knobs */

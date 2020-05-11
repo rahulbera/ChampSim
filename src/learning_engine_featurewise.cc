@@ -32,6 +32,8 @@ namespace knob
 	extern bool 			le_featurewise_selective_update;
 	extern uint32_t         le_featurewise_pooling_type;
 	extern bool             le_featurewise_enable_dyn_action_fallback;
+	extern uint32_t 		le_featurewise_bw_acc_check_level;
+	extern uint32_t 		le_featurewise_acc_thresh;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -40,6 +42,10 @@ void LearningEngineFeaturewise::init_knobs()
 	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_num_tiles.size());
 	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_enable_tiling_offset.size());
 	assert(knob::le_featurewise_active_features.size() == knob::le_featurewise_feature_weights.size());
+	if(knob::le_featurewise_enable_dyn_action_fallback)
+	{
+		assert(knob::le_featurewise_enable_action_fallback);
+	}
 }
 
 void LearningEngineFeaturewise::init_stats()
@@ -175,15 +181,7 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
 	uint32_t selected_action = 0, init_index = 0;
 	
-	bool fallback = knob::le_featurewise_enable_action_fallback;
-	if(knob::le_featurewise_enable_dyn_action_fallback)
-	{
-		if(state->is_high_bw)
-		{
-			fallback = false;
-			stats.action.dyn_fallback_saved++;
-		}
-	}
+	bool fallback = do_fallback(state);
 
 	if(!fallback)
 	{
@@ -267,7 +265,8 @@ void LearningEngineFeaturewise::dump_stats()
 	fprintf(stdout, "learning_engine_featurewise.action.explore %lu\n", stats.action.explore);
 	fprintf(stdout, "learning_engine_featurewise.action.exploit %lu\n", stats.action.exploit);
 	fprintf(stdout, "learning_engine_featurewise.action.fallback %lu\n", stats.action.fallback);
-	fprintf(stdout, "learning_engine_featurewise.action.dyn_fallback_saved %lu\n", stats.action.dyn_fallback_saved);
+	fprintf(stdout, "learning_engine_featurewise.action.dyn_fallback_saved_bw %lu\n", stats.action.dyn_fallback_saved_bw);
+	fprintf(stdout, "learning_engine_featurewise.action.dyn_fallback_saved_bw_acc %lu\n", stats.action.dyn_fallback_saved_bw_acc);
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
 		fprintf(stdout, "learning_engine_featurewise.action.index_%d_explored %lu\n", scooby->getAction(action), stats.action.dist[action][0]);
@@ -383,7 +382,27 @@ void LearningEngineFeaturewise::adjust_feature_weights(vector<bool> consensus_ve
 			}
 
 		}
-		// if(m_feature_knowledges[index]) fprintf(stdout, "(%s, %0.6f) ", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), m_feature_knowledges[index]->get_weight());
 	}
-	// fprintf(stdout, "\n");
+}
+
+bool LearningEngineFeaturewise::do_fallback(State *state)
+{
+	/* set fallback to whatever the knob value is, if dynamic fallback is turned off */
+	if(!knob::le_featurewise_enable_dyn_action_fallback)
+	{
+		return knob::le_featurewise_enable_action_fallback;
+	}
+
+	if(state->is_high_bw)
+	{
+		stats.action.dyn_fallback_saved_bw++;
+		return false;
+	}
+	else if(state->bw_level >= knob::le_featurewise_bw_acc_check_level && state->acc_level <= knob::le_featurewise_acc_thresh)
+	{
+		stats.action.dyn_fallback_saved_bw_acc++;
+		return false;
+	}
+
+	return true;
 }

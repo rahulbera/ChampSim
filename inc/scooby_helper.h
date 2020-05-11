@@ -59,7 +59,9 @@ public:
 	uint32_t local_pc_sig;
 	uint32_t local_offset_sig;
 	uint8_t  bw_level;
-	bool     is_high_bw;	
+	bool     is_high_bw;
+	uint32_t acc_level;
+
 	/* 
 	 * Add more states here
 	 */
@@ -77,6 +79,7 @@ public:
 		local_offset_sig = 0;
 		bw_level = 0;
 		is_high_bw = false;
+		acc_level = 0;
 	}
 	State(){reset();}
 	~State(){}

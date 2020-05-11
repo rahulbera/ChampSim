@@ -33,7 +33,8 @@ private:
 			uint64_t exploit;
 			uint64_t dist[MAX_ACTIONS][2]; /* 0:explored, 1:exploited */
 			uint64_t fallback;
-			uint64_t dyn_fallback_saved;
+			uint64_t dyn_fallback_saved_bw;
+			uint64_t dyn_fallback_saved_bw_acc;
 		} action;
 
 		struct
@@ -59,6 +60,7 @@ private:
 	void gather_stats(float max_q, float max_to_avg_q_ratio);
 	void action_selection_consensus(State *state, uint32_t selected_action, vector<bool> &consensus_vec);
 	void adjust_feature_weights(vector<bool> consensus_vec, RewardType reward_type);
+	bool do_fallback(State *state);
 
 public:
 	LearningEngineFeaturewise(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint64_t seed, std::string policy, std::string type, bool zero_init);

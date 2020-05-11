@@ -158,6 +158,8 @@ namespace knob
 	extern bool				le_featurewise_selective_update;
 	extern uint32_t 		le_featurewise_pooling_type;
 	extern bool             le_featurewise_enable_dyn_action_fallback;
+	extern uint32_t 		le_featurewise_bw_acc_check_level;
+	extern uint32_t 		le_featurewise_acc_thresh;
 }
 
 void Scooby::init_knobs()
@@ -434,6 +436,8 @@ void Scooby::print_config()
 		<< "le_featurewise_selective_update " << knob::le_featurewise_selective_update << endl
 		<< "le_featurewise_pooling_type " << knob::le_featurewise_pooling_type << endl
 		<< "le_featurewise_enable_dyn_action_fallback " << knob::le_featurewise_enable_dyn_action_fallback << endl
+		<< "le_featurewise_bw_acc_check_level " << knob::le_featurewise_bw_acc_check_level << endl
+		<< "le_featurewise_acc_thresh " << knob::le_featurewise_acc_thresh << endl
 		<< endl;
 		
 	if(knob::scooby_enable_shaggy)
@@ -481,6 +485,7 @@ void Scooby::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit,
 	state->local_offset_sig = stentry->get_offset_sig();
 	state->bw_level = bw_level;
 	state->is_high_bw = is_high_bw();
+	state->acc_level = acc_level;
 
 	/* Shaggy only predicts for streaming accesses */
 	bool cond_streaming = (knob::scooby_enable_shaggy && stentry->streaming);
