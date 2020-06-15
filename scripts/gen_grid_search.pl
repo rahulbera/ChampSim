@@ -2,7 +2,7 @@
 
 use warnings;
 
-$corr_timely_min 	= 9;
+$corr_timely_min 	= 8;
 $corr_timely_max 	= 24;
 $corr_untimely_min 	= 2;
 $corr_untimely_max 	= 16;
