@@ -62,6 +62,10 @@ void Bingo::print_config() {
    << "bingo_pht_ways " << knob::bingo_pht_ways << endl
    << "bingo_pf_streamer_size " << knob::bingo_pf_streamer_size << endl
    << "bingo_debug_level " << knob::bingo_debug_level << endl
+   << "bingo_l1d_thresh " << knob::bingo_l1d_thresh << endl
+   << "bingo_l2c_thresh " << knob::bingo_l2c_thresh << endl
+   << "bingo_llc_thresh " << knob::bingo_llc_thresh << endl
+   << "bingo_pc_address_fill_level " << knob::bingo_pc_address_fill_level << endl
    << endl;
 }
 
@@ -222,6 +226,7 @@ void Bingo::print_stats() {
    double voter_sd = sqrt(voter_sqr_mean - square(voter_mean));
    cout << "[Bingo] Number of Voters Mean: " << voter_mean << endl;
    cout << "[Bingo] Number of Voters SD: " << voter_sd << endl;
+   cout << endl;
 }
 
 /**
