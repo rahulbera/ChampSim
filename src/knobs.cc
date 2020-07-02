@@ -121,6 +121,23 @@ namespace knob
 	float 	mlop_llc_thresh;
 	uint32_t	mlop_debug_level;
 
+	/* Bingo */
+	uint32_t bingo_region_size = 2048;
+	uint32_t bingo_pattern_len = 32;
+	uint32_t bingo_pc_width = 16;
+	uint32_t bingo_min_addr_width = 5;
+	uint32_t bingo_max_addr_width = 16;
+	uint32_t bingo_ft_size = 64;
+	uint32_t bingo_at_size = 128;
+	uint32_t bingo_pht_size = 8192;
+	uint32_t bingo_pht_ways = 16;
+	uint32_t bingo_pf_streamer_size = 128;
+	uint32_t bingo_debug_level = 0;
+	float    bingo_l1d_thresh;
+	float    bingo_l2c_thresh;
+	float    bingo_llc_thresh;
+	string   bingo_pc_address_fill_level;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -242,9 +259,9 @@ namespace knob
 
 	/* Featurewise Learning Engine */
 	vector<int32_t> le_featurewise_active_features;
-	vector<int32_t> le_featurewise_num_tilings; 
-	vector<int32_t> le_featurewise_num_tiles; 
-	vector<int32_t> le_featurewise_hash_types; 
+	vector<int32_t> le_featurewise_num_tilings;
+	vector<int32_t> le_featurewise_num_tiles;
+	vector<int32_t> le_featurewise_hash_types;
 	vector<int32_t> le_featurewise_enable_tiling_offset;
 	float le_featurewise_max_q_thresh;
 	bool le_featurewise_enable_action_fallback;
@@ -307,7 +324,7 @@ void parse_args(int argc, char *argv[])
 			printf("error parsing commandline %s\n", argv[index]);
 			exit(1);
 		}
-	}	
+	}
 }
 
 int handler(void* user, const char* section, const char* name, const char* value)
@@ -329,7 +346,7 @@ int handler(void* user, const char* section, const char* name, const char* value
 void parse_config(char *config_file_name)
 {
 	cout << "parsing config file: " << string(config_file_name) << endl;
-	if (ini_parse(config_file_name, parse_knobs, NULL) < 0) 
+	if (ini_parse(config_file_name, parse_knobs, NULL) < 0)
 	{
         printf("Failed to load %s\n", config_file_name);
         exit(1);
@@ -732,6 +749,68 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 		knob::mlop_debug_level = atoi(value);
 	}
 
+	/* Bingo */
+	else if (MATCH("", "bingo_region_size"))
+	{
+	   knob::bingo_region_size = atoi(value);
+	}
+	else if (MATCH("", "bingo_pattern_len"))
+	{
+	   knob::bingo_pattern_len = atoi(value);
+	}
+	else if (MATCH("", "bingo_pc_width"))
+	{
+	   knob::bingo_pc_width = atoi(value);
+	}
+	else if (MATCH("", "bingo_min_addr_width"))
+	{
+	   knob::bingo_min_addr_width = atoi(value);
+	}
+	else if (MATCH("", "bingo_max_addr_width"))
+	{
+	   knob::bingo_max_addr_width = atoi(value);
+	}
+	else if (MATCH("", "bingo_ft_size"))
+	{
+	   knob::bingo_ft_size = atoi(value);
+	}
+	else if (MATCH("", "bingo_at_size"))
+	{
+	   knob::bingo_at_size = atoi(value);
+	}
+	else if (MATCH("", "bingo_pht_size"))
+	{
+	   knob::bingo_pht_size = atoi(value);
+	}
+	else if (MATCH("", "bingo_pht_ways"))
+	{
+	   knob::bingo_pht_ways = atoi(value);
+	}
+	else if (MATCH("", "bingo_pf_streamer_size"))
+	{
+	   knob::bingo_pf_streamer_size = atoi(value);
+	}
+	else if (MATCH("", "bingo_debug_level"))
+	{
+	   knob::bingo_debug_level = atoi(value);
+	}
+	else if (MATCH("", "bingo_l1d_thresh"))
+	{
+	   knob::bingo_l1d_thresh = atof(value);
+	}
+	else if (MATCH("", "bingo_l2c_thresh"))
+	{
+	   knob::bingo_l2c_thresh = atof(value);
+	}
+	else if (MATCH("", "bingo_llc_thresh"))
+	{
+	   knob::bingo_llc_thresh = atof(value);
+	}
+	else if (MATCH("", "bingo_pc_address_fill_level"))
+	{
+	   knob::bingo_pc_address_fill_level = string(value);
+	}
+
 	/* Scooby */
 	else if (MATCH("", "scooby_alpha"))
 	{
@@ -1023,7 +1102,7 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	{
 		knob::scooby_dyn_degrees_afterburning_hbw = get_array_int(value);
 	}
-	
+
 	/* Learning Engine */
 	else if (MATCH("", "le_enable_trace"))
 	{
@@ -1361,7 +1440,7 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 		knob::fred_score_cutoff = atof(value);
 	}
 
-    else 
+    else
     {
     	printf("unable to parse section: %s, name: %s, value: %s\n", section, name, value);
         return 0;
