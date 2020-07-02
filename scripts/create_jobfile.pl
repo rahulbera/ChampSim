@@ -14,14 +14,18 @@ my $exe;
 my $local = "0";
 my $ncores = 1;
 my $slurm_partition = "slurm_part";
+my $exclude_list;
 
 GetOptions('tlist=s' => \$tlist_file,
 	   'exp=s' => \$exp_file,
 	   'exe=s' => \$exe,
 	   'ncores=s' => \$ncores,
 	   'local=s' => \$local,
+	   'exclude=s' => \$exclude_list,
 ) or die "Usage: $0 --exe <executable> --exp <exp file> --tlist <trace list>\n";
 die "Supply exe\n" unless defined $exe;
+
+my $exclude_nodes_list = "kratos[$exclude_list]" if defined $exclude_list;
 
 my @trace_info = Trace::parse($tlist_file);
 my @exp_info = Exp::parse($exp_file);
@@ -78,7 +82,7 @@ foreach $trace (@trace_info)
 		}
 		else
 		{
-			$slurm_cmd = "sbatch -p $slurm_partition --mincpus=1 -c $ncores -J ${trace_name}_${exp_name} -o ${trace_name}_${exp_name}.out -e ${trace_name}_${exp_name}.err";
+			$slurm_cmd = "sbatch -p $slurm_partition --mincpus=1 --exclude=${exclude_nodes_list} -c $ncores -J ${trace_name}_${exp_name} -o ${trace_name}_${exp_name}.out -e ${trace_name}_${exp_name}.err";
 			$cmdline = "$slurm_cmd $CHAMPSIM_ROOT/wrapper.sh $exe \"$exp_knobs $trace_knobs -traces $trace_input\"";
 		}
 		$cmdline =~ s/\$(EXP)/$exp_name/g;
