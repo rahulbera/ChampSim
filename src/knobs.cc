@@ -167,6 +167,7 @@ namespace knob
 	bool     scooby_access_debug;
 	bool     scooby_print_access_debug;
 	uint64_t scooby_print_access_debug_pc;
+	uint32_t scooby_print_access_debug_pc_count;
 	bool     scooby_print_trace;
 	bool     scooby_enable_state_action_stats;
 	bool     scooby_enable_reward_tracker_hit;
@@ -918,6 +919,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "scooby_print_access_debug_pc"))
 	{
 		knob::scooby_print_access_debug_pc = strtoul(value, NULL, 0);
+	}
+	else if (MATCH("", "scooby_print_access_debug_pc_count"))
+	{
+		knob::scooby_print_access_debug_pc_count = atoi(value);
 	}
 	else if (MATCH("", "scooby_print_trace"))
 	{

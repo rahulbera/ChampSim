@@ -33,6 +33,7 @@ namespace knob
 	extern uint32_t scooby_pt_address_hashed_bits;
 	extern bool     scooby_access_debug;
 	extern uint64_t scooby_print_access_debug_pc;
+	extern uint32_t scooby_print_access_debug_pc_count;
 	extern uint32_t scooby_seed;
 	extern uint32_t scooby_bloom_filter_size;
 	extern bool     scooby_enable_dyn_degree_detector;
@@ -40,6 +41,8 @@ namespace knob
 	extern bool     scooby_print_trace;
 	extern uint32_t scooby_action_tracker_size;
 }
+
+uint32_t debug_print_count = 0;
 
 const char* MapFeatureString[] = {"PC", "Offset", "Delta", "PC_path", "Offset_path", "Delta_path", "Address", "Page"};
 const char* getFeatureString(Feature feature)
@@ -481,7 +484,23 @@ void ScoobyRecorder::dump_stats()
 
 void print_access_debug(Scooby_STEntry *stentry)
 {
-	if(knob::scooby_print_access_debug_pc && stentry->unique_pcs.find(knob::scooby_print_access_debug_pc) == stentry->unique_pcs.end())
+	bool to_print = true;
+	if(knob::scooby_print_access_debug_pc)
+	{
+		if(stentry->unique_pcs.find(knob::scooby_print_access_debug_pc) == stentry->unique_pcs.end())
+		{
+			to_print = false;
+		}
+		else
+		{
+			debug_print_count++;
+			if(debug_print_count > knob::scooby_print_access_debug_pc_count)
+			{
+				to_print = false;
+			}
+		}
+	}
+	if(!to_print)
 	{
 		return;
 	}

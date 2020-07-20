@@ -53,6 +53,7 @@ namespace knob
 	extern bool     scooby_access_debug;
 	extern bool     scooby_print_access_debug;
 	extern uint64_t scooby_print_access_debug_pc;
+	extern uint32_t scooby_print_access_debug_pc_count;
 	extern bool     scooby_print_trace;
 	extern bool     scooby_enable_state_action_stats;
 	extern bool     scooby_enable_reward_tracker_hit;
@@ -334,6 +335,7 @@ void Scooby::print_config()
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
 		<< "scooby_print_access_debug " << knob::scooby_print_access_debug << endl
 		<< "scooby_print_access_debug_pc " << hex << knob::scooby_print_access_debug_pc << dec << endl
+		<< "scooby_print_access_debug_pc_count " << knob::scooby_print_access_debug_pc_count << endl
 		<< "scooby_print_trace " << knob::scooby_print_trace << endl
 		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
