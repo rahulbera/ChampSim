@@ -32,6 +32,7 @@ namespace knob
 	extern uint32_t scooby_pt_address_hash_type;
 	extern uint32_t scooby_pt_address_hashed_bits;
 	extern bool     scooby_access_debug;
+	extern uint64_t scooby_print_access_debug_pc;
 	extern uint32_t scooby_seed;
 	extern uint32_t scooby_bloom_filter_size;
 	extern bool     scooby_enable_dyn_degree_detector;
@@ -129,52 +130,52 @@ uint32_t State::get_hash(uint64_t key)
 			value = HashZoo::murmur3(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 5:
 			value = HashZoo::jenkins32(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 6:
 			value = HashZoo::hash32shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 7:
 			value = HashZoo::hash32shiftmult(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 8:
 			value = HashZoo::hash64shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 9:
 			value = HashZoo::hash5shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 10:
 			value = HashZoo::hash7shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 11:
 			value = HashZoo::Wang6shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 12:
 			value = HashZoo::Wang5shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 13:
 			value = HashZoo::Wang4shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
 			break;
-			
+
 		case 14:
 			value = HashZoo::Wang3shift(key);
 			value = (uint32_t)(value % knob::scooby_max_states);
@@ -246,7 +247,7 @@ uint32_t Scooby_STEntry::get_delta_sig()
 	/* compute signature only using last 4 deltas */
 	uint32_t n = deltas.size();
 	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
-	
+
 	for(uint32_t index = ptr; index < deltas.size(); ++index)
 	{
 		signature = (signature << DELTA_SIG_SHIFT);
@@ -266,7 +267,7 @@ uint32_t Scooby_STEntry::get_delta_sig2()
 	/* compute signature only using last 4 deltas */
 	uint32_t n = deltas.size();
 	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
-	
+
 	for(uint32_t index = ptr; index < deltas.size(); ++index)
 	{
 		int sig_delta = (deltas[index] < 0) ? (((-1) * deltas[index]) + (1 << (SIG_DELTA_BIT - 1))) : deltas[index];
@@ -283,7 +284,7 @@ uint32_t Scooby_STEntry::get_pc_sig()
 	/* compute signature only using last 4 PCs */
 	uint32_t n = pcs.size();
 	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
-	
+
 	for(uint32_t index = ptr; index < pcs.size(); ++index)
 	{
 		signature = (signature << PC_SIG_SHIFT);
@@ -300,7 +301,7 @@ uint32_t Scooby_STEntry::get_offset_sig()
 	/* compute signature only using last 4 offsets */
 	uint32_t n = offsets.size();
 	uint32_t ptr = (n >= 4) ? (n - 4) : 0;
-	
+
 	for(uint32_t index = ptr; index < offsets.size(); ++index)
 	{
 		signature = (signature << OFFSET_SIG_SHIFT);
@@ -480,21 +481,26 @@ void ScoobyRecorder::dump_stats()
 
 void print_access_debug(Scooby_STEntry *stentry)
 {
+	if(knob::scooby_print_access_debug_pc && stentry->unique_pcs.find(knob::scooby_print_access_debug_pc) == stentry->unique_pcs.end())
+	{
+		return;
+	}
+
 	uint64_t trigger_pc = stentry->pcs.front();
 	/*some streaming PC of 432.milc-274B*/
-	// if(trigger_pc != 0x40e7b8 && trigger_pc != 0x40e7ad) 
+	// if(trigger_pc != 0x40e7b8 && trigger_pc != 0x40e7ad)
 	// {
 	// 	return;
 	// }
 	uint32_t trigger_offset = stentry->offsets.front();
 	uint32_t unique_pc_count = stentry->unique_pcs.size();
-	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%64s|%2u|%2u|%2u|%2u|%2u|", 
-		stentry->page, 
-		trigger_pc, 
-		trigger_offset, 
-		unique_pc_count, 
-		BitmapHelper::to_string(stentry->bmp_real).c_str(), 
-		BitmapHelper::to_string(stentry->bmp_pred).c_str(), 
+	fprintf(stdout, "[ACCESS] %16lx|%16lx|%2u|%2u|%64s|%64s|%2u|%2u|%2u|%2u|%2u|",
+		stentry->page,
+		trigger_pc,
+		trigger_offset,
+		unique_pc_count,
+		BitmapHelper::to_string(stentry->bmp_real).c_str(),
+		BitmapHelper::to_string(stentry->bmp_pred).c_str(),
 		BitmapHelper::count_bits_set(stentry->bmp_real),
 		BitmapHelper::count_bits_set(stentry->bmp_pred),
 		BitmapHelper::count_bits_same(stentry->bmp_real, stentry->bmp_pred), /* covered */

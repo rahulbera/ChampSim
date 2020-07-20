@@ -52,7 +52,8 @@ namespace knob
 	extern uint32_t scooby_state_type;
 	extern bool     scooby_access_debug;
 	extern bool     scooby_print_access_debug;
-	extern bool     scooby_print_trace;	
+	extern uint64_t scooby_print_access_debug_pc;
+	extern bool     scooby_print_trace;
 	extern bool     scooby_enable_state_action_stats;
 	extern bool     scooby_enable_reward_tracker_hit;
 	extern int32_t  scooby_reward_tracker_hit;
@@ -218,8 +219,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 
 		brain_cmac = new LearningEngineCMAC(config,
 											this,
-											knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
-											knob::scooby_max_actions, 
+											knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon,
+											knob::scooby_max_actions,
 											knob::scooby_max_states,
 											knob::scooby_seed,
 											knob::scooby_policy,
@@ -238,8 +239,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 
 		brain_cmac2 = new LearningEngineCMAC2(config,
 											this,
-											knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
-											knob::scooby_max_actions, 
+											knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon,
+											knob::scooby_max_actions,
 											knob::scooby_max_states,
 											knob::scooby_seed,
 											knob::scooby_policy,
@@ -260,8 +261,8 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	else
 	{
 		brain = new LearningEngineBasic( this,
-									knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon, 
-									knob::scooby_max_actions, 
+									knob::scooby_alpha, knob::scooby_gamma, knob::scooby_epsilon,
+									knob::scooby_max_actions,
 									knob::scooby_max_states,
 									knob::scooby_seed,
 									knob::scooby_policy,
@@ -273,7 +274,7 @@ Scooby::Scooby(string type) : Prefetcher(type)
 	/* init Shaggy */
 	if(knob::scooby_enable_shaggy)
 	{
-		shaggy = new Shaggy();	
+		shaggy = new Shaggy();
 	}
 
 	bw_level = 0;
@@ -332,6 +333,7 @@ void Scooby::print_config()
 		<< "scooby_state_hash_type " << knob::scooby_state_hash_type << endl
 		<< "scooby_access_debug " << knob::scooby_access_debug << endl
 		<< "scooby_print_access_debug " << knob::scooby_print_access_debug << endl
+		<< "scooby_print_access_debug_pc " << hex << knob::scooby_print_access_debug_pc << dec << endl
 		<< "scooby_print_trace " << knob::scooby_print_trace << endl
 		<< "scooby_enable_state_action_stats " << knob::scooby_enable_state_action_stats << endl
 		<< "scooby_enable_reward_tracker_hit " << knob::scooby_enable_reward_tracker_hit << endl
@@ -439,7 +441,7 @@ void Scooby::print_config()
 		<< "le_featurewise_bw_acc_check_level " << knob::le_featurewise_bw_acc_check_level << endl
 		<< "le_featurewise_acc_thresh " << knob::le_featurewise_acc_thresh << endl
 		<< endl;
-		
+
 	if(knob::scooby_enable_shaggy)
 	{
 		shaggy->print_config();
@@ -840,7 +842,7 @@ uint32_t Scooby::get_dyn_pref_degree(float max_to_avg_q_ratio, uint64_t page, in
 			{
 				degree = 1;
 			}
-			
+
 			/* remember the action that achieved max degree */
 			if(knob::scooby_enable_afterburner && degree >= knob::scooby_afterburner_degree_threshold)
 			{
@@ -861,7 +863,7 @@ void Scooby::reward(uint64_t address)
 
 	stats.reward.demand.called++;
 	vector<Scooby_PTEntry*> ptentries = search_pt(address, knob::scooby_enable_reward_all);
-	
+
 	if(ptentries.empty())
 	{
 		MYLOG("PT miss");
@@ -945,7 +947,7 @@ void Scooby::assign_reward(Scooby_PTEntry *ptentry, RewardType type)
 {
 	MYLOG("assign_reward PT evict %lx state %x act_idx %u act %d", ptentry->address, ptentry->state->value(), ptentry->action_index, Actions[ptentry->action_index]);
 	assert(!ptentry->has_reward);
-	
+
 	/* compute the reward */
 	int32_t reward = compute_reward(ptentry, type);
 
@@ -1145,8 +1147,8 @@ void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
 	assert(last_evicted->has_reward);
 
 	/* train */
-	MYLOG("===SARSA=== S1: %s A1: %u R1: %d S2: %s A2: %u", last_evicted->state->to_string().c_str(), last_evicted->action_index, 
-															last_evicted->reward, 
+	MYLOG("===SARSA=== S1: %s A1: %u R1: %d S2: %s A2: %u", last_evicted->state->to_string().c_str(), last_evicted->action_index,
+															last_evicted->reward,
 															curr_evicted->state->to_string().c_str(), curr_evicted->action_index);
 	if(knob::scooby_enable_cmac_engine)
 	{
@@ -1158,7 +1160,7 @@ void Scooby::train(Scooby_PTEntry *curr_evicted, Scooby_PTEntry *last_evicted)
 	}
 	else if(knob::scooby_enable_featurewise_engine)
 	{
-		brain_featurewise->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index, 
+		brain_featurewise->learn(last_evicted->state, last_evicted->action_index, last_evicted->reward, curr_evicted->state, curr_evicted->action_index,
 								last_evicted->consensus_vec, last_evicted->reward_type);
 	}
 	else
@@ -1377,7 +1379,7 @@ void Scooby::dump_stats()
 		<< "scooby_st_insert " << stats.st.insert << endl
 		<< "scooby_st_streaming " << stats.st.streaming << endl
 		<< endl
-		
+
 		<< "scooby_predict_called " << stats.predict.called << endl
 		<< "scooby_predict_shaggy_called " << stats.predict.shaggy_called << endl
 		<< "scooby_predict_out_of_bounds " << stats.predict.out_of_bounds << endl;
@@ -1420,7 +1422,7 @@ void Scooby::dump_stats()
 					cout << it->second[index] << ",";
 				}
 				cout << endl;
-			}			
+			}
 		}
 		else
 		{
@@ -1486,7 +1488,7 @@ void Scooby::dump_stats()
 	}
 
 
-	cout << endl 
+	cout << endl
 		<< "scooby_train_called " << stats.train.called << endl
 		<< "scooby_train_compute_reward " << stats.train.compute_reward << endl
 		<< endl
