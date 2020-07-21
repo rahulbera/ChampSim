@@ -51,6 +51,7 @@ private:
 	/* q-value tracing related variables */
 	uint32_t trace_interval;
 	uint64_t trace_timestamp;
+	uint32_t trace_record_count;
 	FILE *trace;
 
 private:

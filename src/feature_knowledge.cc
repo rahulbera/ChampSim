@@ -20,6 +20,7 @@ namespace knob
 	extern uint32_t		le_featurewise_trace_feature_type;
 	extern string 			le_featurewise_trace_feature;
 	extern uint32_t 		le_featurewise_trace_interval;
+	extern uint32_t 		le_featurewise_trace_record_count;
 	extern std::string 	le_featurewise_trace_file_name;
 }
 
@@ -79,6 +80,7 @@ FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float 
 	{
 		trace_interval = 0;
 		trace_timestamp = 0;
+		trace_record_count = 0;
 		trace = fopen(knob::le_featurewise_trace_file_name.c_str(), "w");
 		assert(trace);
 	}
@@ -147,10 +149,12 @@ void FeatureKnowledge::updateQ(State *state1, uint32_t action1, int32_t reward, 
 	if(knob::le_featurewise_enable_trace
 		&& knob::le_featurewise_trace_feature_type == m_feature_type
 		&& !knob::le_featurewise_trace_feature.compare(get_feature_string(state1))
-		&& trace_interval++ == knob::le_featurewise_trace_interval)
+		&& trace_interval++ == knob::le_featurewise_trace_interval
+		&& trace_record_count < knob::le_featurewise_trace_record_count)
 	{
 		dump_feature_trace(state1);
 		trace_interval = 0;
+		trace_record_count++;
 	}
 }
 
@@ -235,7 +239,7 @@ string FeatureKnowledge::get_feature_string(State *state)
 			ss << std::hex << pc << std::dec << "|" << delta;
 			break;
 		default:
-			/* @RBERA TODO: define the rest */ 
+			/* @RBERA TODO: define the rest */
 			assert(false);
 	}
 	return ss.str();

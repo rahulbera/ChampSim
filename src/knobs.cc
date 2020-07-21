@@ -280,6 +280,7 @@ namespace knob
 	uint32_t		le_featurewise_trace_feature_type;
 	string 			le_featurewise_trace_feature;
 	uint32_t 		le_featurewise_trace_interval;
+	uint32_t 		le_featurewise_trace_record_count;
 	std::string 	le_featurewise_trace_file_name;
 	bool 			le_featurewise_enable_score_plot;
 	vector<int32_t> le_featurewise_plot_actions;
@@ -1357,6 +1358,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_trace_interval"))
 	{
 	   knob::le_featurewise_trace_interval = atoi(value);
+	}
+	else if (MATCH("", "le_featurewise_trace_record_count"))
+	{
+	   knob::le_featurewise_trace_record_count = atoi(value);
 	}
 	else if (MATCH("", "le_featurewise_trace_file_name"))
 	{

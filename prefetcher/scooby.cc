@@ -166,6 +166,7 @@ namespace knob
 	extern uint32_t		le_featurewise_trace_feature_type;
 	extern string 			le_featurewise_trace_feature;
 	extern uint32_t 		le_featurewise_trace_interval;
+	extern uint32_t 		le_featurewise_trace_record_count;
 	extern std::string 	le_featurewise_trace_file_name;
 	extern bool 			le_featurewise_enable_score_plot;
 	extern vector<int32_t> le_featurewise_plot_actions;
@@ -455,6 +456,7 @@ void Scooby::print_config()
 		<< "le_featurewise_trace_feature_type " << knob::le_featurewise_trace_feature_type << endl
 		<< "le_featurewise_trace_feature " << knob::le_featurewise_trace_feature << endl
 		<< "le_featurewise_trace_interval " << knob::le_featurewise_trace_interval << endl
+		<< "le_featurewise_trace_record_count " << knob::le_featurewise_trace_record_count << endl
 		<< "le_featurewise_trace_file_name " << knob::le_featurewise_trace_file_name << endl
 		<< "le_featurewise_enable_score_plot " << knob::le_featurewise_enable_score_plot << endl
 		<< "le_featurewise_plot_actions " << array_to_string(knob::le_featurewise_plot_actions) << endl
