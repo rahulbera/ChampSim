@@ -455,11 +455,17 @@ void LearningEngineFeaturewise::plot_scores()
 	for(uint32_t index = 0; index < knob::le_featurewise_plot_actions.size(); ++index)
 	{
 		if(index) fprintf(script, ", ");
-		fprintf(script, "'%s' using 1:%u with lines ls %u title \"action(%d)\"",
+		int action = scooby->getAction(knob::le_featurewise_plot_actions[index]);
+		stringstream ss;
+		if(action > 0)
+			ss << "+" << action;
+		else
+			ss << "-" << action;
+		fprintf(script, "'%s' using 1:%u with lines ls %u title (%s)",
 					knob::le_featurewise_trace_file_name.c_str(),
 					(knob::le_featurewise_plot_actions[index]+2),
-					(index+1), 
-					scooby->getAction(knob::le_featurewise_plot_actions[index]));
+					(index+1),
+					ss.str().c_str());
 	}
 	fprintf(script, "\n");
 	fclose(script);
