@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <assert.h>
 #include "feature_knowledge.h"
 #include "feature_knowledge_helper.h"
@@ -15,6 +16,11 @@
 namespace knob
 {
 	extern bool le_featurewise_enable_action_fallback;
+	extern bool 			le_featurewise_enable_trace;
+	extern uint32_t		le_featurewise_trace_feature_type;
+	extern string 			le_featurewise_trace_feature;
+	extern uint32_t 		le_featurewise_trace_interval;
+	extern std::string 	le_featurewise_trace_file_name;
 }
 
 const char* MapFeatureTypeString[] = {"PC", "Offset", "Delta", "Address", "PC_Offset", "PC_Address", "PC_Page", "PC_Path", "Delta_Path", "Offset_Path", "PC_Delta", "PC_Offset_Delta", "Page", "PC_Path_Offset", "PC_Path_Offset_Path", "PC_Path_Delta", "PC_Path_Delta_Path", "PC_Path_Offset_Path_Delta_Path", "Offset_Path_PC", "Delta_Path_PC"};
@@ -28,7 +34,7 @@ string FeatureKnowledge::getFeatureString(FeatureType feature)
 FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, float weight, float weight_gradient, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset)
 	: m_feature_type(feature_type), m_alpha(alpha), m_gamma(gamma), m_actions(actions), m_weight(weight), m_weight_gradient(weight_gradient), m_hash_type(hash_type), m_num_tilings(num_tilings), m_num_tiles(num_tiles), m_enable_tiling_offset(enable_tiling_offset ? true : false)
 {
-	assert(m_num_tilings < FK_MAX_TILINGS);
+	assert(m_num_tilings <= FK_MAX_TILINGS);
 	assert(m_num_tilings == 1 || m_enable_tiling_offset); /* enforce the use of tiling offsets in case of multiple tilings */
 
 	/* create Q-table */
@@ -67,6 +73,15 @@ FeatureKnowledge::FeatureKnowledge(FeatureType feature_type, float alpha, float 
 
 	min_weight = 1000000;
 	max_weight = 0;
+
+	/* reward tracing */
+	if(knob::le_featurewise_enable_trace)
+	{
+		trace_interval = 0;
+		trace_timestamp = 0;
+		trace = fopen(knob::le_featurewise_trace_file_name.c_str(), "w");
+		assert(trace);
+	}
 }
 
 FeatureKnowledge::~FeatureKnowledge()
@@ -87,7 +102,7 @@ void FeatureKnowledge::setQ(uint32_t tiling, uint32_t tile_index, uint32_t actio
 	assert(tiling < m_num_tilings);
 	assert(tile_index < m_num_tiles);
 	assert(action < m_actions);
-	m_qtable[tiling][tile_index][action] = value;	
+	m_qtable[tiling][tile_index][action] = value;
 }
 
 float FeatureKnowledge::retrieveQ(State *state, uint32_t action)
@@ -118,7 +133,7 @@ void FeatureKnowledge::updateQ(State *state1, uint32_t action1, int32_t reward, 
 		tile_index2 = get_tile_index(tiling, state2);
 		Qsa1 = getQ(tiling, tile_index1, action1);
 		Qsa2 = getQ(tiling, tile_index2, action2);
-		Qsa1_old = Qsa1;	
+		Qsa1_old = Qsa1;
 		/* SARSA */
 		Qsa1 = Qsa1 + m_alpha * ((float)reward + m_gamma * Qsa2 - Qsa1);
 		setQ(tiling, tile_index1, action1, Qsa1);
@@ -127,6 +142,16 @@ void FeatureKnowledge::updateQ(State *state1, uint32_t action1, int32_t reward, 
 
 	float QSa1_new_overall = retrieveQ(state1, action1);
 	MYLOG("<feature %s> Q(%s,%u) = %0.2f, R = %d, Q(%s,%u) = %0.2f, Q(%s,%u) = %0.2f", getFeatureString(m_feature_type).c_str(), state1->to_string().c_str(), action1, QSa1_old_overall, reward, state2->to_string().c_str(), action2, QSa2_old_overall, state1->to_string().c_str(), action1, QSa1_new_overall);
+
+	/* tracing Q-values */
+	if(knob::le_featurewise_enable_trace
+		&& knob::le_featurewise_trace_feature_type == m_feature_type
+		&& !knob::le_featurewise_trace_feature.compare(get_feature_string(state1))
+		&& trace_interval++ == knob::le_featurewise_trace_interval)
+	{
+		dump_feature_trace(state1);
+		trace_interval = 0;
+	}
 }
 
 uint32_t FeatureKnowledge::get_tile_index(uint32_t tiling, State *state)
@@ -187,4 +212,43 @@ uint32_t FeatureKnowledge::getMaxAction(State *state)
 		}
 	}
 	return selected_action;
+}
+
+string FeatureKnowledge::get_feature_string(State *state)
+{
+	uint64_t pc = state->pc;
+	uint64_t page = state->page;
+	uint64_t address = state->address;
+	uint32_t offset = state->offset;
+	int32_t  delta = state->delta;
+	uint32_t delta_path = state->local_delta_sig2;
+	uint32_t pc_path = state->local_pc_sig;
+	uint32_t offset_path = state->local_offset_sig;
+
+	std::stringstream ss;
+	switch(m_feature_type)
+	{
+		case F_PC:
+			ss << std::hex << pc << std::dec;
+			break;
+		case F_PC_Delta:
+			ss << std::hex << pc << std::dec << "|" << delta;
+			break;
+		default:
+			/* @RBERA TODO: define the rest */ 
+			assert(false);
+	}
+	return ss.str();
+}
+
+void FeatureKnowledge::dump_feature_trace(State *state)
+{
+	trace_timestamp++;
+	fprintf(trace, "%lu,", trace_timestamp);
+	for(uint32_t action = 0; action < m_actions; ++action)
+	{
+		fprintf(trace, "%.2f,", retrieveQ(state, action));
+	}
+	fprintf(trace, "\n");
+	fflush(trace);
 }

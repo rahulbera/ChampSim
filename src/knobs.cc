@@ -276,6 +276,14 @@ namespace knob
 	bool le_featurewise_enable_dyn_action_fallback;
 	uint32_t le_featurewise_bw_acc_check_level;
 	uint32_t le_featurewise_acc_thresh;
+	bool 			le_featurewise_enable_trace;
+	uint32_t		le_featurewise_trace_feature_type;
+	string 			le_featurewise_trace_feature;
+	uint32_t 		le_featurewise_trace_interval;
+	std::string 	le_featurewise_trace_file_name;
+	bool 			le_featurewise_enable_score_plot;
+	vector<int32_t> le_featurewise_plot_actions;
+	std::string 	le_featurewise_plot_file_name;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -1333,6 +1341,38 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_acc_thresh"))
 	{
 		knob::le_featurewise_acc_thresh = atoi(value);
+	}
+	else if (MATCH("", "le_featurewise_enable_trace"))
+	{
+	   knob::le_featurewise_enable_trace = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_trace_feature_type"))
+	{
+	   knob::le_featurewise_trace_feature_type = atoi(value);
+	}
+	else if (MATCH("", "le_featurewise_trace_feature"))
+	{
+	   knob::le_featurewise_trace_feature = string(value);
+	}
+	else if (MATCH("", "le_featurewise_trace_interval"))
+	{
+	   knob::le_featurewise_trace_interval = atoi(value);
+	}
+	else if (MATCH("", "le_featurewise_trace_file_name"))
+	{
+	   knob::le_featurewise_trace_file_name = string(value);
+	}
+	else if (MATCH("", "le_featurewise_enable_score_plot"))
+	{
+	   knob::le_featurewise_enable_score_plot = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "le_featurewise_plot_actions"))
+	{
+	   knob::le_featurewise_plot_actions = get_array_int(value);
+	}
+	else if (MATCH("", "le_featurewise_plot_file_name"))
+	{
+	   knob::le_featurewise_plot_file_name = string(value);
 	}
 
 	/* Shaggy knobs */

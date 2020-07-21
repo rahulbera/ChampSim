@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <strings.h>
 #include <numeric>
+#include "util.h"
 #include "learning_engine_featurewise.h"
 #include "scooby.h"
 
@@ -34,6 +35,11 @@ namespace knob
 	extern bool             le_featurewise_enable_dyn_action_fallback;
 	extern uint32_t 		le_featurewise_bw_acc_check_level;
 	extern uint32_t 		le_featurewise_acc_thresh;
+	extern bool 			le_featurewise_enable_trace;
+	extern std::string 	le_featurewise_trace_file_name;
+	extern bool 			le_featurewise_enable_score_plot;
+	extern vector<int32_t> le_featurewise_plot_actions;
+	extern std::string 	le_featurewise_plot_file_name;
 }
 
 void LearningEngineFeaturewise::init_knobs()
@@ -64,9 +70,9 @@ LearningEngineFeaturewise::LearningEngineFeaturewise(Prefetcher *parent, float a
 	for(uint32_t index = 0; index < knob::le_featurewise_active_features.size(); ++index)
 	{
 		assert(knob::le_featurewise_active_features[index] < NumFeatureTypes);
-		m_feature_knowledges[knob::le_featurewise_active_features[index]] = new FeatureKnowledge((FeatureType)knob::le_featurewise_active_features[index], 
-																							alpha, 
-																							gamma, 
+		m_feature_knowledges[knob::le_featurewise_active_features[index]] = new FeatureKnowledge((FeatureType)knob::le_featurewise_active_features[index],
+																							alpha,
+																							gamma,
 																							actions,
 																							knob::le_featurewise_feature_weights[index],
 																							knob::le_featurewise_weight_gradient,
@@ -148,7 +154,7 @@ void LearningEngineFeaturewise::learn(State *state1, uint32_t action1, int32_t r
 {
 	stats.learn.called++;
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
-	{	
+	{
 		for(uint32_t index = 0; index < NumFeatureTypes; ++index)
 		{
 			if(m_feature_knowledges[index])
@@ -180,7 +186,7 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 {
 	float max_q_value = 0.0, q_value = 0.0, total_q_value = 0.0;
 	uint32_t selected_action = 0, init_index = 0;
-	
+
 	bool fallback = do_fallback(state);
 
 	if(!fallback)
@@ -212,7 +218,7 @@ uint32_t LearningEngineFeaturewise::getMaxAction(State *state, float &max_q, flo
 	}
 	else
 	{
-		max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
+		max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value);
 	}
 	if(max_q_value < knob::le_featurewise_max_q_thresh*m_max_q_value)
 	{
@@ -274,14 +280,14 @@ void LearningEngineFeaturewise::dump_stats()
 	}
 	fprintf(stdout, "learning_engine_featurewise.learn.called %lu\n", stats.learn.called);
 	for(uint32_t index = 0; index < NumFeatureTypes; ++index)
-	{	
+	{
 		if(m_feature_knowledges[index])
 		{
 			fprintf(stdout, "learning_engine_featurewise.learn.su_skip_%s %lu\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), stats.learn.su_skip[index]);
 		}
 	}
 	fprintf(stdout, "\n");
-	
+
 	/* plot histogram */
 	for(uint32_t index = 0; index < m_q_value_histogram.size(); ++index)
 	{
@@ -311,6 +317,12 @@ void LearningEngineFeaturewise::dump_stats()
 			fprintf(stdout, "learning_engine_featurewise.feature_%s_min_weight %0.8f\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), m_feature_knowledges[index]->get_min_weight());
 			fprintf(stdout, "learning_engine_featurewise.feature_%s_max_weight %0.8f\n", FeatureKnowledge::getFeatureString((FeatureType)index).c_str(), m_feature_knowledges[index]->get_max_weight());
 		}
+	}
+
+	/* score plotting */
+	if(knob::le_featurewise_enable_trace && knob::le_featurewise_enable_score_plot)
+	{
+		plot_scores();
 	}
 }
 
@@ -358,7 +370,7 @@ void LearningEngineFeaturewise::action_selection_consensus(State *state, uint32_
 void LearningEngineFeaturewise::adjust_feature_weights(vector<bool> consensus_vec, RewardType reward_type)
 {
 	assert(consensus_vec.size() == NumFeatureTypes);
-	
+
 	if(knob::le_featurewise_disable_adjust_weight_all_features_align && std::accumulate(consensus_vec.begin(), consensus_vec.end(), 0) == knob::le_featurewise_active_features.size())
 	{
 		return;
@@ -369,7 +381,7 @@ void LearningEngineFeaturewise::adjust_feature_weights(vector<bool> consensus_ve
 		if(consensus_vec[index]) /* the feature algined with the overall decision */
 		{
 			assert(m_feature_knowledges[index]);
-			
+
 			/* if the prefetch decision is indeed proven to be correct
 			 * increase the weight of the feature, else decrease it */
 			if(isRewardCorrect(reward_type))
@@ -405,4 +417,38 @@ bool LearningEngineFeaturewise::do_fallback(State *state)
 	}
 
 	return true;
+}
+
+void LearningEngineFeaturewise::plot_scores()
+{
+	Scooby *scooby = (Scooby*)m_parent;
+
+	char *script_file = (char*)malloc(16*sizeof(char));
+	assert(script_file);
+	gen_random(script_file, 16);
+	FILE *script = fopen(script_file, "w");
+	assert(script);
+
+	fprintf(script, "set term png size 960,720 font 'Helvetica,12'\n");
+	fprintf(script, "set datafile sep ','\n");
+	fprintf(script, "set output '%s'\n", knob::le_featurewise_plot_file_name.c_str());
+	fprintf(script, "set title \"Reward over time\"\n");
+	fprintf(script, "set xlabel \"Time\"\n");
+	fprintf(script, "set ylabel \"Score\"\n");
+	fprintf(script, "set grid y\n");
+	fprintf(script, "set key right bottom Left box 3\n");
+	fprintf(script, "plot ");
+	for(uint32_t index = 0; index < knob::le_featurewise_plot_actions.size(); ++index)
+	{
+		if(index) fprintf(script, ", ");
+		fprintf(script, "'%s' using 1:%u with lines title \"action(%d)\"", knob::le_featurewise_trace_file_name.c_str(), (knob::le_featurewise_plot_actions[index]+2), scooby->getAction(knob::le_featurewise_plot_actions[index]));
+	}
+	fprintf(script, "\n");
+	fclose(script);
+
+	std::string cmd = "gnuplot " + std::string(script_file);
+	system(cmd.c_str());
+
+	std::string cmd2 = "rm " + std::string(script_file);
+	system(cmd2.c_str());
 }

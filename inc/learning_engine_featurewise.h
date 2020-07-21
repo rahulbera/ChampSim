@@ -10,7 +10,7 @@ class LearningEngineFeaturewise : public LearningEngineBase
 private:
 	FeatureKnowledge* m_feature_knowledges[NumFeatureTypes];
 	float m_max_q_value;
-	
+
 	std::default_random_engine m_generator;
 	std::bernoulli_distribution *m_explore;
 	std::uniform_int_distribution<int> *m_actiongen;
@@ -61,6 +61,7 @@ private:
 	void action_selection_consensus(State *state, uint32_t selected_action, vector<bool> &consensus_vec);
 	void adjust_feature_weights(vector<bool> consensus_vec, RewardType reward_type);
 	bool do_fallback(State *state);
+	void plot_scores();
 
 public:
 	LearningEngineFeaturewise(Prefetcher *p, float alpha, float gamma, float epsilon, uint32_t actions, uint64_t seed, std::string policy, std::string type, bool zero_init);
@@ -71,4 +72,3 @@ public:
 };
 
 #endif /* LEARNING_ENGINE_FEATUREWISE_H */
-

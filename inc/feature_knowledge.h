@@ -1,6 +1,7 @@
 #ifndef FEATURE_KNOWLEDGE
 #define FEATURE_KNOWLEDGE
 
+#include <string>
 #include "scooby_helper.h"
 #define FK_MAX_TILINGS 32
 
@@ -40,18 +41,24 @@ private:
 	float m_weight;
 	float m_weight_gradient;
 	uint32_t m_hash_type;
-	
+
 	uint32_t m_num_tilings, m_num_tiles;
 	float ***m_qtable;
 	bool m_enable_tiling_offset;
 
 	float min_weight, max_weight;
 
+	/* q-value tracing related variables */
+	uint32_t trace_interval;
+	uint64_t trace_timestamp;
+	FILE *trace;
+
 private:
 	float getQ(uint32_t tiling, uint32_t tile_index, uint32_t action);
 	void setQ(uint32_t tiling, uint32_t tile_index, uint32_t action, float value);
 	uint32_t get_tile_index(uint32_t tiling, State *state);
-	
+	string get_feature_string(State *state);
+
 	/* feature index generators */
 	uint32_t process_PC(uint32_t tiling, uint64_t pc);
 	uint32_t process_offset(uint32_t tiling, uint32_t offset);
@@ -74,6 +81,10 @@ private:
 	uint32_t process_Offset_Path_PC(uint32_t tiling, uint32_t offset_path, uint64_t pc);
 	uint32_t process_Delta_Path_PC(uint32_t tiling, uint32_t delta_path, uint64_t pc);
 
+	/* for q-value tracing */
+	void dump_feature_trace(State *state);
+	void plot_scores();
+
 public:
 	FeatureKnowledge(FeatureType feature_type, float alpha, float gamma, uint32_t actions, float weight, float weight_gradient, uint32_t num_tilings, uint32_t num_tiles, bool zero_init, uint32_t hash_type, int32_t enable_tiling_offset);
 	~FeatureKnowledge();
@@ -81,7 +92,7 @@ public:
 	void updateQ(State *state1, uint32_t action1, int32_t reward, State *state2, uint32_t action2);
 	static string getFeatureString(FeatureType type);
 	uint32_t getMaxAction(State *state); /* Called by featurewise engine only to get a consensus from all the features */
-	
+
 	/* weight manipulation */
 	inline void increase_weight() {m_weight = m_weight + m_weight_gradient * m_weight; if(m_weight < min_weight) min_weight = m_weight;}
 	inline void decrease_weight() {m_weight = m_weight - m_weight_gradient * m_weight; if(m_weight > max_weight) max_weight = m_weight;}
@@ -91,4 +102,3 @@ public:
 };
 
 #endif /* FEATURE_KNOWLEDGE */
-

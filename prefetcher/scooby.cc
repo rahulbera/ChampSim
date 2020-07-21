@@ -162,6 +162,15 @@ namespace knob
 	extern bool             le_featurewise_enable_dyn_action_fallback;
 	extern uint32_t 		le_featurewise_bw_acc_check_level;
 	extern uint32_t 		le_featurewise_acc_thresh;
+	extern bool 			le_featurewise_enable_trace;
+	extern uint32_t		le_featurewise_trace_feature_type;
+	extern string 			le_featurewise_trace_feature;
+	extern uint32_t 		le_featurewise_trace_interval;
+	extern std::string 	le_featurewise_trace_file_name;
+	extern bool 			le_featurewise_enable_score_plot;
+	extern vector<int32_t> le_featurewise_plot_actions;
+	extern std::string 	le_featurewise_plot_file_name;
+
 }
 
 void Scooby::init_knobs()
@@ -442,6 +451,14 @@ void Scooby::print_config()
 		<< "le_featurewise_enable_dyn_action_fallback " << knob::le_featurewise_enable_dyn_action_fallback << endl
 		<< "le_featurewise_bw_acc_check_level " << knob::le_featurewise_bw_acc_check_level << endl
 		<< "le_featurewise_acc_thresh " << knob::le_featurewise_acc_thresh << endl
+		<< "le_featurewise_enable_trace " << knob::le_featurewise_enable_trace << endl
+		<< "le_featurewise_trace_feature_type " << knob::le_featurewise_trace_feature_type << endl
+		<< "le_featurewise_trace_feature " << knob::le_featurewise_trace_feature << endl
+		<< "le_featurewise_trace_interval " << knob::le_featurewise_trace_interval << endl
+		<< "le_featurewise_trace_file_name " << knob::le_featurewise_trace_file_name << endl
+		<< "le_featurewise_enable_score_plot " << knob::le_featurewise_enable_score_plot << endl
+		<< "le_featurewise_plot_actions " << array_to_string(knob::le_featurewise_plot_actions) << endl
+		<< "le_featurewise_plot_file_name " << knob::le_featurewise_plot_file_name << endl
 		<< endl;
 
 	if(knob::scooby_enable_shaggy)
