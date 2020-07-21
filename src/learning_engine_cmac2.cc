@@ -198,7 +198,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 		total_q_value += max_q_value;
 		init_index = 1;
 	}
-	
+
 	for(uint32_t action = init_index; action < m_actions; ++action)
 	{
 		q_value = consultQ(state, action);
@@ -234,7 +234,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 			}
 			else
 			{
-				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
+				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value);
 			}
 			break;
 		case 3:
@@ -244,7 +244,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 			}
 			else
 			{
-				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value); 
+				max_to_avg_q_ratio = (max_q_value - avg_q_value)/abs(avg_q_value);
 			}
 			/* Similar to ratio type 2, but a bit more conservative.
 			 * Only considers the ratio if the max_q_value is more than the init_value */
@@ -261,7 +261,7 @@ uint32_t LearningEngineCMAC2::getMaxAction(State *state, float &max_q, float &ma
 		default:
 			assert(false);
 	}
-	
+
 	bool counted = false;
 	uint32_t th = 0;
 	for(th = 0; th < knob::le_cmac2_qvalue_threshold_levels.size(); ++th)
@@ -329,7 +329,7 @@ void LearningEngineCMAC2::learn(State *state1, uint32_t action1, int32_t reward,
 	float Qsa1_total = 0.0, Qsa2_total = 0.0, Qsa1_total_new = 0.0;
 	Qsa1_total = consultQ(state1, action1);
 	Qsa2_total = consultQ(state2, action2);
-	
+
 	if(m_type == LearningType::SARSA && m_policy == Policy::EGreedy)
 	{
 		/* update each plane */
@@ -348,7 +348,7 @@ void LearningEngineCMAC2::learn(State *state1, uint32_t action1, int32_t reward,
 
 			MYLOG("<plane_%u> Q(%s,%u) = %.2f, R = %d, Q(%s,%u) = %.2f, Q(%s,%u) = %.2f", plane, state1->to_string().c_str(), action1, Qsa1_old, reward, state2->to_string().c_str(), action2, Qsa2, state1->to_string().c_str(), action1, Qsa1);
 		}
-		
+
 		Qsa1_total_new = consultQ(state1, action1);
 		MYLOG("<overall> Q(%s,%u) = %.2f, R = %d, Q(%s,%u) = %.2f, Q(%s,%u) = %.2f", state1->to_string().c_str(), action1, Qsa1_total, reward, state2->to_string().c_str(), action2, Qsa2_total, state1->to_string().c_str(), action1, Qsa1_total_new);
 
@@ -397,13 +397,13 @@ void LearningEngineCMAC2::dump_stats()
 	}
 	fprintf(stdout, "learning_engine_cmac2.learn.called %lu\n", stats.learn.called);
 	fprintf(stdout, "\n");
-	
+
 	for(uint32_t action = 0; action < m_actions; ++action)
 	{
-		fprintf(stdout, "learning_engine_cmac2.action.index_%d_threshold_buckets ", scooby->getAction(action));		
+		fprintf(stdout, "learning_engine_cmac2.action.index_%d_threshold_buckets ", scooby->getAction(action));
 		for(uint32_t th = 0; th < knob::le_cmac2_qvalue_threshold_levels.size()+1; ++th)
 		{
-			fprintf(stdout, "%lu,", stats.action.threshold_dist[action][th]);			
+			fprintf(stdout, "%lu,", stats.action.threshold_dist[action][th]);
 		}
 		fprintf(stdout, "\n");
 	}
@@ -448,21 +448,35 @@ uint32_t LearningEngineCMAC2::getHash(uint32_t key)
 void LearningEngineCMAC2::plot_scores()
 {
 	Scooby *scooby = (Scooby*)m_parent;
-	
+
 	char *script_file = (char*)malloc(16*sizeof(char));
 	assert(script_file);
 	gen_random(script_file, 16);
 	FILE *script = fopen(script_file, "w");
 	assert(script);
 
-	fprintf(script, "set term png size 960,720 font 'Helvetica,12'\n");
+	/* define line styles */
+	stringstream ss;
+	ss	<< "set style line 1 lt 1 lc rgb \"#A00000\" lw 1.4\n"
+		<< "set style line 2 lt 1 lc rgb \"#00A000\" lw 1.4\n"
+		<< "set style line 3 lt 1 lc rgb \"#5060D0\" lw 1.4\n"
+		<< "set style line 4 lt 1 lc rgb \"#0000A0\" lw 1.4\n"
+		<< "set style line 5 lt 1 lc rgb \"#D0D000\" lw 1.4\n"
+		<< "set style line 6 lt 1 lc rgb \"#00D0D0\" lw 1.4\n"
+		<< "set style line 7 lt 1 lc rgb \"#B200B2\" lw 1.4";
+	string line_styles = ss.str();
+
+	fprintf(script, "%s\n\n", line_styles.c_str());
+	fprintf(script, "set term pdf size 5,3.5 enhanced color font 'SVBasicManual, 16' lw 2\n");
 	fprintf(script, "set datafile sep ','\n");
 	fprintf(script, "set output '%s'\n", knob::le_cmac2_plot_file_name.c_str());
-	fprintf(script, "set title \"Reward over time\"\n");
-	fprintf(script, "set xlabel \"Time\"\n");
-	fprintf(script, "set ylabel \"Score\"\n");
-	fprintf(script, "set grid y\n");
-	fprintf(script, "set key right bottom Left box 3\n");
+	fprintf(script, "set border linewidth 1.2\n");
+	fprintf(script, "set xlabel \"time\"\n");
+	fprintf(script, "set ylabel \"q-value\"\n");
+	fprintf(script, "set grid xtics\n");
+	fprintf(script, "set grid ytics\n");
+	// fprintf(script, "set key right bottom Left box 3\n");
+	fprintf(script, "set key outside center bottom horizontal box\n");
 	fprintf(script, "plot ");
 	for(uint32_t index = 0; index < knob::le_cmac2_plot_actions.size(); ++index)
 	{
@@ -474,9 +488,8 @@ void LearningEngineCMAC2::plot_scores()
 
 	std::string cmd = "gnuplot " + std::string(script_file);
 	system(cmd.c_str());
-
-	std::string cmd2 = "rm " + std::string(script_file);
-	system(cmd2.c_str());
+	// std::string cmd2 = "rm " + std::string(script_file);
+	// system(cmd2.c_str());
 }
 
 uint32_t LearningEngineCMAC2::generateInitialIndex(uint32_t plane, State *state)
@@ -510,7 +523,7 @@ uint32_t LearningEngineCMAC2::gen_state_original(uint32_t plane, State *state)
 	offset >>= m_feature_granularities[Feature::Offset];
 
 	/* 3. Delta */
-	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta; /* converts into 7 bit signed representation */ 
+	uint32_t unsigned_delta = (delta < 0) ? (((-1) * delta) + (1 << (DELTA_BITS - 1))) : delta; /* converts into 7 bit signed representation */
 	unsigned_delta += m_plane_offsets[plane];
 	unsigned_delta >>= m_feature_granularities[Feature::Delta];
 
