@@ -285,6 +285,7 @@ namespace knob
 	bool 			le_featurewise_enable_score_plot;
 	vector<int32_t> le_featurewise_plot_actions;
 	std::string 	le_featurewise_plot_file_name;
+	bool 			le_featurewise_remove_plot_script;
 
 	/* Shaggy */
 	uint32_t shaggy_pb_size;
@@ -1378,6 +1379,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "le_featurewise_plot_file_name"))
 	{
 	   knob::le_featurewise_plot_file_name = string(value);
+	}
+	else if (MATCH("", "le_featurewise_remove_plot_script"))
+	{
+	   knob::le_featurewise_remove_plot_script = !strcmp(value, "true") ? true : false;
 	}
 
 	/* Shaggy knobs */

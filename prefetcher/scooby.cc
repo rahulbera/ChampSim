@@ -171,7 +171,7 @@ namespace knob
 	extern bool 			le_featurewise_enable_score_plot;
 	extern vector<int32_t> le_featurewise_plot_actions;
 	extern std::string 	le_featurewise_plot_file_name;
-
+	extern bool 			le_featurewise_remove_plot_script;
 }
 
 void Scooby::init_knobs()
