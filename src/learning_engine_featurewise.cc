@@ -461,7 +461,7 @@ void LearningEngineFeaturewise::plot_scores()
 			ss << "+" << action;
 		else
 			ss << "-" << action;
-		fprintf(script, "'%s' using 1:%u with lines ls %u title (%s)",
+		fprintf(script, "'%s' using 1:%u with lines ls %u title \"(%s)\"",
 					knob::le_featurewise_trace_file_name.c_str(),
 					(knob::le_featurewise_plot_actions[index]+2),
 					(index+1),
@@ -473,6 +473,6 @@ void LearningEngineFeaturewise::plot_scores()
 	std::string cmd = "gnuplot " + std::string(script_file);
 	system(cmd.c_str());
 
-	// std::string cmd2 = "rm " + std::string(script_file);
-	// system(cmd2.c_str());
+	std::string cmd2 = "rm " + std::string(script_file);
+	system(cmd2.c_str());
 }
