@@ -442,16 +442,18 @@ void LearningEngineFeaturewise::plot_scores()
 	string line_styles = ss.str();
 
 	fprintf(script, "%s\n\n", line_styles.c_str());
-	fprintf(script, "set term pdf size 5,3.5 enhanced color font 'SVBasicManual, 16' lw 2\n");
+	fprintf(script, "set term pdf size 5,4 enhanced color font 'SVBasicManual, 20' lw 2\n");
 	fprintf(script, "set datafile sep ','\n");
 	fprintf(script, "set output '%s'\n", knob::le_featurewise_plot_file_name.c_str());
 	fprintf(script, "set border linewidth 1.2\n");
 	fprintf(script, "set xlabel \"time\"\n");
 	fprintf(script, "set ylabel \"q-value\"\n");
+	fprintf(script, "set format x '%%.0s%%c'\n");
 	fprintf(script, "set grid xtics\n");
 	fprintf(script, "set grid ytics\n");
 	// fprintf(script, "set key right bottom Left box 3\n");
-	fprintf(script, "set key outside center bottom horizontal box\n");
+	// fprintf(script, "set key outside center bottom horizontal box\n");
+	fprintf(script, "set key outside center top horizontal font \",18\"\n");
 	fprintf(script, "plot ");
 	for(uint32_t index = 0; index < knob::le_featurewise_plot_actions.size(); ++index)
 	{
