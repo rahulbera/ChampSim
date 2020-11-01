@@ -14,6 +14,7 @@
 //#include "ppf_dev.h"
 #include "mlop.h"
 #include "bingo.h"
+#include "stride.h"
 
 using namespace std;
 
@@ -103,6 +104,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: Bingo" << endl;
 			Bingo *pref_bingo = new Bingo(knob::l2c_prefetcher_types[index], this);
 			prefetchers.push_back(pref_bingo);
+		}
+		else if(!knob::l2c_prefetcher_types[index].compare("stride"))
+		{
+			cout << "adding L2C_PREFETCHER: Stride" << endl;
+			StridePrefetcher *pref_stride = new StridePrefetcher(knob::l2c_prefetcher_types[index]);
+			prefetchers.push_back(pref_stride);
 		}
 		else
 		{

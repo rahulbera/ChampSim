@@ -13,24 +13,25 @@ my $tilings = 3;
 my $tiles = 128;
 ####################################################
 
-foreach $num_comb (@num_combs){
-my $num_tilings = join(",", ($tilings)x$num_comb);
-my $num_tlies = join(",", ($tiles)x$num_comb);
-my $hash_types = join(",", (2)x$num_comb);
-my $enable_tiling_offset = join(",", (1)x$num_comb);
-my $weights = join(",", (1)x$num_comb);
-my $cmdline = "--le_featurewise_num_tilings=$num_tilings --le_featurewise_num_tiles=$num_tlies --le_featurewise_hash_types=$hash_types --le_featurewise_enable_tiling_offset=$enable_tiling_offset --le_featurewise_feature_weights=$weights";
-
-my @combinations = combine($num_comb, @selected_features);
-
-print "#Combinations using $num_comb features\n";
-foreach my $combo (@combinations)
+foreach $num_comb (@num_combs)
 {
-	my @combo2 = @$combo;
-	$sel_feat_ids = join(",", @combo2);
-	$sel_feat_names = join("+", map { $feature_names[$_] } @combo2);
-	$exp_name = "scooby_${sel_feat_names}_${tilings}x${tiles}_max_pool";
-	print "${exp_name}  \$(BASE) \$(SCOOBY) --le_featurewise_active_features=${sel_feat_ids} $cmdline\n";
-}
-print "\n";
+	my $num_tilings = join(",", ($tilings)x$num_comb);
+	my $num_tlies = join(",", ($tiles)x$num_comb);
+	my $hash_types = join(",", (2)x$num_comb);
+	my $enable_tiling_offset = join(",", (1)x$num_comb);
+	my $weights = join(",", (1)x$num_comb);
+	my $cmdline = "--le_featurewise_num_tilings=$num_tilings --le_featurewise_num_tiles=$num_tlies --le_featurewise_hash_types=$hash_types --le_featurewise_enable_tiling_offset=$enable_tiling_offset --le_featurewise_feature_weights=$weights";
+
+	my @combinations = combine($num_comb, @selected_features);
+
+	print "#Combinations using $num_comb features\n";
+	foreach my $combo (@combinations)
+	{
+		my @combo2 = @$combo;
+		$sel_feat_ids = join(",", @combo2);
+		$sel_feat_names = join("+", map { $feature_names[$_] } @combo2);
+		$exp_name = "scooby_${sel_feat_names}_${tilings}x${tiles}";
+		print "${exp_name}  \$(BASE) \$(SCOOBY) --le_featurewise_active_features=${sel_feat_ids} $cmdline\n";
+	}
+	print "\n";
 }

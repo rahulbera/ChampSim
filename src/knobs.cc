@@ -138,6 +138,10 @@ namespace knob
 	float    bingo_llc_thresh;
 	string   bingo_pc_address_fill_level;
 
+	/* Stride */
+	uint32_t stride_num_trackers = 64;
+   uint32_t stride_pref_degree = 2;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -821,6 +825,16 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "bingo_pc_address_fill_level"))
 	{
 	   knob::bingo_pc_address_fill_level = string(value);
+	}
+
+	/* Stride Prefetcher */
+	else if (MATCH("", "stride_num_trackers"))
+	{
+		knob::stride_num_trackers = atoi(value);
+	}
+	else if (MATCH("", "stride_pref_degree"))
+	{
+		knob::stride_pref_degree = atoi(value);
 	}
 
 	/* Scooby */
