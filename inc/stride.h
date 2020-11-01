@@ -5,6 +5,8 @@
 #include <vector>
 #include "prefetcher.h"
 
+using namespace std;
+
 class Tracker
 {
   public:
@@ -54,6 +56,7 @@ private:
 private:
    void init_knobs();
    void init_stats();
+   uint32_t generate_prefetch(uint64_t address, int32_t stride, vector<uint64_t> &pref_addr);
 
 public:
    StridePrefetcher(string type);

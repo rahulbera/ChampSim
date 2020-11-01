@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "stride.h"
+#include "champsim.h"
 
 namespace knob
 {
@@ -37,7 +38,7 @@ void StridePrefetcher::print_config()
 void StridePrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, uint8_t type, vector<uint64_t> &pref_addr)
 {
    uint64_t page = address >> LOG2_PAGE_SIZE;
-   uint64_t cl_addr = addresses >> LOG2_BLOCK_SIZE;
+   uint64_t cl_addr = address >> LOG2_BLOCK_SIZE;
 	uint32_t offset = (address >> LOG2_BLOCK_SIZE) & ((1ull << (LOG2_PAGE_SIZE - LOG2_BLOCK_SIZE)) - 1);
 
    stats.tracker.lookup++;
@@ -50,7 +51,7 @@ void StridePrefetcher::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t 
       {
          /* evict */
          Tracker *victim = trackers.back();
-         tracker.pop_back();
+         trackers.pop_back();
          delete victim;
          stats.tracker.evict++;
       }
@@ -110,8 +111,8 @@ uint32_t StridePrefetcher::generate_prefetch(uint64_t address, int32_t stride, v
       int32_t pref_offset = offset + stride*deg;
       if(pref_offset >= 0 && pref_offset < 64) /* bounds check */
       {
-         uint64_t pref_addr = (page << LOG2_PAGE_SIZE) + (pref_offset << LOG2_BLOCK_SIZE);
-         pref_addr.push_back(pref_addr);
+         uint64_t addr = (page << LOG2_PAGE_SIZE) + (pref_offset << LOG2_BLOCK_SIZE);
+         pref_addr.push_back(addr);
          count++;
       }
       else
@@ -135,5 +136,5 @@ void StridePrefetcher::dump_stats()
       << "stride_stride_zero " << stats.stride.zero << endl
       << "stride_pref_stride_match " << stats.pref.stride_match << endl
       << "stride_pref_generated " << stats.pref.generated << endl
-      ;
+      << endl;
 }
