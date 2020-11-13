@@ -47,7 +47,7 @@ extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;
 #define L1I_SET 64
 #define L1I_WAY 8
 #define L1I_RQ_SIZE 64
-#define L1I_WQ_SIZE 64 
+#define L1I_WQ_SIZE 64
 #define L1I_PQ_SIZE 8
 #define L1I_MSHR_SIZE 8
 #define L1I_LATENCY 1
@@ -56,7 +56,7 @@ extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;
 #define L1D_SET 64
 #define L1D_WAY 8
 #define L1D_RQ_SIZE 64
-#define L1D_WQ_SIZE 64 
+#define L1D_WQ_SIZE 64
 #define L1D_PQ_SIZE 8
 #define L1D_MSHR_SIZE 16
 #define L1D_LATENCY 4
@@ -127,6 +127,7 @@ class CACHE : public MEMORY {
 
     /* Array of prefetchers associated with this cache */
     vector<Prefetcher*> prefetchers;
+    vector<Prefetcher*> l1d_prefetchers;
 
     /* For semi-perfect cache */
     deque<uint64_t> page_buffer;
@@ -136,9 +137,9 @@ class CACHE : public MEMORY {
     uint64_t pf_useful_epoch, pf_filled_epoch;
     uint32_t pref_acc;
     uint64_t total_acc_epochs, acc_epoch_hist[CACHE_ACC_LEVELS];
-    
+
     // constructor
-    CACHE(string v1, uint32_t v2, int v3, uint32_t v4, uint32_t v5, uint32_t v6, uint32_t v7, uint32_t v8) 
+    CACHE(string v1, uint32_t v2, int v3, uint32_t v4, uint32_t v5, uint32_t v6, uint32_t v7, uint32_t v8)
         : NAME(v1), NUM_SET(v2), NUM_WAY(v3), NUM_LINE(v4), WQ_SIZE(v5), RQ_SIZE(v6), PQ_SIZE(v7), MSHR_SIZE(v8) {
 
         LATENCY = 0;
@@ -146,7 +147,7 @@ class CACHE : public MEMORY {
         // cache block
         block = new BLOCK* [NUM_SET];
         for (uint32_t i=0; i<NUM_SET; i++) {
-            block[i] = new BLOCK[NUM_WAY]; 
+            block[i] = new BLOCK[NUM_WAY];
 
             for (uint32_t j=0; j<NUM_WAY; j++) {
                 block[i][j].lru = j;
@@ -245,7 +246,7 @@ class CACHE : public MEMORY {
          l1d_prefetcher_final_stats(),
          l2c_prefetcher_final_stats(),
          llc_prefetcher_final_stats();
-    
+
     uint32_t l1d_prefetcher_prefetch_hit(uint64_t addr, uint64_t ip, uint32_t metadata_in),
             l2c_prefetcher_prefetch_hit(uint64_t addr, uint64_t ip, uint32_t metadata_in),
             llc_prefetcher_prefetch_hit(uint64_t addr, uint64_t ip, uint32_t metadata_in);
@@ -255,7 +256,7 @@ class CACHE : public MEMORY {
          l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in),
          llc_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in);
 
-    void broadcast_bw(uint8_t bw_level), 
+    void broadcast_bw(uint8_t bw_level),
         l1d_prefetcher_broadcast_bw(uint8_t bw_level),
         l2c_prefetcher_broadcast_bw(uint8_t bw_level),
         llc_prefetcher_broadcast_bw(uint8_t bw_level);
@@ -266,7 +267,7 @@ class CACHE : public MEMORY {
         llc_prefetcher_broadcast_ipc(uint8_t ipc);
 
     void prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_t &pref_used, uint64_t &pref_late);
-    
+
     uint32_t get_set(uint64_t address),
              get_way(uint64_t address, uint32_t set),
              find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
