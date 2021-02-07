@@ -42,13 +42,14 @@ for $trace (@trace_info)
 {
 	my $trace_name = $trace->{"NAME"};
 	my $passed = 1;
-	my %records;
+
 	for $exp (@exp_info)
 	{
 		my $exp_name = $exp->{"NAME"};
 		my $log_file = "${trace_name}_${exp_name}.${ext}";
 		my @metric_values;
-		
+		my %records;
+
 		if (-e $log_file)
 		{
 			open(my $fh, '<', $log_file) or die "cannot open $log_file\n";
