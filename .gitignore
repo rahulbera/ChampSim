@@ -8,3 +8,9 @@ tags
 *.out
 traces/
 tracer/obj-intel64/
+inc/libbf/
+scripts/Crypt/
+scripts/Math-Combinatorics-0.09/
+scripts/Math/
+scripts/Statistics/
+libbf/
