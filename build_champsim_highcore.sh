@@ -69,9 +69,9 @@ if ! [[ $NUM_CORE =~ $re ]] ; then
     exit 1
 fi
 
-# This script is only valid for 8-cores or more
-if [ "$NUM_CORE" -lt "8" ]; then
-	echo "Number of core: $NUM_CORE must be greater or equal to 8"
+# This script is only valid for 6-cores or more
+if [ "$NUM_CORE" -lt "6" ]; then
+	echo "Number of core: $NUM_CORE must be greater or equal to 6"
 	exit 1
 fi
 
