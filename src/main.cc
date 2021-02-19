@@ -18,9 +18,14 @@
 #   define MYLOG(...) {}
 #endif
 
-uint8_t warmup_complete[NUM_CPUS], 
-        simulation_complete[NUM_CPUS], 
-        all_warmup_complete = 0, 
+std::default_random_engine generator;
+std::uniform_int_distribution<int> cpugen(0, NUM_CPUS-1);
+bool generated[NUM_CPUS];
+uint32_t num_generated = 0;
+
+uint8_t warmup_complete[NUM_CPUS],
+        simulation_complete[NUM_CPUS],
+        all_warmup_complete = 0,
         all_simulation_complete = 0,
         MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS;
 uint64_t champsim_seed;
@@ -165,7 +170,7 @@ void print_dram_stats()
 {
     // cout << endl;
     // cout << "DRAM Statistics" << endl;
-    for (uint32_t i=0; i<DRAM_CHANNELS; i++) 
+    for (uint32_t i=0; i<DRAM_CHANNELS; i++)
     {
         cout << "Channel_" << i << "_RQ_row_buffer_hit " << uncore.DRAM.RQ[i].ROW_BUFFER_HIT << endl
             << "Channel_" << i << "_RQ_row_buffer_miss " << uncore.DRAM.RQ[i].ROW_BUFFER_MISS << endl
@@ -186,7 +191,7 @@ void print_dram_stats()
     else
         cout << "avg_congested_cycle 0" << endl;
     cout << endl;
-    
+
     cout << "DRAM_bw_pochs " << uncore.DRAM.total_bw_epochs << endl;
     for(uint32_t index = 0; index < DRAM_BW_LEVELS; ++index)
     {
@@ -240,7 +245,7 @@ void finish_warmup()
         cout << "Warmup complete CPU " << setw(2) << i << " instructions: " << setw(10) << ooo_cpu[i].num_retired << " cycles: " << setw(10) << current_core_cycle[i];
         cout << " (Simulation time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " << endl;
 
-        ooo_cpu[i].begin_sim_cycle = current_core_cycle[i]; 
+        ooo_cpu[i].begin_sim_cycle = current_core_cycle[i];
         ooo_cpu[i].begin_sim_instr = ooo_cpu[i].num_retired;
 
         // reset branch stats
@@ -305,13 +310,13 @@ void print_deadlock(uint32_t i)
     for (uint32_t j=0; j<queue->SIZE; j++) {
         cout << "[" << queue->NAME << "] entry: " << j << " instr_id: " << queue->entry[j].instr_id << " rob_index: " << queue->entry[j].rob_index;
         cout << " address: " << hex << queue->entry[j].address << " full_addr: " << queue->entry[j].full_addr << dec << " type: " << +queue->entry[j].type;
-        cout << " fill_level: " << queue->entry[j].fill_level << " lq_index: " << queue->entry[j].lq_index << " sq_index: " << queue->entry[j].sq_index << endl; 
+        cout << " fill_level: " << queue->entry[j].fill_level << " lq_index: " << queue->entry[j].lq_index << " sq_index: " << queue->entry[j].sq_index << endl;
     }
 
     assert(0);
 }
 
-void signal_handler(int signal) 
+void signal_handler(int signal)
 {
 	cout << "Caught signal: " << signal << endl;
 	exit(1);
@@ -350,7 +355,7 @@ RANDOM champsim_rand(champsim_seed);
 uint64_t va_to_pa(uint32_t cpu, uint64_t instr_id, uint64_t va, uint64_t unique_vpage)
 {
 #ifdef SANITY_CHECK
-    if (va == 0) 
+    if (va == 0)
         assert(0);
 #endif
 
@@ -377,7 +382,7 @@ uint64_t va_to_pa(uint32_t cpu, uint64_t instr_id, uint64_t va, uint64_t unique_
         cl_check->second++;
 
     pr = page_table.find(vpage);
-    if (pr == page_table.end()) { // no VA => PA translation found 
+    if (pr == page_table.end()) { // no VA => PA translation found
 
         if (allocated_pages >= DRAM_PAGES) { // not enough memory
 
@@ -449,27 +454,27 @@ uint64_t va_to_pa(uint32_t cpu, uint64_t instr_id, uint64_t va, uint64_t unique_
                 fragmented = 1;
             }
 
-            // encoding cpu number 
+            // encoding cpu number
             // this allows ChampSim to run homogeneous multi-programmed workloads without VA => PA aliasing
             // (e.g., cpu0: astar  cpu1: astar  cpu2: astar  cpu3: astar...)
             //random_ppage &= (~((NUM_CPUS-1)<< (32-LOG2_PAGE_SIZE)));
-            //random_ppage |= (cpu<<(32-LOG2_PAGE_SIZE)); 
+            //random_ppage |= (cpu<<(32-LOG2_PAGE_SIZE));
 
             while (1) { // try to find an empty physical page number
-                ppage_check = inverse_table.find(random_ppage); // check if this page can be allocated 
+                ppage_check = inverse_table.find(random_ppage); // check if this page can be allocated
                 if (ppage_check != inverse_table.end()) { // random_ppage is not available
                     DP ( if (warmup_complete[cpu]) {
-                    cout << "vpage: " << hex << ppage_check->first << " is already mapped to ppage: " << random_ppage << dec << endl; }); 
-                    
+                    cout << "vpage: " << hex << ppage_check->first << " is already mapped to ppage: " << random_ppage << dec << endl; });
+
                     if (num_adjacent_page > 0)
                         fragmented = 1;
 
                     // try one more time
                     random_ppage = champsim_rand.draw_rand();
-                    
-                    // encoding cpu number 
+
+                    // encoding cpu number
                     //random_ppage &= (~((NUM_CPUS-1)<<(32-LOG2_PAGE_SIZE)));
-                    //random_ppage |= (cpu<<(32-LOG2_PAGE_SIZE)); 
+                    //random_ppage |= (cpu<<(32-LOG2_PAGE_SIZE));
                 }
                 else
                     break;
@@ -578,8 +583,31 @@ void print_knobs()
     cout << endl;
 }
 
+int get_next_cpu()
+{
+   int index = cpugen(generator);
+   while(generated[index])
+   {
+      index = cpugen(generator);
+   }
+   assert(index < NUM_CPUS && !generated[index]);
+   generated[index] = true;
+   num_generated++;
+
+   /* reset array */
+   if(num_generated == NUM_CPUS)
+   {
+      for(int i = 0; i < NUM_CPUS; ++i) generated[i] = false;
+      num_generated = 0;
+   }
+
+   return index;
+}
+
 int main(int argc, char** argv)
 {
+   for(uint32_t index = 0; index < NUM_CPUS; ++index) generated[index] = false;
+
 	// interrupt signal hanlder
 	struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = signal_handler;
@@ -610,12 +638,12 @@ int main(int argc, char** argv)
         DRAM_MTPS = knob::dram_io_freq;
 
     // DRAM access latency
-    tRP  = (uint32_t)((1.0 * tRP_DRAM_NANOSECONDS  * CPU_FREQ) / 1000); 
-    tRCD = (uint32_t)((1.0 * tRCD_DRAM_NANOSECONDS * CPU_FREQ) / 1000); 
-    tCAS = (uint32_t)((1.0 * tCAS_DRAM_NANOSECONDS * CPU_FREQ) / 1000); 
+    tRP  = (uint32_t)((1.0 * tRP_DRAM_NANOSECONDS  * CPU_FREQ) / 1000);
+    tRCD = (uint32_t)((1.0 * tRCD_DRAM_NANOSECONDS * CPU_FREQ) / 1000);
+    tCAS = (uint32_t)((1.0 * tCAS_DRAM_NANOSECONDS * CPU_FREQ) / 1000);
 
     // default: 16 = (64 / 8) * (3200 / 1600)
-    // it takes 16 CPU cycles to tranfser 64B cache block on a 8B (64-bit) bus 
+    // it takes 16 CPU cycles to tranfser 64B cache block on a 8B (64-bit) bus
     // note that dram burst length = BLOCK_SIZE/DRAM_CHANNEL_WIDTH
     DRAM_DBUS_RETURN_TIME = (BLOCK_SIZE / DRAM_CHANNEL_WIDTH) * (1.0 * CPU_FREQ / DRAM_MTPS);
     DRAM_DBUS_MAX_CAS = DRAM_CHANNELS * (knob::measure_dram_bw_epoch / DRAM_DBUS_RETURN_TIME);
@@ -639,14 +667,14 @@ int main(int argc, char** argv)
 				printf("TRACE FILE DOES NOT EXIST\n");
 				assert(false);
 			}
-				
+
 
             if (full_name[last_dot - full_name + 1] == 'g') // gzip format
                 sprintf(ooo_cpu[count_traces].gunzip_command, "gunzip -c %s", argv[i]);
             else if (full_name[last_dot - full_name + 1] == 'x') // xz
                 sprintf(ooo_cpu[count_traces].gunzip_command, "xz -dc %s", argv[i]);
             else {
-                cout << "ChampSim does not support traces other than gz or xz compression!" << endl; 
+                cout << "ChampSim does not support traces other than gz or xz compression!" << endl;
                 assert(0);
             }
 
@@ -697,10 +725,10 @@ int main(int argc, char** argv)
     champsim_seed = seed_number;
     for (int i=0; i<NUM_CPUS; i++) {
 
-        ooo_cpu[i].cpu = i; 
+        ooo_cpu[i].cpu = i;
         ooo_cpu[i].warmup_instructions = knob::warmup_instructions;
         ooo_cpu[i].simulation_instructions = knob::simulation_instructions;
-        ooo_cpu[i].begin_sim_cycle = 0; 
+        ooo_cpu[i].begin_sim_cycle = 0;
         ooo_cpu[i].begin_sim_instr = knob::warmup_instructions;
 
         // ROB
@@ -714,7 +742,7 @@ int main(int argc, char** argv)
         ooo_cpu[i].ITLB.cache_type = IS_ITLB;
         ooo_cpu[i].ITLB.fill_level = FILL_L1;
         ooo_cpu[i].ITLB.extra_interface = &ooo_cpu[i].L1I;
-        ooo_cpu[i].ITLB.lower_level = &ooo_cpu[i].STLB; 
+        ooo_cpu[i].ITLB.lower_level = &ooo_cpu[i].STLB;
 
         ooo_cpu[i].DTLB.cpu = i;
         ooo_cpu[i].DTLB.cache_type = IS_DTLB;
@@ -734,13 +762,13 @@ int main(int argc, char** argv)
         ooo_cpu[i].L1I.cache_type = IS_L1I;
         ooo_cpu[i].L1I.MAX_READ = (FETCH_WIDTH > MAX_READ_PER_CYCLE) ? MAX_READ_PER_CYCLE : FETCH_WIDTH;
         ooo_cpu[i].L1I.fill_level = FILL_L1;
-        ooo_cpu[i].L1I.lower_level = &ooo_cpu[i].L2C; 
+        ooo_cpu[i].L1I.lower_level = &ooo_cpu[i].L2C;
 
         ooo_cpu[i].L1D.cpu = i;
         ooo_cpu[i].L1D.cache_type = IS_L1D;
         ooo_cpu[i].L1D.MAX_READ = (2 > MAX_READ_PER_CYCLE) ? MAX_READ_PER_CYCLE : 2;
         ooo_cpu[i].L1D.fill_level = FILL_L1;
-        ooo_cpu[i].L1D.lower_level = &ooo_cpu[i].L2C; 
+        ooo_cpu[i].L1D.lower_level = &ooo_cpu[i].L2C;
         ooo_cpu[i].L1D.l1d_prefetcher_initialize();
 
         ooo_cpu[i].L2C.cpu = i;
@@ -773,7 +801,7 @@ int main(int argc, char** argv)
         simulation_complete[i] = 0;
         current_core_cycle[i] = 0;
         stall_cycle[i] = 0;
-        
+
         previous_ppage = 0;
         num_adjacent_page = 0;
         num_cl[i] = 0;
@@ -789,6 +817,7 @@ int main(int argc, char** argv)
     print_knobs();
 
     // simulation entry point
+    generator.seed(champsim_seed);
     start_time = time(NULL);
     uint8_t run_simulation = 1;
     while (run_simulation) {
@@ -799,7 +828,11 @@ int main(int argc, char** argv)
         elapsed_minute -= elapsed_hour*60;
         elapsed_second -= (elapsed_hour*3600 + elapsed_minute*60);
 
-        for (int i=0; i<NUM_CPUS; i++) {
+        for (int index = 0; index < NUM_CPUS; ++index) {
+	    /* randomizes CPU traversal to improve QoS for high-core simulations */
+	    int i = get_next_cpu();
+	    // cout << "Next cpu: " << i << endl;
+
             // proceed one cycle
             current_core_cycle[i]++;
 
@@ -833,7 +866,7 @@ int main(int argc, char** argv)
                 // fetch unit
                 if (ooo_cpu[i].ROB.occupancy < ooo_cpu[i].ROB.SIZE) {
                     // handle branch
-                    if (ooo_cpu[i].fetch_stall == 0) 
+                    if (ooo_cpu[i].fetch_stall == 0)
                         ooo_cpu[i].handle_branch();
                 }
 
@@ -853,7 +886,7 @@ int main(int argc, char** argv)
                 ooo_cpu[i].schedule_memory_instruction();
                 ooo_cpu[i].execute_memory_instruction();
 
-                // complete 
+                // complete
                 ooo_cpu[i].update_rob();
 
                 // retire
@@ -871,7 +904,7 @@ int main(int argc, char** argv)
                 float heartbeat_ipc = (1.0*ooo_cpu[i].num_retired - ooo_cpu[i].last_sim_instr) / (current_core_cycle[i] - ooo_cpu[i].last_sim_cycle);
 
                 cout << "Heartbeat CPU " << setw(2) << i << " instructions: " << setw(10) << ooo_cpu[i].num_retired << " cycles: " << setw(10) << current_core_cycle[i];
-                cout << " heartbeat IPC: " << FIXED_FLOAT(heartbeat_ipc) << " cumulative IPC: " << FIXED_FLOAT(cumulative_ipc); 
+                cout << " heartbeat IPC: " << FIXED_FLOAT(heartbeat_ipc) << " cumulative IPC: " << FIXED_FLOAT(cumulative_ipc);
                 cout << " (Simulation time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " << endl;
                 ooo_cpu[i].next_print_instruction += STAT_PRINTING_PERIOD;
 
@@ -895,14 +928,14 @@ int main(int argc, char** argv)
             }
 
             /*
-            if (all_warmup_complete == 0) { 
+            if (all_warmup_complete == 0) {
                 all_warmup_complete = 1;
                 finish_warmup();
             }
             if (ooo_cpu[1].num_retired > 0)
                 warmup_complete[1] = 1;
             */
-            
+
             // simulation complete
             if ((all_warmup_complete > NUM_CPUS) && (simulation_complete[i] == 0) && (ooo_cpu[i].num_retired >= (ooo_cpu[i].begin_sim_instr + ooo_cpu[i].simulation_instructions))) {
                 simulation_complete[i] = 1;
@@ -924,6 +957,7 @@ int main(int argc, char** argv)
             if (all_simulation_complete == NUM_CPUS)
                 run_simulation = 0;
         }
+	// cout << "-----------------" << endl;
 
         // TODO: should it be backward?
         uncore.cycle++;
@@ -953,12 +987,12 @@ int main(int argc, char** argv)
              elapsed_hour = elapsed_minute / 60;
     elapsed_minute -= elapsed_hour*60;
     elapsed_second -= (elapsed_hour*3600 + elapsed_minute*60);
-    
+
     cout << endl << "ChampSim completed all CPUs" << endl;
     if (NUM_CPUS > 1) {
 //         cout << endl << "Total Simulation Statistics (not including warmup)" << endl;
 //         for (uint32_t i=0; i<NUM_CPUS; i++) {
-//             cout << endl << "CPU " << i << " cumulative IPC: " << (float) (ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr) / (current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle); 
+//             cout << endl << "CPU " << i << " cumulative IPC: " << (float) (ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr) / (current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle);
 //             cout << " instructions: " << ooo_cpu[i].num_retired - ooo_cpu[i].begin_sim_instr << " cycles: " << current_core_cycle[i] - ooo_cpu[i].begin_sim_cycle << endl;
 // #ifndef CRC2_COMPILE
 //             print_sim_stats(i, &ooo_cpu[i].L1D);
