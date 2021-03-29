@@ -41,7 +41,8 @@ print ",Filter\n";
 for $trace (@trace_info)
 {
 	my $trace_name = $trace->{"NAME"};
-	my $passed = 1;
+	my %per_trace_result;
+	my $all_exps_passed = 1;
 
 	for $exp (@exp_info)
 	{
@@ -135,24 +136,28 @@ for $trace (@trace_info)
 				else
 				{
 					$value = 0;
-					$passed = 0;
+					$all_exps_passed = 0;
 				}
 				push(@metric_values, $value);
 			}
 		}
 		else
 		{
-			$passed = 0;
+			$all_exps_passed = 0;
 			for $metric (@m_info)
 			{
 				push(@metric_values, 0);
 			}
 		}
 		my $arr = join(",", @metric_values);
-		# print "$trace_name,$exp_name,";
-		# print "$arr,FAILED_STATUS\n";
-		my $result = sprintf("%s,%s,%s,FAILED_STATUS\n", $trace_name, $exp_name, $arr);
-		$result =~ s/FAILED_STATUS/$passed/g;
+		$per_trace_result{$exp_name} = $arr;
+	}
+
+	# print stats
+	for $exp (@exp_info)
+	{
+		my $exp_name = $exp->{"NAME"};
+		my $result = sprintf("%s,%s,%s,%d\n", $trace_name, $exp_name, $per_trace_result{$exp_name}, $all_exps_passed);
 		print $result;
 	}
 }
