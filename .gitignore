@@ -1,5 +1,6 @@
 .DS_Store
 ._.DS_Store
+.vscode/
 bin/
 dpc3_traces/
 obj/

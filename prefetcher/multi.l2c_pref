@@ -11,7 +11,7 @@
 #include "sandbox.h"
 #include "dspatch.h"
 #include "spp_dev2.h"
-//#include "ppf_dev.h"
+#include "ppf_dev.h"
 #include "mlop.h"
 #include "bingo.h"
 #include "stride.h"
@@ -88,12 +88,12 @@ void CACHE::l2c_prefetcher_initialize()
 			SPP_dev2 *pref_spp_dev2 = new SPP_dev2(knob::l2c_prefetcher_types[index], this);
 			prefetchers.push_back(pref_spp_dev2);
 		}
-		//else if(!knob::l2c_prefetcher_types[index].compare("spp_ppf_dev"))
-		//{
-		//	cout << "adding L2C_PREFETCHER: SPP_PPF_dev" << endl;
-		//	SPP_PPF_dev *pref_spp_ppf_dev = new SPP_PPF_dev(knob::l2c_prefetcher_types[index], this);
-		//	prefetchers.push_back(pref_spp_ppf_dev);
-		//}
+		else if(!knob::l2c_prefetcher_types[index].compare("spp_ppf_dev"))
+		{
+			cout << "adding L2C_PREFETCHER: SPP_PPF_dev" << endl;
+			SPP_PPF_dev *pref_spp_ppf_dev = new SPP_PPF_dev(knob::l2c_prefetcher_types[index], this);
+			prefetchers.push_back(pref_spp_ppf_dev);
+		}
 		else if(!knob::l2c_prefetcher_types[index].compare("mlop"))
 		{
 			cout << "adding L2C_PREFETCHER: MLOP" << endl;
