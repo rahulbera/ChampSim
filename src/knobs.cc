@@ -114,6 +114,10 @@ namespace knob
 	uint32_t dspatch_pref_buffer_size;
 	uint32_t dspatch_pref_degree;
 
+	/* PPF */
+	int32_t ppf_perc_threshold_hi = -5;
+	int32_t ppf_perc_threshold_lo = -15;
+
 	/* MLOP */
 	uint32_t mlop_pref_degree;
 	uint32_t mlop_num_updates;
@@ -141,7 +145,7 @@ namespace knob
 
 	/* Stride */
 	uint32_t stride_num_trackers = 64;
-   uint32_t stride_pref_degree = 2;
+   	uint32_t stride_pref_degree = 2;
 
 	/* Scooby */
 	float    scooby_alpha;
@@ -742,6 +746,16 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "dspatch_pref_degree"))
 	{
 		knob::dspatch_pref_degree = atoi(value);
+	}
+
+	/* PPF */
+	else if (MATCH("", "ppf_perc_threshold_hi"))
+	{
+		knob::ppf_perc_threshold_hi = atoi(value);
+	}
+	else if (MATCH("", "ppf_perc_threshold_lo"))
+	{
+		knob::ppf_perc_threshold_lo = atoi(value);
 	}
 
 	/* MLOP */

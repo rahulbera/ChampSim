@@ -6,7 +6,8 @@ using namespace spp_ppf;
 
 namespace knob
 {
-
+    extern int32_t ppf_perc_threshold_hi;
+    extern int32_t ppf_perc_threshold_lo;
 }
 
 void SPP_PPF_dev::init_knobs()
@@ -22,25 +23,27 @@ void SPP_PPF_dev::init_stats()
 SPP_PPF_dev::SPP_PPF_dev(std::string type, CACHE *cache) : Prefetcher(type), m_parent_cache(cache)
 {
     cout << "Initialize SIGNATURE TABLE" << endl
-        << "ST_SET: " << ST_SET << endl
-        << "ST_WAY: " << ST_WAY << endl
-        << "ST_TAG_BIT: " << ST_TAG_BIT << endl
-        << "ST_TAG_MASK: " << hex << ST_TAG_MASK << dec << endl
-        << endl 
-        << "Initialize PATTERN TABLE" << endl
-        << "PT_SET: " << PT_SET << endl
-        << "PT_WAY: " << PT_WAY << endl
-        << "SIG_DELTA_BIT: " << SIG_DELTA_BIT << endl
-        << "C_SIG_BIT: " << C_SIG_BIT << endl
-        << "C_DELTA_BIT: " << C_DELTA_BIT << endl
-        << endl 
-        << "Initialize PREFETCH FILTER" << endl
-        << "FILTER_SET: " << FILTER_SET << endl
-        << endl
-        << "Initialize PERCEPTRON" << endl
-        << "PERC_ENTRIES: " << PERC_ENTRIES << endl
-        << "PERC_FEATURES: " << PERC_FEATURES << endl
-        << endl;
+         << "ST_SET: " << ST_SET << endl
+         << "ST_WAY: " << ST_WAY << endl
+         << "ST_TAG_BIT: " << ST_TAG_BIT << endl
+         << "ST_TAG_MASK: " << hex << ST_TAG_MASK << dec << endl
+         << endl
+         << "Initialize PATTERN TABLE" << endl
+         << "PT_SET: " << PT_SET << endl
+         << "PT_WAY: " << PT_WAY << endl
+         << "SIG_DELTA_BIT: " << SIG_DELTA_BIT << endl
+         << "C_SIG_BIT: " << C_SIG_BIT << endl
+         << "C_DELTA_BIT: " << C_DELTA_BIT << endl
+         << endl
+         << "Initialize PREFETCH FILTER" << endl
+         << "FILTER_SET: " << FILTER_SET << endl
+         << endl
+         << "Initialize PERCEPTRON" << endl
+         << "PERC_ENTRIES: " << PERC_ENTRIES << endl
+         << "PERC_FEATURES: " << PERC_FEATURES << endl
+         << "PERC_THRESH_HI: " << knob::ppf_perc_threshold_hi << endl
+         << "PERC_THRESH_LO: " << knob::ppf_perc_threshold_lo << endl
+         << endl;
 
     /* set cross-pointers */
     ST.ghr = &GHR;
@@ -154,7 +157,7 @@ void SPP_PPF_dev::invoke_prefetcher(uint64_t ip, uint64_t addr, uint8_t cache_hi
             SPP_DP(
                 cout << "[ChampSim] State of features: \nTrain addr: " << train_addr << "\tCurr IP: " << curr_ip << "\tIP_1: " << GHR.ip_1 << "\tIP_2: " << GHR.ip_2 << "\tIP_3: " << GHR.ip_3 << "\tDelta: " << train_delta + delta_q[i] << "\t:LastSig " << last_sig << "\t:CurrSig " << curr_sig << "\t:Conf " << confidence_q[i] << "\t:Depth " << depth << "\tSUM: "<< perc_sum  << endl;
             );
-            FILTER_REQUEST fill_level = (perc_sum >= PERC_THRESHOLD_HI) ? SPP_L2C_PREFETCH : SPP_LLC_PREFETCH;
+            FILTER_REQUEST fill_level = (perc_sum >= knob::ppf_perc_threshold_hi) ? SPP_L2C_PREFETCH : SPP_LLC_PREFETCH;
             
             if ((addr & ~(PAGE_SIZE - 1)) == (pf_addr & ~(PAGE_SIZE - 1))) { // Prefetch request is in the same physical page
                 

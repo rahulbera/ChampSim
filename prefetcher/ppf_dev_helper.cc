@@ -3,6 +3,12 @@
 
 using namespace spp_ppf;
 
+namespace knob
+{
+    extern int32_t ppf_perc_threshold_hi;
+    extern int32_t ppf_perc_threshold_lo;
+}
+
 // TODO: Find a good 64-bit hash function
 uint64_t spp_ppf::get_hash(uint64_t key)
 {
@@ -215,8 +221,8 @@ void PATTERN_TABLE::read_pattern(uint32_t curr_sig, int *delta_q, uint32_t *conf
             pf_conf = depth ? (ghr->global_accuracy * c_delta[set][way] / c_sig[set] * lookahead_conf / 100) : local_conf;
 
 			int32_t perc_sum = perc->perc_predict(train_addr, curr_ip, ghr->ip_1, ghr->ip_2, ghr->ip_3, train_delta + delta[set][way], last_sig, curr_sig, pf_conf, depth);
-			bool do_pf = (perc_sum >= PERC_THRESHOLD_LO) ? 1 : 0;
-			bool fill_l2 = (perc_sum >= PERC_THRESHOLD_HI) ? 1 : 0;
+			bool do_pf = (perc_sum >= knob::ppf_perc_threshold_lo) ? 1 : 0;
+			bool fill_l2 = (perc_sum >= knob::ppf_perc_threshold_hi) ? 1 : 0;
 
 			if (fill_l2 && (mshr_occupancy >= mshr_SIZE || pq_occupancy >= pq_SIZE) )
 				continue;
@@ -252,8 +258,8 @@ void PATTERN_TABLE::read_pattern(uint32_t curr_sig, int *delta_q, uint32_t *conf
                 );
             }
 			// Recording Perc negatives
-            if (pf_conf && pf_q_tail < L2C_MSHR_SIZE && (perc_sum < PERC_THRESHOLD_HI) ) {
-				// Note: Using PERC_THRESHOLD_HI as the decising factor for negative case
+            if (pf_conf && pf_q_tail < L2C_MSHR_SIZE && (perc_sum < knob::ppf_perc_threshold_hi) ) {
+				// Note: Using knob::ppf_perc_threshold_hi as the decising factor for negative case
 				// Because 'trueness' of a prefetch is decisded based on the feedback from L2C
 				// So even though LLC prefetches go through, they are treated as false wrt L2C in this case
 				uint64_t pf_addr = (base_addr & ~(BLOCK_SIZE - 1)) + (delta[set][way] << LOG2_BLOCK_SIZE);
@@ -574,7 +580,7 @@ int32_t	PERCEPTRON::perc_predict(uint64_t base_addr, uint64_t ip, uint64_t ip_1,
 		// Calculate Sum
 	}
 	SPP_DP (
-		cout << " Sum of perceptrons: " << sum << " Prediction made: " << ((sum >= PERC_THRESHOLD_LO) ?  ((sum >= PERC_THRESHOLD_HI) ? FILL_L2 : FILL_LLC) : 0)  << endl;
+		cout << " Sum of perceptrons: " << sum << " Prediction made: " << ((sum >= knob::ppf_perc_threshold_lo) ?  ((sum >= knob::ppf_perc_threshold_hi) ? FILL_L2 : FILL_LLC) : 0)  << endl;
 	);
 	// Return the sum
 	return sum;
@@ -601,19 +607,19 @@ void 	PERCEPTRON::perc_update(uint64_t base_addr, uint64_t ip, uint64_t ip_1, ui
 	if (!direction) { // direction = 1 means the sum was in the correct direction, 0 means it was in the wrong direction
 		// Prediction wrong
 		for (int i = 0; i < PERC_FEATURES; i++) {
-			if (sum >= PERC_THRESHOLD_HI) {
+			if (sum >= knob::ppf_perc_threshold_hi) {
 				// Prediction was to prefectch -- so decrement counters
 				if (perc_weights[perc_set[i]][i] > -1*(PERC_COUNTER_MAX+1) )
 					perc_weights[perc_set[i]][i]--;
 			}
-			if (sum < PERC_THRESHOLD_HI) {
+			if (sum < knob::ppf_perc_threshold_hi) {
 				// Prediction was to not prefetch -- so increment counters
 				if (perc_weights[perc_set[i]][i] < PERC_COUNTER_MAX)
 					perc_weights[perc_set[i]][i]++;
 			}
 		}
 		SPP_DP (
-			int differential = (sum >= PERC_THRESHOLD_HI) ? -1 : 1;
+			int differential = (sum >= knob::ppf_perc_threshold_hi) ? -1 : 1;
 			cout << " Direction is: " << direction << " and sum is:" << sum;
 			cout << " Overall Differential: " << differential << endl;
 		);
@@ -621,12 +627,12 @@ void 	PERCEPTRON::perc_update(uint64_t base_addr, uint64_t ip, uint64_t ip_1, ui
 	if (direction && sum > NEG_UPDT_THRESHOLD && sum < POS_UPDT_THRESHOLD) {
 		// Prediction correct but sum not 'saturated' enough
 		for (int i = 0; i < PERC_FEATURES; i++) {
-			if (sum >= PERC_THRESHOLD_HI) {
+			if (sum >= knob::ppf_perc_threshold_hi) {
 				// Prediction was to prefetch -- so increment counters
 				if (perc_weights[perc_set[i]][i] < PERC_COUNTER_MAX)
 					perc_weights[perc_set[i]][i]++;
 			}
-			if (sum < PERC_THRESHOLD_HI) {
+			if (sum < knob::ppf_perc_threshold_hi) {
 				// Prediction was to not prefetch -- so decrement counters
 				if (perc_weights[perc_set[i]][i] > -1*(PERC_COUNTER_MAX+1) )
 					perc_weights[perc_set[i]][i]--;
@@ -634,8 +640,8 @@ void 	PERCEPTRON::perc_update(uint64_t base_addr, uint64_t ip, uint64_t ip_1, ui
 		}
 		SPP_DP (
 			int differential = 0;
-			if (sum >= PERC_THRESHOLD_HI) differential =  1;
-			if (sum  < PERC_THRESHOLD_HI) differential = -1;
+			if (sum >= knob::ppf_perc_threshold_hi) differential =  1;
+			if (sum  < knob::ppf_perc_threshold_hi) differential = -1;
 			cout << " Direction is: " << direction << " and sum is:" << sum;
 			cout << " Overall Differential: " << differential << endl;
 		);
