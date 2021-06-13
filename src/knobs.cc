@@ -147,6 +147,19 @@ namespace knob
 	uint32_t stride_num_trackers = 64;
    	uint32_t stride_pref_degree = 2;
 
+	/* AMPM */
+	uint32_t ampm_pb_size = 64;
+	uint32_t ampm_pred_degree = 4;
+	uint32_t ampm_pref_degree = 4;
+	uint32_t ampm_pref_buffer_size = 256;
+
+	/* Context Prefetcher */
+	uint32_t cp_cst_size = 2048;
+	uint32_t cp_cst_assoc = 16;
+	uint32_t cp_max_response_per_cst = 4;
+	int32_t cp_init_reward = 0;
+	uint32_t cp_prefetch_queue_size = 128;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -854,6 +867,46 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "stride_pref_degree"))
 	{
 		knob::stride_pref_degree = atoi(value);
+	}
+
+	/* AMPM */
+	else if (MATCH("", "ampm_pb_size"))
+	{
+		knob::ampm_pb_size = atoi(value);
+	}
+	else if (MATCH("", "ampm_pred_degree"))
+	{
+		knob::ampm_pred_degree = atoi(value);
+	}
+	else if (MATCH("", "ampm_pref_degree"))
+	{
+		knob::ampm_pref_degree = atoi(value);
+	}
+	else if (MATCH("", "ampm_pref_buffer_size"))
+	{
+		knob::ampm_pref_buffer_size = atoi(value);
+	}
+
+	/* Context Prefetcher */
+	else if (MATCH("", "cp_cst_size"))
+	{
+		knob::cp_cst_size = atoi(value);
+	}
+	else if (MATCH("", "cp_cst_assoc"))
+	{
+		knob::cp_cst_assoc = atoi(value);
+	}
+	else if (MATCH("", "cp_max_response_per_cst"))
+	{
+		knob::cp_max_response_per_cst = atoi(value);
+	}
+	else if (MATCH("", "cp_init_reward"))
+	{
+		knob::cp_init_reward = atoi(value);
+	}
+	else if (MATCH("", "cp_prefetch_queue_size"))
+	{
+		knob::cp_prefetch_queue_size = atoi(value);
 	}
 
 	/* Scooby */

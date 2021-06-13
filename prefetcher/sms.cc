@@ -48,6 +48,7 @@ SMSPrefetcher::SMSPrefetcher(string type) : Prefetcher(type)
 {
 	init_knobs();
 	init_stats();
+	print_config();
 
 	/* init PHT */
 	deque<PHTEntry*> d;

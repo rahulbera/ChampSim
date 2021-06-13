@@ -16,6 +16,7 @@
 #include "bingo.h"
 #include "stride.h"
 #include "ipcp_L2.h"
+#include "ampm.h"
 
 using namespace std;
 
@@ -117,6 +118,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: IPCP" << endl;
 			IPCP_L2 *pref_ipcp_L2 = new IPCP_L2(knob::l2c_prefetcher_types[index], this);
 			prefetchers.push_back(pref_ipcp_L2);
+		}
+		else if (!knob::l2c_prefetcher_types[index].compare("ampm"))
+		{
+			cout << "adding L2C_PREFETCHER: AMPM" << endl;
+			AMPM *pref_ampm = new AMPM(knob::l2c_prefetcher_types[index]);
+			prefetchers.push_back(pref_ampm);
 		}
 		else
 		{
