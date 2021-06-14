@@ -18,6 +18,7 @@
 #include "ipcp_L2.h"
 #include "ampm.h"
 #include "streamer.h"
+#include "pref_power7.h"
 
 using namespace std;
 
@@ -119,6 +120,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: streamer" << endl;
 			Streamer *pref_streamer = new Streamer(knob::l2c_prefetcher_types[index]);
 			prefetchers.push_back(pref_streamer);
+		}
+		else if (!knob::l2c_prefetcher_types[index].compare("power7"))
+		{
+			cout << "adding L2C_PREFETCHER: POWER7" << endl;
+			POWER7_Pref *pref_power7 = new POWER7_Pref(knob::l2c_prefetcher_types[index], this);
+			prefetchers.push_back(pref_power7);
 		}
 		else if(!knob::l2c_prefetcher_types[index].compare("ipcp"))
 		{

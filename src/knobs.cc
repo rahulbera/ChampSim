@@ -166,6 +166,10 @@ namespace knob
 	int32_t cp_init_reward = 0;
 	uint32_t cp_prefetch_queue_size = 128;
 
+	/* IBM POWER7 Prefetcher */
+	uint32_t power7_explore_epoch = 1000;
+	uint32_t power7_exploit_epoch = 100000;
+
 	/* Scooby */
 	float    scooby_alpha;
 	float    scooby_gamma;
@@ -930,6 +934,16 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "cp_prefetch_queue_size"))
 	{
 		knob::cp_prefetch_queue_size = atoi(value);
+	}
+
+	/* POWER7 Prefetcher */
+	else if (MATCH("", "power7_explore_epoch"))
+	{
+		knob::power7_explore_epoch = atoi(value);
+	}
+	else if (MATCH("", "power7_exploit_epoch"))
+	{
+		knob::power7_exploit_epoch = atoi(value);
 	}
 
 	/* Scooby */

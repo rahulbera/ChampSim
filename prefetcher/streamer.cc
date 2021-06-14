@@ -16,7 +16,7 @@ void Streamer::init_knobs()
 
 void Streamer::init_stats()
 {
-
+    bzero(&stats, sizeof(stats));
 }
 
 void Streamer::print_config()
@@ -28,7 +28,8 @@ void Streamer::print_config()
 
 Streamer::Streamer(string type) : Prefetcher(type)
 {
-
+    init_knobs();
+    init_stats();
 }
 
 Streamer::~Streamer()

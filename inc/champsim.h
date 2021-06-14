@@ -100,6 +100,9 @@ uint64_t rotl64 (uint64_t n, unsigned int c),
 // log base 2 function from efectiu
 int lg2(int n);
 
+// get CPU cycle
+inline uint64_t get_cpu_cycle(uint32_t cpu) {return current_core_cycle[cpu];}
+
 // smart random number generator
 class RANDOM {
   public:
