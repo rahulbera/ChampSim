@@ -12,6 +12,38 @@ namespace knob
     extern uint32_t power7_exploit_epoch;
 }
 
+string POWER7_Pref::get_mode_string(Mode mode)
+{
+    switch(mode)
+    {
+        case Mode::Explore: return string("Explore");
+        case Mode::Exploit: return string("Exploit");
+        default:            return string("UNK");
+    }
+}
+
+string POWER7_Pref::get_config_string(Config cfg)
+{
+    switch (cfg)
+    {
+        case Config::Default:       return string("Default");
+        case Config::Off:           return string("Off");
+        case Config::Shallowest:    return string("Shallowest");
+        case Config::S_Shallowest:  return string("S_Shallowest");
+        case Config::Shallow:       return string("Shallow");
+        case Config::S_Shallow:     return string("S_Shallow");
+        case Config::Medium:        return string("Medium");
+        case Config::S_Medium:      return string("S_Medium");
+        case Config::Deep:          return string("Deep");
+        case Config::S_Deep:        return string("S_Deep");
+        case Config::Deeper:        return string("Deeper");
+        case Config::S_Deeper:      return string("S_Deeper");
+        case Config::Deepest:       return string("Deepest");
+        case Config::S_Deepest:     return string("S_Deepest");
+        default:                    return ("UNK");
+    }
+}
+
 void POWER7_Pref::init_knobs()
 {
     assert(knob::power7_exploit_epoch >= knob::power7_explore_epoch*Config::NumConfigs);
@@ -19,12 +51,14 @@ void POWER7_Pref::init_knobs()
 
 void POWER7_Pref::init_stats()
 {
-
+    bzero(&stats, sizeof(stats));
 }
 
 void POWER7_Pref::print_config()
 {
-
+    cout << "power7_explore_epoch " << knob::power7_explore_epoch << endl
+        << "power7_exploit_epoch " << knob::power7_exploit_epoch << endl
+        << endl;
 }
 
 POWER7_Pref::POWER7_Pref(string type, CACHE *cache) : Prefetcher(type), m_parent_cache(cache)
@@ -99,6 +133,7 @@ void POWER7_Pref::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache
 {
     access_counter++;
     uint64_t cpu_cycle = get_cpu_cycle(m_parent_cache->cpu);
+    stats.called++;
 
     /* state machine design */
     if(mode == Mode::Exploit)
@@ -112,7 +147,13 @@ void POWER7_Pref::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache
             access_counter = 0;
             cycle_stamp = cpu_cycle;
             clear_cycle_stats();
+            stats.mode.exploit_to_explore++;
         }
+        else
+        {
+            stats.mode.exploit++;
+        }
+        
     }
     else
     {
@@ -127,6 +168,7 @@ void POWER7_Pref::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache
                 config = get_winner_config();
                 clear_cycle_stats();
                 set_params();
+                stats.mode.explore_to_exploit++;
             }
             else
             {
@@ -138,6 +180,11 @@ void POWER7_Pref::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache
             access_counter = 0;
             cycle_stamp = cpu_cycle;
         }
+        else
+        {
+            stats.mode.explore++;
+        }
+        
     }
 
     /* validate */
@@ -151,9 +198,19 @@ void POWER7_Pref::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache
         }
     }
 
+    /* Config stats */
+    stats.config.histogram[config][mode]++;
+
     /* invoke each individual prefetcher */
+    uint32_t pred_streamer = 0, pred_stride = 0;
     streamer->invoke_prefetcher(pc, address, cache_hit, type, pref_addr);
+    pred_streamer = pref_addr.size();
     stride->invoke_prefetcher(pc, address, cache_hit, type, pref_addr);
+    pred_stride = pref_addr.size() - pred_streamer;
+
+    stats.pred.streamer += pred_streamer;
+    stats.pred.stride += pred_stride;
+    stats.pred.total += pref_addr.size();
 
     return;
 }
@@ -194,5 +251,24 @@ Config POWER7_Pref::get_winner_config()
 
 void POWER7_Pref::dump_stats()
 {
+    cout << "power7.called " << stats.called << endl 
+         << "power7.mode.explore " << stats.mode.explore << endl
+         << "power7.mode.exploit " << stats.mode.exploit << endl
+         << "power7.mode.explore_to_exploit " << stats.mode.explore_to_exploit << endl
+         << "power7.mode.exploit_to_explore " << stats.mode.exploit_to_explore << endl
+         << endl;
 
+    for (uint32_t cfg = (uint32_t)Config::Default; cfg < (uint32_t)Config::NumConfigs; ++cfg)
+    {
+        for (uint32_t mode = (uint32_t)Mode::Explore; mode < (uint32_t)Mode::NumModes; ++mode)
+        {
+            cout << "power7.config." << get_config_string((Config)cfg) << "." << get_mode_string((Mode)mode) << " " << stats.config.histogram[cfg][mode] << endl;
+        }
+    }
+    cout << endl;
+
+    cout << "power7.pred.total " << stats.pred.total << endl
+        << "power7.pred.streamer " << stats.pred.streamer << endl
+        << "power7.pred.stride " << stats.pred.stride << endl
+        << endl;
 }
