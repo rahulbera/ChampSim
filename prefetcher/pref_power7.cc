@@ -72,6 +72,12 @@ POWER7_Pref::POWER7_Pref(string type, CACHE *cache) : Prefetcher(type), m_parent
     mode = Mode::Exploit;
     config = Config::Default;
     set_params();
+
+    /* create component prefetchers */
+    streamer = new Streamer("streamer");
+    assert(streamer);
+    stride = new StridePrefetcher("stride");
+    assert(stride);
 }
 
 POWER7_Pref::~POWER7_Pref()
