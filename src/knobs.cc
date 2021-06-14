@@ -152,6 +152,8 @@ namespace knob
 	uint32_t ampm_pred_degree = 4;
 	uint32_t ampm_pref_degree = 4;
 	uint32_t ampm_pref_buffer_size = 256;
+	bool	 ampm_enable_pref_buffer = false;
+	uint32_t ampm_max_delta = 16;
 
 	/* Context Prefetcher */
 	uint32_t cp_cst_size = 2048;
@@ -885,6 +887,14 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "ampm_pref_buffer_size"))
 	{
 		knob::ampm_pref_buffer_size = atoi(value);
+	}
+	else if (MATCH("", "ampm_enable_pref_buffer"))
+	{
+		knob::ampm_enable_pref_buffer = !strcmp(value, "true") ? true : false;
+	}
+	else if (MATCH("", "ampm_max_delta"))
+	{
+		knob::ampm_max_delta = atoi(value);
 	}
 
 	/* Context Prefetcher */

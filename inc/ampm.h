@@ -54,6 +54,7 @@ private:
             uint64_t hit;
             uint64_t dropped;
             uint64_t insert;
+            uint64_t issued;
         } pref_buffer;
 
         struct
@@ -66,6 +67,8 @@ private:
 private:
     void init_knobs();
     void init_stats();
+    void buffer_prefetch(vector<uint64_t> predicted_addrs);
+    void issue_prefetch(vector<uint64_t> &pref_addr);
 
 public:
     AMPM(string type);

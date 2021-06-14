@@ -8,6 +8,8 @@ namespace knob
     extern uint32_t ampm_pred_degree;
     extern uint32_t ampm_pref_degree;
     extern uint32_t ampm_pref_buffer_size;
+    extern bool     ampm_enable_pref_buffer;
+    extern uint32_t ampm_max_delta;
 }
 
 void AMPM::init_knobs()
@@ -26,6 +28,8 @@ void AMPM::print_config()
          << "ampm_pred_degree " << knob::ampm_pred_degree << endl
          << "ampm_pref_degree " << knob::ampm_pref_degree << endl
          << "ampm_pref_buffer_size " << knob::ampm_pref_buffer_size << endl
+         << "ampm_enable_pref_buffer " << knob::ampm_enable_pref_buffer << endl
+         << "ampm_max_delta " << knob::ampm_max_delta << endl
          << endl;
 }
 
@@ -74,7 +78,7 @@ void AMPM::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, u
 
     /* check for +ve deltas */
     vector<int32_t> selected_pos;
-    for(int32_t delta = +16; delta >= +1; --delta)
+    for(int32_t delta = knob::ampm_max_delta; delta >= +1; --delta)
     {
         int32_t one_hop = (offset - 1*delta >= 0) ? (offset - 1*delta) : -1;
         int32_t two_hop = (offset - 2*delta >= 0) ? (offset - 2*delta) : -1;
@@ -90,7 +94,7 @@ void AMPM::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, u
 
     /* check for -ve deltas */
     vector<int32_t> selected_neg;
-    for (int32_t delta = +16; delta >= +1; --delta)
+    for (int32_t delta = knob::ampm_max_delta; delta >= +1; --delta)
     {
         int32_t one_hop = (offset + 1*delta < 64) ? (offset + 1*delta) : -1;
         int32_t two_hop = (offset + 2*delta < 64) ? (offset + 2*delta) : -1;
@@ -115,7 +119,7 @@ void AMPM::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, u
             stats.pred.degree_reached_pos++;
             break;
         }
-        assert(selected_pos[index] >= 1 && selected_pos[index] <= 16);
+        assert(selected_pos[index] >= 1 && selected_pos[index] <= knob::ampm_max_delta);
         int32_t pref_offset = offset + selected_pos[index];
         if(pref_offset >= 0 && pref_offset < 64)
         {
@@ -132,7 +136,7 @@ void AMPM::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, u
             stats.pred.degree_reached_neg++;
             break;
         }
-        assert(selected_neg[index] >= 1 && selected_neg[index] <= 16);
+        assert(selected_neg[index] >= 1 && selected_neg[index] <= knob::ampm_max_delta);
         int32_t pref_offset = offset - selected_neg[index];
         if (pref_offset >= 0 && pref_offset < 64)
         {
@@ -146,10 +150,26 @@ void AMPM::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, u
     stats.pred.total += predicted_addrs.size();
 
     /* buffer predicted addresses */
+    if(knob::ampm_enable_pref_buffer)
+    {
+        buffer_prefetch(predicted_addrs);
+        issue_prefetch(pref_addr);
+    }
+    else
+    {
+        pref_addr = predicted_addrs;
+    }
+    
+    stats.pred.total += pref_addr.size();
+    return;
+}
+
+void AMPM::buffer_prefetch(vector<uint64_t> predicted_addrs)
+{
     for(uint32_t index = 0; index < predicted_addrs.size(); ++index)
     {
         bool found = false;
-        for(uint32_t index2 = 0; index2 < pref_buffer.size(); ++index)
+        for(uint32_t index2 = 0; index2 < pref_buffer.size(); ++index2)
         {
             if(pref_buffer[index2] == predicted_addrs[index])
             {
@@ -175,17 +195,18 @@ void AMPM::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache_hit, u
             }
         }
     }
+}
 
-    /* populate pref_addr */
-    for(uint32_t index = 0; index < knob::ampm_pref_degree; ++index)
-    {
-        pref_addr.push_back(pref_buffer.front());
-        pref_buffer.pop_front();
-    }
-
-    stats.pref.total += pref_addr.size();
-    
-    return;
+void AMPM::issue_prefetch(vector<uint64_t> &pref_addr)
+{
+	uint32_t count = 0;
+	while(!pref_buffer.empty() && count < knob::ampm_pref_degree)
+	{
+		pref_addr.push_back(pref_buffer.front());
+		pref_buffer.pop_front();
+		count++;
+	}
+	stats.pref_buffer.issued += pref_addr.size();
 }
 
 void AMPM::dump_stats()
@@ -221,6 +242,7 @@ void AMPM::dump_stats()
     cout << "ampm.pref_buffer.hit " << stats.pref_buffer.hit << endl
         << "ampm.pref_buffer.dropped " << stats.pref_buffer.dropped << endl
         << "ampm.pref_buffer.insert " << stats.pref_buffer.insert << endl
+        << "ampm.pref_buffer.issued " << stats.pref_buffer.issued << endl
         << "ampm.pref.total " << stats.pref.total << endl
         << endl;
 }
