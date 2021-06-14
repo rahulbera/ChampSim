@@ -17,6 +17,7 @@
 #include "stride.h"
 #include "ipcp_L2.h"
 #include "ampm.h"
+#include "streamer.h"
 
 using namespace std;
 
@@ -112,6 +113,12 @@ void CACHE::l2c_prefetcher_initialize()
 			cout << "adding L2C_PREFETCHER: Stride" << endl;
 			StridePrefetcher *pref_stride = new StridePrefetcher(knob::l2c_prefetcher_types[index]);
 			prefetchers.push_back(pref_stride);
+		}
+		else if (!knob::l2c_prefetcher_types[index].compare("streamer"))
+		{
+			cout << "adding L2C_PREFETCHER: streamer" << endl;
+			Streamer *pref_streamer = new Streamer(knob::l2c_prefetcher_types[index]);
+			prefetchers.push_back(pref_streamer);
 		}
 		else if(!knob::l2c_prefetcher_types[index].compare("ipcp"))
 		{

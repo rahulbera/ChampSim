@@ -147,6 +147,10 @@ namespace knob
 	uint32_t stride_num_trackers = 64;
    	uint32_t stride_pref_degree = 2;
 
+	/* Streamer */
+	uint32_t streamer_num_trackers = 64;
+	uint32_t streamer_pref_degree = 5; /* models IBM POWER7 */
+
 	/* AMPM */
 	uint32_t ampm_pb_size = 64;
 	uint32_t ampm_pred_degree = 4;
@@ -869,6 +873,15 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "stride_pref_degree"))
 	{
 		knob::stride_pref_degree = atoi(value);
+	}
+
+	else if (MATCH("", "streamer_num_trackers"))
+	{
+		knob::streamer_num_trackers = atoi(value);
+	}
+	else if (MATCH("", "streamer_pref_degree"))
+	{
+		knob::streamer_pref_degree = atoi(value);
 	}
 
 	/* AMPM */
