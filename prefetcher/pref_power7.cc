@@ -179,7 +179,7 @@ void POWER7_Pref::invoke_prefetcher(uint64_t pc, uint64_t address, uint8_t cache
             else
             {
                 cycle_stats[config] = (cpu_cycle - cycle_stamp);
-                mode = Mode::Exploit;
+                mode = Mode::Explore;
                 config = (Config)((uint32_t)config + 1); /* try out next config */
                 set_params();
             }
