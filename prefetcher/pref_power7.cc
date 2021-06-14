@@ -46,7 +46,7 @@ string POWER7_Pref::get_config_string(Config cfg)
 
 void POWER7_Pref::init_knobs()
 {
-    assert(knob::power7_exploit_epoch >= knob::power7_explore_epoch*Config::NumConfigs);
+    // assert(knob::power7_exploit_epoch >= knob::power7_explore_epoch*Config::NumConfigs);
 }
 
 void POWER7_Pref::init_stats()
