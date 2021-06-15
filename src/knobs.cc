@@ -169,6 +169,7 @@ namespace knob
 	/* IBM POWER7 Prefetcher */
 	uint32_t power7_explore_epoch = 1000;
 	uint32_t power7_exploit_epoch = 100000;
+	uint32_t power7_default_streamer_degree = 4;
 
 	/* Scooby */
 	float    scooby_alpha;
@@ -944,6 +945,10 @@ int parse_knobs(void* user, const char* section, const char* name, const char* v
 	else if (MATCH("", "power7_exploit_epoch"))
 	{
 		knob::power7_exploit_epoch = atoi(value);
+	}
+	else if (MATCH("", "power7_default_streamer_degree"))
+	{
+		knob::power7_default_streamer_degree = atoi(value);
 	}
 
 	/* Scooby */

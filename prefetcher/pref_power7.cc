@@ -10,6 +10,7 @@ namespace knob
     extern uint32_t stride_pref_degree;
     extern uint32_t power7_explore_epoch;
     extern uint32_t power7_exploit_epoch;
+    extern uint32_t power7_default_streamer_degree;
 }
 
 string POWER7_Pref::get_mode_string(Mode mode)
@@ -56,8 +57,13 @@ void POWER7_Pref::init_stats()
 
 void POWER7_Pref::print_config()
 {
-    cout << "power7_explore_epoch " << knob::power7_explore_epoch << endl
-        << "power7_exploit_epoch " << knob::power7_exploit_epoch << endl
+    cout << "streamer_num_trackers " << streamer_num_trackers << endl
+        << "streamer_pref_degree " << streamer_pref_degree << endl
+        << "stride_num_trackers " << stride_num_trackers << endl
+        << "stride_pref_degree " << stride_pref_degree << endl
+        << "power7_explore_epoch " << power7_explore_epoch << endl
+        << "power7_exploit_epoch " << power7_exploit_epoch << endl
+        << "power7_default_streamer_degree " << power7_default_streamer_degree << endl
         << endl;
 }
 
@@ -95,7 +101,7 @@ uint32_t POWER7_Pref::get_streamer_degree(Config config)
 {
     switch(config)
     {
-        case Config::Default:           return 5;
+        case Config::Default:           return knob::power7_default_streamer_degree;
         case Config::Off:               return 0;
         case Config::Shallowest:
         case Config::S_Shallowest:      return 2;
@@ -109,7 +115,7 @@ uint32_t POWER7_Pref::get_streamer_degree(Config config)
         case Config::S_Deeper:          return 6;
         case Config::Deepest:
         case Config::S_Deepest:         return 7;
-        default:                        return 5;
+        default:                        return knob::power7_default_streamer_degree;
     }
 }
 
