@@ -57,13 +57,13 @@ void POWER7_Pref::init_stats()
 
 void POWER7_Pref::print_config()
 {
-    cout << "streamer_num_trackers " << streamer_num_trackers << endl
-        << "streamer_pref_degree " << streamer_pref_degree << endl
-        << "stride_num_trackers " << stride_num_trackers << endl
-        << "stride_pref_degree " << stride_pref_degree << endl
-        << "power7_explore_epoch " << power7_explore_epoch << endl
-        << "power7_exploit_epoch " << power7_exploit_epoch << endl
-        << "power7_default_streamer_degree " << power7_default_streamer_degree << endl
+    cout << "streamer_num_trackers " << knob::streamer_num_trackers << endl
+        << "streamer_pref_degree " << knob::streamer_pref_degree << endl
+        << "stride_num_trackers " << knob::stride_num_trackers << endl
+        << "stride_pref_degree " << knob::stride_pref_degree << endl
+        << "power7_explore_epoch " << knob::power7_explore_epoch << endl
+        << "power7_exploit_epoch " << knob::power7_exploit_epoch << endl
+        << "power7_default_streamer_degree " << knob::power7_default_streamer_degree << endl
         << endl;
 }
 
